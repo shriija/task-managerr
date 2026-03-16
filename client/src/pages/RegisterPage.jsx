@@ -57,7 +57,26 @@ const { register, handleSubmit, formState: { errors } } = useForm();
               <input type="url" placeholder="Enter image URL" className="w-3/4 border rounded p-2" {...register("profileImageUrl")} />
             </div>
           </div>
-          <button type="submit" className="w-full bg-blue-600 mb-4 text-white p-2 rounded hover:bg-blue-700 hover:cursor-pointer" > Register </button>
+          <div className="flex items-center">
+            <input id="terms" type="checkbox" required className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded" />
+            <label htmlFor="terms" className="ml-2 block text-sm text-gray-600">
+              I agree to the <a href="#" className="text-primary-600 hover:text-primary-500">Terms</a> and <a href="#" className="text-primary-600 hover:text-primary-500">Privacy Policy</a>
+            </label>
+          </div>
+
+          <button
+            type="submit"
+            className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-primary-600 hover:bg-primary-700 transition-all shadow-lg hover:shadow-primary-500/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          >
+            Create Account
+          </button>
+
+                        <p className="text-center text-sm text-gray-600">
+                            Already have an account?{' '}
+                            <NavLink to="/login" className="font-semibold text-gray-900 hover:text-gray-700">
+                                Log in
+                            </NavLink>
+                        </p>
           <div className="">
           </div>
         </form>
