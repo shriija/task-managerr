@@ -5,6 +5,8 @@ function Navbar() {
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const logout = useAuthStore((state) => state.logout)
+  const currentUser = useAuthStore((state)=>state.currentUser)
+  console.log(currentUser)
 
   return (
     <nav className="fixed top-0 w-full bg-white border-b z-50">
@@ -22,19 +24,19 @@ function Navbar() {
             {isAuthenticated ? (
               <>
                 <span className="text-sm text-gray-700">
-                  Hello
+                  {currentUser.name}
                 </span>
 
                 <NavLink
                   to="/dashboard"
-                  className="text-sm font-medium text-gray-700 hover:text-black"
+                  className= {({isActive})=>isActive? "text-sm font-medium text-white hover:text-gray-600 bg-gray-900 px-4 py-2 rounded" : ""}
                 >
                   Dashboard
                 </NavLink>
 
                 <button
                   onClick={logout}
-                  className="text-sm font-medium text-red-600"
+                  className="text-sm font-medium text-red-600 hover:text-white hover:bg-red-600 px-4 py-2 rounded transition-colors duration-200 cursor-pointer"
                 >
                   Logout
                 </button>
