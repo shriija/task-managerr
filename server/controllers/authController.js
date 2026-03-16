@@ -1,10 +1,14 @@
 import {UserModel} from '../models/User.js'
 import bcrypt from 'bcryptjs'
 import {generateToken} from '../utils/generateToken.js'
+import { response } from 'express';
 
 export const signup = async(req,res) =>{
     const user = req.body;
-    const reponse = await UserModel.findOne({email:user.email})
+    const response = await UserModel.findOne({email:user.email})
+    if(response){
+        return res.status(501).json({message:"email already exists"})
+    }
     try {
         await UserModel.validate(user);
         const hashedPass = await bcrypt.hash(user.password,8)
@@ -54,6 +58,7 @@ export const logout = async(req,res)=>{
     try {
         const userId = req.params.id;
         res.cookie("jwt",'')
+        
         res.status(501).json({message:"logout sucessfull"});
         
     } catch (error) {

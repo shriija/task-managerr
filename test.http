@@ -3,8 +3,8 @@ POST http://localhost:4001/user-api/signup
 Content-Type: application/json
 
 {
-    "name":"dsp",
-    "email":"dsp@gmail.com",
+    "name":"charan",
+    "email":"charan@gmail.com",
     "password":"123456"
 }
 
@@ -13,8 +13,9 @@ GET http://localhost:4001/user-api/signin
 Content-Type: application/json
 
 {
-    "email":"dsp@gmail.com",
+    "email":"charan@gmail.com",
     "password":"123456"
 }
 
 ###
+GET http://localhost:4001/user-api/logout/69b7ba3eaee7c3f3b3359832
