@@ -18,7 +18,7 @@ config();
 app.use(exp.json());
 app.use(CookieParser());
 
-const FRONTEND_URL = "http://localhost:5174";
+const FRONTEND_URL = "http://localhost:5173" || "http://localhost:5174";
 
 app.use(
   cors({
