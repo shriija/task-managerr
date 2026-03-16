@@ -8,9 +8,26 @@ const { register, handleSubmit, formState: { errors } } = useForm();
   const [loading,setLoading] = useState(false);
   const [error,setError] = useState(null);  
 
-
   const onSubmit = async (newUser) => {
     console.log(newUser)
+    try {
+      setLoading(true);
+      setError(null);
+
+      const res = await axios.post(
+        "http://localhost:4001/user-api/signup",
+        newUser
+      );
+
+      console.log(res.data);
+      alert("User registered successfully");
+
+    } catch (err) {
+      console.error(err);
+      setError("Registration failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

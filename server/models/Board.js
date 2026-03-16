@@ -1,4 +1,3 @@
-import exp from "express";
 import { Schema, model } from "mongoose";
 
 //Board schema
@@ -24,10 +23,6 @@ const boardSchema = new Schema(
       type: String,
       default: "#0052cc",
     },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
   },
   {
     strict: true,
@@ -35,7 +30,7 @@ const boardSchema = new Schema(
   },
 );
 
-export const Board = model("board", boardSchema);
+export const Board = model("Board", boardSchema);
 
 // collection: boards
 // Field

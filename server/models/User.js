@@ -1,4 +1,3 @@
-import exp from "express";
 import { Schema, model } from "mongoose";
 
 //User Schema
@@ -12,4 +11,4 @@ const userSchema = new Schema(
   { strict: true, timestamps: true },
 );
 
-export const UserModel = model("user", userSchema);
+export const UserModel = model("User", userSchema);

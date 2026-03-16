@@ -19,7 +19,7 @@ export const signup = async(req,res) =>{
             avatar:user.avatar
         })
         newUser.save()
-        res.status(501).json({message:"user created sucessfully"})
+        res.status(201).json({message:"user created sucessfully"})
     } catch (error) {
         console.log("error in signup")
         res.json({error:error.message})
@@ -35,7 +35,7 @@ export const signin = async(req,res)=>{
 
         const response = await bcrypt.compare(password,user.password)
         if(!response){
-            return res.status(400).json({message:"invalid credentials"})
+            return res.status(401).json({message:"invalid credentials"})
         }
         const userObj = user.toObject()
         delete userObj.password
@@ -51,18 +51,17 @@ export const signin = async(req,res)=>{
 
     } catch (error) {
         console.log("error in signin")
-        res.status(401).json({error:error.message})
+        res.status(200).json({error:error.message})
     }
 }
 export const logout = async(req,res)=>{
     try {
         const userId = req.params.id;
         res.cookie("jwt",'')
-        
         res.status(501).json({message:"logout sucessfull"});
         
     } catch (error) {
         console.log("error in logout")
-        res.status(401).json({error:error.message})
+        res.status(201).json({error:error.message})
     }
 }

@@ -77,6 +77,13 @@ function Home() {
           </p>
         </div>
 
+        <div className="p-8 bg-white border rounded-xl">
+          <h3 className="text-xl font-bold mb-3">Task Priorities & Deadlines</h3>
+          <p className="text-gray-600">
+           Set priorities and due dates to keep your work organized and on schedule.
+          </p>
+        </div>
+
       </div>
     </div>
   </section>
@@ -88,18 +95,18 @@ function Home() {
 
       <div className="flex-1">
         <h2 className="text-3xl md:text-4xl font-bold mb-6">
-          Transform Your Space
+          Kanvas
         </h2>
 
         <p className="text-gray-300 text-lg">
-          Generate realistic interior design previews instantly.
+          Simple task management for teams and individuals
         </p>
       </div>
 
       <div className="flex-1">
         <img
           src="../assets/react.svg"
-          alt="Room design"
+          alt="Kanvas Final Screenshot"
           className="rounded-lg shadow-lg"
         />
       </div>
