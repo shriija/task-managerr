@@ -8,7 +8,7 @@ function Home() {
 
   {/* HERO */}
   <section className="pt-20 pb-32">
-    <div className="max-w-7xl mx-auto px-4 text-center">
+    <div className="max-w-7xl mx-auto px-4 text-center mt-8">
 
       <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-8">
         Organize Your Work<br />
@@ -43,23 +43,23 @@ function Home() {
       <div className="grid md:grid-cols-3 gap-8">
 
         <div className="p-8 bg-white border rounded-xl">
-          <h3 className="text-xl font-bold mb-3">Turn Ideas into Action</h3>
+          <h3 className="text-xl font-bold mb-3">Visual Task Boards</h3>
           <p className="text-gray-600">
-            A simple and powerful task manager to organize projects, track progress, and stay productive every day
+            Organize tasks using simple boards, lists, and cards to clearly see what needs to be done.
           </p>
         </div>
 
         <div className="p-8 bg-white border rounded-xl">
-          <h3 className="text-xl font-bold mb-3">Custom Styles</h3>
+          <h3 className="text-xl font-bold mb-3">Drag & Drop Workflow</h3>
           <p className="text-gray-600">
-            Choose from modern, minimalist, bohemian and more.
+            Move tasks between lists effortlessly with an intuitive drag-and-drop interface.
           </p>
         </div>
 
         <div className="p-8 bg-white border rounded-xl">
-          <h3 className="text-xl font-bold mb-3">Visualization</h3>
+          <h3 className="text-xl font-bold mb-3">Team Collaboration</h3>
           <p className="text-gray-600">
-            See realistic previews of furniture and colors in your room.
+           Invite teammates, assign tasks, and work together in real time on shared projects.
           </p>
         </div>
 
