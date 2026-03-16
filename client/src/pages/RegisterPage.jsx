@@ -53,7 +53,6 @@ const { register, handleSubmit, formState: { errors } } = useForm();
             <label className="block mb-1 font-medium"> Profile Picture </label>
 
             <div className="flex gap-2">
-
               {/* Image URL */}
               <input type="url" placeholder="Enter image URL" className="w-3/4 border rounded p-2" {...register("profileImageUrl")} />
             </div>
