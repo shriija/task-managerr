@@ -53,7 +53,7 @@ function UserDashboard() {
           {/* Dynamic Boards */}
           {boards.map((board) => (
             <div
-              key={board._id}
+              key={board.id}
               onClick={()=>navigate(`/board/${board.id}`)}
               className="bg-white rounded-xl shadow p-6 hover:shadow-lg cursor-pointer"
             >
