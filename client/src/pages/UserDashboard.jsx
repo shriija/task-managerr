@@ -1,28 +1,15 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 
 function UserDashboard() {
+
+  const navigate = useNavigate()
 
   const [boards, setBoards] = useState([
     { id: 1, name: "Project Alpha" },
     { id: 2, name: "Marketing Plan" },
     { id: 3, name: "Personal Tasks" }
   ])
-
-  const [showModal, setShowModal] = useState(false)
-  const [boardName, setBoardName] = useState("")
-
-  const createBoard = () => {
-    if (!boardName.trim()) return
-
-    const newBoard = {
-      id: Date.now(),
-      name: boardName
-    }
-
-    setBoards([...boards, newBoard])
-    setBoardName("")
-    setShowModal(false)
-  }
 
   return (
     <div className="min-h-screen flex bg-background-light">
@@ -32,7 +19,7 @@ function UserDashboard() {
         <h2 className="font-bold text-xl mb-6">TaskHub</h2>
 
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => navigate("/create-board")}
           className="w-full bg-primary text-white py-2 rounded-lg mb-6"
         >
           + Create Board
@@ -41,7 +28,7 @@ function UserDashboard() {
         <p className="text-sm text-gray-500 mb-2">Boards</p>
 
         {boards.map((b) => (
-          <div key={b.id} className="p-2 rounded hover:bg-gray-100 cursor-pointer">
+          <div key={b.id} onClick={()=> navigate(`/board/${b.id}`)} className="p-2 rounded hover:bg-gray-100 cursor-pointer">
             {b.name}
           </div>
         ))}
@@ -56,7 +43,7 @@ function UserDashboard() {
 
           {/* Create New Board Card */}
           <div
-            onClick={() => setShowModal(true)}
+            onClick={() => navigate("/create-board")}
             className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-primary"
           >
             <span className="text-4xl">+</span>
@@ -66,7 +53,8 @@ function UserDashboard() {
           {/* Dynamic Boards */}
           {boards.map((board) => (
             <div
-              key={board.id}
+              key={board._id}
+              onClick={()=>navigate(`/board/${board.id}`)}
               className="bg-white rounded-xl shadow p-6 hover:shadow-lg cursor-pointer"
             >
               <h3 className="font-bold text-lg">{board.name}</h3>
@@ -77,42 +65,6 @@ function UserDashboard() {
         </div>
 
       </main>
-
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-
-          <div className="bg-white p-6 rounded-xl w-96">
-
-            <h2 className="text-xl font-bold mb-4">Create Board</h2>
-
-            <input
-              value={boardName}
-              onChange={(e) => setBoardName(e.target.value)}
-              className="w-full border p-2 rounded mb-4"
-              placeholder="Board name"
-            />
-
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-gray-300 rounded"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={createBoard}
-                className="px-4 py-2 bg-primary text-white rounded"
-              >
-                Create
-              </button>
-            </div>
-
-          </div>
-
-        </div>
-      )}
 
     </div>
   )
