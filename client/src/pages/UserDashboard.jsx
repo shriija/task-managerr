@@ -8,25 +8,29 @@ function UserDashboard() {
     { id: 3, name: "Personal Tasks" }
   ])
 
-  const createBoard = () => {
-    const boardName = prompt("Enter board name:")
+  const [showModal, setShowModal] = useState(false)
+  const [boardName, setBoardName] = useState("")
 
-    if (!boardName) return;
+  const createBoard = () => {
+    if (!boardName.trim()) return
 
     const newBoard = {
       id: Date.now(),
       name: boardName
     }
 
-    setBoards([...boards, newBoard]);
+    setBoards([...boards, newBoard])
+    setBoardName("")
+    setShowModal(false)
   }
 
   return (
     <div className="p-8">
+
       <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
 
       <button
-        onClick={createBoard}
+        onClick={() => setShowModal(true)}
         className="bg-blue-600 text-white px-4 py-2 rounded-lg mb-8"
       >
         + Create Board
@@ -42,8 +46,47 @@ function UserDashboard() {
           </div>
         ))}
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/40">
+
+          <div className="bg-white p-6 rounded-xl w-96">
+
+            <h2 className="text-xl font-bold mb-4">Create Board</h2>
+
+            <input
+              type="text"
+              placeholder="Board Name"
+              value={boardName}
+              onChange={(e) => setBoardName(e.target.value)}
+              className="w-full border p-2 rounded mb-4"
+            />
+
+            <div className="flex justify-end gap-3">
+
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 bg-gray-300 rounded"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={createBoard}
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+              >
+                Create
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
     </div>
-  )
+  );
 }
 
 export default UserDashboard;
