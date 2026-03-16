@@ -4,7 +4,7 @@ import {generateToken} from '../utils/generateToken.js'
 
 export const signup = async(req,res) =>{
     const user = req.body;
-    console.log(user)
+    const reponse = await UserModel.findOne({email:user.email})
     try {
         await UserModel.validate(user);
         const hashedPass = await bcrypt.hash(user.password,8)
@@ -22,9 +22,9 @@ export const signup = async(req,res) =>{
     }
 }
 export const signin = async(req,res)=>{
-    const {name,password} = req.body;
+    const {email,password} = req.body;
     try {
-        const user = await UserModel.findOne({name})
+        const user = await UserModel.findOne({email})
         if(!user){
             return res.status(404).json({message:"user not found"})
         }

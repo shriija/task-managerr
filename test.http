@@ -13,7 +13,7 @@ GET http://localhost:4001/user-api/signin
 Content-Type: application/json
 
 {
-    "name":"dsp",
+    "email":"dsp@gmail.com",
     "password":"123456"
 }
 
