@@ -9,7 +9,6 @@ function Loginpage() {
   const login = useAuthStore((state) => state.login);
   const loading = useAuthStore((state) => state.loading);
   const error = useAuthStore((state) => state.error);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   const navigate = useNavigate();
 

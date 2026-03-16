@@ -25,7 +25,7 @@ function App() {
           element:<Loginpage />
         },
         {
-          path:"/login",
+          path:"/dashboard",
           element:<UserDashboard />
         },
       ]
