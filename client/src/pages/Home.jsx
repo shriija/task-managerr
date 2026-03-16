@@ -7,8 +7,8 @@ function Home() {
     <div className="bg-white overflow-hidden">
 
   {/* HERO */}
-  <section className="pt-20 pb-32">
-    <div className="max-w-7xl mx-auto px-4 text-center">
+  <section className="pt-20 pb-20">
+    <div className="max-w-7xl mx-auto px-4 text-center mt-8">
 
       <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-8">
         Organize Your Work<br />
@@ -20,8 +20,8 @@ function Home() {
       </p>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <NavLink to="/register" className="px-8 py-4 bg-blue-600 text-white rounded-full font-semibold">
-          Get Started
+        <NavLink to="/register" className="group relative w-40 flex justify-center py-3 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-primary-600 hover:bg-primary-700 transition-all shadow-lg hover:shadow-primary-500/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+          Get Started 
         </NavLink>
       </div>
 
@@ -43,23 +43,37 @@ function Home() {
       <div className="grid md:grid-cols-3 gap-8">
 
         <div className="p-8 bg-white border rounded-xl">
-          <h3 className="text-xl font-bold mb-3">Turn Ideas into Action</h3>
+          <h3 className="text-xl font-bold mb-3">Visual Task Boards</h3>
           <p className="text-gray-600">
-            A simple and powerful task manager to organize projects, track progress, and stay productive every day
+            Organize tasks using simple boards, lists, and cards to clearly see what needs to be done.
           </p>
         </div>
 
         <div className="p-8 bg-white border rounded-xl">
-          <h3 className="text-xl font-bold mb-3">Custom Styles</h3>
+          <h3 className="text-xl font-bold mb-3">Drag & Drop Workflow</h3>
           <p className="text-gray-600">
-            Choose from modern, minimalist, bohemian and more.
+            Move tasks between lists effortlessly with an intuitive drag-and-drop interface.
           </p>
         </div>
 
         <div className="p-8 bg-white border rounded-xl">
-          <h3 className="text-xl font-bold mb-3">Visualization</h3>
+          <h3 className="text-xl font-bold mb-3">Team Collaboration</h3>
           <p className="text-gray-600">
-            See realistic previews of furniture and colors in your room.
+           Invite teammates, assign tasks, and work together in real time on shared projects.
+          </p>
+        </div>
+
+        <div className="p-8 bg-white border rounded-xl">
+          <h3 className="text-xl font-bold mb-3">File Attachments</h3>
+          <p className="text-gray-600">
+           Attach documents, images, and resources directly to tasks for quick access.
+          </p>
+        </div>
+
+        <div className="p-8 bg-white border rounded-xl">
+          <h3 className="text-xl font-bold mb-3">Activity Tracking</h3>
+          <p className="text-gray-600">
+           Keep track of updates and see who changed what with detailed activity logs.
           </p>
         </div>
 
