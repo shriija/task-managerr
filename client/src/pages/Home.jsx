@@ -23,13 +23,6 @@ function Home() {
         <button className="px-8 py-4 bg-blue-600 text-white rounded-full font-semibold">
           Get Started
         </button>
-
-        <NavLink
-          to="/demo"
-          className="px-8 py-4 border border-gray-300 rounded-full font-semibold"
-        >
-          View Demo
-        </NavLink>
       </div>
 
     </div>
