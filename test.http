@@ -18,7 +18,7 @@ Content-Type: application/json
 }
 
 ###
-GET http://localhost:4001/user-api/logout/69b7ba3eaee7c3f3b3359832
+GET http://localhost:4001/user-api/logout
 
 ### Board Test
 POST http://localhost:4001/board-api/addBoard

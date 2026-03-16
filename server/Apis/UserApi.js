@@ -4,6 +4,6 @@ const UserApi = exp.Router()
 
 UserApi.post('/signup',signup)
 UserApi.post('/signin',signin)
-UserApi.get('/logout/:id',logout)
+UserApi.use('/logout',logout)
 
 export default UserApi;

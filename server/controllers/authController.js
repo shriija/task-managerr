@@ -57,9 +57,12 @@ export const signin = async(req,res)=>{
 }
 export const logout = async(req,res)=>{
     try {
-        const userId = req.params.id;
-        res.cookie("jwt",'')
-        res.status(501).json({message:"logout sucessfull"});
+        res.clearCookie('token',{
+            httpOnly:true,
+            secure:false,
+            sameSite:"lax"
+        })
+        res.status(200).json({message:"logout success"})
         
     } catch (error) {
         console.log("error in logout")
