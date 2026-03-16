@@ -25,45 +25,75 @@ function UserDashboard() {
   }
 
   return (
-    <div className="p-8">
+    <div className="min-h-screen flex bg-background-light">
 
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+      {/* Sidebar */}
+      <aside className="w-64 bg-white border-r p-6 hidden lg:block">
+        <h2 className="font-bold text-xl mb-6">TaskHub</h2>
 
-      <button
-        onClick={() => setShowModal(true)}
-        className="bg-blue-600 text-white px-4 py-2 rounded-lg mb-8"
-      >
-        + Create Board
-      </button>
+        <button
+          onClick={() => setShowModal(true)}
+          className="w-full bg-primary text-white py-2 rounded-lg mb-6"
+        >
+          + Create Board
+        </button>
 
-      <div className="grid grid-cols-3 gap-6">
-        {boards.map((board) => (
-          <div
-            key={board.id}
-            className="bg-white shadow-md p-6 rounded-xl cursor-pointer hover:shadow-lg"
-          >
-            <h2 className="text-xl font-semibold">{board.name}</h2>
+        <p className="text-sm text-gray-500 mb-2">Boards</p>
+
+        {boards.map((b) => (
+          <div key={b.id} className="p-2 rounded hover:bg-gray-100 cursor-pointer">
+            {b.name}
           </div>
         ))}
-      </div>
+      </aside>
 
+      {/* Main */}
+      <main className="flex-1 p-8">
+
+        <h1 className="text-3xl font-black mb-8 mt-23">My Boards</h1>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+
+          {/* Create New Board Card */}
+          <div
+            onClick={() => setShowModal(true)}
+            className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-primary"
+          >
+            <span className="text-4xl">+</span>
+            <p className="font-bold mt-2">Create Board</p>
+          </div>
+
+          {/* Dynamic Boards */}
+          {boards.map((board) => (
+            <div
+              key={board.id}
+              className="bg-white rounded-xl shadow p-6 hover:shadow-lg cursor-pointer"
+            >
+              <h3 className="font-bold text-lg">{board.name}</h3>
+              <p className="text-xs text-gray-400 mt-2">Updated just now</p>
+            </div>
+          ))}
+
+        </div>
+
+      </main>
+
+      {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
 
           <div className="bg-white p-6 rounded-xl w-96">
 
             <h2 className="text-xl font-bold mb-4">Create Board</h2>
 
             <input
-              type="text"
-              placeholder="Board Name"
               value={boardName}
               onChange={(e) => setBoardName(e.target.value)}
               className="w-full border p-2 rounded mb-4"
+              placeholder="Board name"
             />
 
             <div className="flex justify-end gap-3">
-
               <button
                 onClick={() => setShowModal(false)}
                 className="px-4 py-2 bg-gray-300 rounded"
@@ -73,11 +103,10 @@ function UserDashboard() {
 
               <button
                 onClick={createBoard}
-                className="px-4 py-2 bg-blue-600 text-white rounded"
+                className="px-4 py-2 bg-primary text-white rounded"
               >
                 Create
               </button>
-
             </div>
 
           </div>
@@ -86,7 +115,7 @@ function UserDashboard() {
       )}
 
     </div>
-  );
+  )
 }
 
 export default UserDashboard;
