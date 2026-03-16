@@ -57,7 +57,7 @@ const { register, handleSubmit, formState: { errors } } = useForm();
               <input type="url" placeholder="Enter image URL" className="w-3/4 border rounded p-2" {...register("profileImageUrl")} />
             </div>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center mb-3">
             <input id="terms" type="checkbox" required className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded" />
             <label htmlFor="terms" className="ml-2 block text-sm text-gray-600">
               I agree to the <a href="#" className="text-primary-600 hover:text-primary-500">Terms</a> and <a href="#" className="text-primary-600 hover:text-primary-500">Privacy Policy</a>
@@ -71,14 +71,12 @@ const { register, handleSubmit, formState: { errors } } = useForm();
             Create Account
           </button>
 
-                        <p className="text-center text-sm text-gray-600">
-                            Already have an account?{' '}
-                            <NavLink to="/login" className="font-semibold text-gray-900 hover:text-gray-700">
-                                Log in
-                            </NavLink>
-                        </p>
-          <div className="">
-          </div>
+          <p className="text-center text-sm text-gray-600 mt-1">
+            Already have an account?{' '}
+            <NavLink to="/login" className="font-semibold text-gray-900 hover:text-gray-700">
+              Log in
+            </NavLink>
+          </p>
         </form>
       </div>
     </div>

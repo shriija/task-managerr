@@ -20,9 +20,9 @@ function Home() {
       </p>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <button className="px-8 py-4 bg-blue-600 text-white rounded-full font-semibold">
+        <NavLink to="/register" className="px-8 py-4 bg-blue-600 text-white rounded-full font-semibold">
           Get Started
-        </button>
+        </NavLink>
       </div>
 
     </div>
