@@ -7,7 +7,7 @@ function RegisterPage() {
 const { register, handleSubmit, formState: { errors } } = useForm();
   const [loading,setLoading] = useState(false);
   const [error,setError] = useState(null);  
-  // const navigate = useNavigate()
+
 
   const onSubmit = async (newUser) => {
     console.log(newUser)
@@ -86,7 +86,6 @@ const { register, handleSubmit, formState: { errors } } = useForm();
 
           <button type="submit" className="w-full bg-blue-600 mb-4 text-white p-2 rounded hover:bg-blue-700 hover:cursor-pointer" > Register </button>
           <div className="">
-            {/* <p>Already have an account? <NavLink to="/login" className="text-blue-400">Login</NavLink></p> */}
           </div>
         </form>
       </div>
