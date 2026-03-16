@@ -16,7 +16,7 @@ function CreateBoardPage() {
       setLoading(true)
 
       const res = await axios.post(
-        "http://localhost:4001/board-api/create",
+        "http://localhost:4001/board-api/addBoard",
         {
           title,
           background:"#0052cc"

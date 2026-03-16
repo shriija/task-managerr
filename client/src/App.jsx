@@ -6,6 +6,7 @@ import RootLayout from './pages/RootLayout'
 import Home from './pages/Home'
 import UserDashboard from './pages/UserDashboard'
 import CreateBoardPage from './pages/CreateBoardPage'
+import BoardPage from './pages/BoardPage'
 
 function App() {
   const routerObj=createBrowserRouter([
@@ -32,6 +33,10 @@ function App() {
         {
           path:"create-board",
           element:<CreateBoardPage/>
+        },
+        {
+          path:"board/:id",
+          element:<BoardPage/>
         }
       ]
     }
