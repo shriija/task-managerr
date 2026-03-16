@@ -7,6 +7,7 @@ import Home from './pages/Home'
 import UserDashboard from './pages/UserDashboard'
 import CreateBoardPage from './pages/CreateBoardPage'
 import ProtectedRoute from './components/ProtectedRoute'
+import BoardPage from './pages/BoardPage'
 
 function App() {
   const routerObj=createBrowserRouter([
@@ -41,7 +42,11 @@ function App() {
               <CreateBoardPage/>
             </ProtectedRoute>
           )
-        }
+        },
+        {
+          path:"board/:id",
+          element:<BoardPage/>
+        },
       ]
     }
   ])

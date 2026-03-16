@@ -40,9 +40,9 @@ export const signin = async(req,res)=>{
         }
         const userObj = user.toObject()
         delete userObj.password
-        const token = generateToken(userObj)
+        const token = generateToken(user)
         
-        res.cookie('jwt', token, {
+        res.cookie('token', token, {
             httpOnly: true,
             maxAge: 7 * 24 * 60 * 60 * 1000,
             secure: false,
