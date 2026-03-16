@@ -39,14 +39,14 @@ function Navbar() {
           <>
             <NavLink
               to="/login"
-              className="text-sm font-medium text-gray-700 hover:text-black"
+              className={({isActive})=>isActive? "text-sm font-medium text-white bg-black px-4 py-2 rounded":"text-sm font-medium text-gray-700 hover:bg-gray-700 hover:text-white px-4 py-2 rounded"}
             >
               Login
             </NavLink>
 
             <NavLink
               to="/register"
-              className="text-sm font-medium bg-black text-white px-4 py-2 rounded"
+              className={({isActive})=>isActive? "text-sm font-medium text-white bg-black px-4 py-2 rounded":"text-sm font-medium text-gray-700 hover:bg-gray-700 hover:text-white px-4 py-2 rounded"}
             >
               Sign Up
             </NavLink>

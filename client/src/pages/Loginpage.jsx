@@ -1,16 +1,31 @@
 import { useForm } from "react-hook-form";
-import { NavLink } from "react-router";
+import { NavLink,useNavigate } from "react-router";
+import { useAuthStore } from "../context/AuthContext";
 
 function Loginpage() {
 
-  const {register,handleSubmit,formState:{errors}}=useForm()
-// 
-  const onUserLogin = async(userCredObj) => {
-    console.log(userCredObj)
-  }
+  const { register, handleSubmit } = useForm();
+
+  const login = useAuthStore((state) => state.login);
+  const loading = useAuthStore((state) => state.loading);
+  const error = useAuthStore((state) => state.error);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  const navigate = useNavigate();
+
+  const onUserLogin = async (userCredObj) => {
+
+    await login(userCredObj);
+
+    if (useAuthStore.getState().isAuthenticated) {
+      navigate("/dashboard");
+    }
+
+  };
 
   return(
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 mt-10">
+    <div>
+			<div className="min-h-screen flex items-center justify-center bg-gray-100 select-none">
       <form onSubmit={handleSubmit(onUserLogin)} className="bg-white shadow-lg rounded-lg p-8 w-100">
 
         <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
@@ -22,6 +37,11 @@ function Loginpage() {
         <div className="mb-1">
           <input type="password" placeholder="Password" {...register("password",{required:true})} className="w-full border rounded p-2 mb-4"/>
         </div>
+				{error && (
+          <p className="text-red-500 text-sm mb-3">
+            {error}
+          </p>
+        )}
 				
         <div className="flex items-center justify-between mb-4 ">
         	<div className="flex items-center">
@@ -35,17 +55,19 @@ function Loginpage() {
 
         <button
           type="submit"
-          className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-gray-900 hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
-        >
-          Sign in
-        </button>
+					disabled={loading}
+      	  className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-gray-900 hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
+      	  >
+      	    {loading ? "Signning in..." : "Sign in"}
+      	  </button>
 
-        <p className="text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-        	<NavLink to="/register" className="font-semibold text-primary-600 hover:text-primary-500">  Sign up for free </NavLink>
-        </p>
-      </form>
-    </div>
+      	  <p className="text-center text-sm text-gray-600">
+      	    Don't have an account?{' '}
+      	  	<NavLink to="/register" className="font-semibold text-primary-600 hover:text-primary-500">  Sign up for free </NavLink>
+      	  </p>
+      	</form>
+   		</div>
+		</div>
   )
 }
 

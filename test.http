@@ -9,12 +9,12 @@ Content-Type: application/json
 }
 
 ###
-GET http://localhost:4001/user-api/signin
+POSt http://localhost:4001/user-api/signin
 Content-Type: application/json
 
 {
-    "email":"charan@gmail.com",
-    "password":"123456"
+    "email":"userB1@example.com",
+    "password":"password123"
 }
 
 ###
