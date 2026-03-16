@@ -74,7 +74,7 @@ function Board() {
   }
 
   return (
-  <div className="h-screen bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 overflow-x-auto">
+  <div className="h-screen from-blue-200 via-indigo-200 to-purple-200 overflow-x-auto">
 
     <div className="flex gap-5 p-6 min-w-max items-start">
 
