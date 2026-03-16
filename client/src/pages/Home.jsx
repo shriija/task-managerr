@@ -7,7 +7,7 @@ function Home() {
     <div className="bg-white overflow-hidden">
 
   {/* HERO */}
-  <section className="pt-20 pb-32">
+  <section className="pt-20 pb-20">
     <div className="max-w-7xl mx-auto px-4 text-center mt-8">
 
       <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-8">
@@ -60,6 +60,20 @@ function Home() {
           <h3 className="text-xl font-bold mb-3">Team Collaboration</h3>
           <p className="text-gray-600">
            Invite teammates, assign tasks, and work together in real time on shared projects.
+          </p>
+        </div>
+
+        <div className="p-8 bg-white border rounded-xl">
+          <h3 className="text-xl font-bold mb-3">File Attachments</h3>
+          <p className="text-gray-600">
+           Attach documents, images, and resources directly to tasks for quick access.
+          </p>
+        </div>
+
+        <div className="p-8 bg-white border rounded-xl">
+          <h3 className="text-xl font-bold mb-3">Activity Tracking</h3>
+          <p className="text-gray-600">
+           Keep track of updates and see who changed what with detailed activity logs.
           </p>
         </div>
 
