@@ -27,17 +27,8 @@ const { register, handleSubmit, formState: { errors } } = useForm();
 
           {/* First Name */}
           <div className="mb-4">
-            <label className="block mb-1 font-medium"> First Name </label>
-            <input type="text" className="w-full border rounded p-2" {...register("firstName", { required:true, minLength:2})} />
-           {
-            
-           }
-          </div>
-
-          {/* Last Name */}
-          <div className="mb-4">
-            <label className="block mb-1 font-medium"> Last Name </label>
-            <input type="text" className="w-full border rounded p-2" {...register("lastName")}/>
+            <label className="block mb-1 font-medium"> Name </label>
+            <input type="text" className="w-full border rounded p-2" {...register("name", { required:true, minLength:2})} />
           </div>
 
           {/* Email */}
@@ -67,23 +58,6 @@ const { register, handleSubmit, formState: { errors } } = useForm();
               <input type="url" placeholder="Enter image URL" className="w-3/4 border rounded p-2" {...register("profileImageUrl")} />
             </div>
           </div>
-
-          {/* Role */}
-          <div className="mb-6">
-            <label className="block mb-2 font-medium"> Role </label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2">
-                <input type="radio" value="USER" {...register("role", { required:true })} />
-                User
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="radio" value="AUTHOR" {...register("role",{ required:true })} />
-                Author
-              </label>
-            </div>
-            {errors?.role?.type=="required" && <p className="text-red-500 text-sm mt-1"> Role is required </p>}
-          </div>
-
           <button type="submit" className="w-full bg-blue-600 mb-4 text-white p-2 rounded hover:bg-blue-700 hover:cursor-pointer" > Register </button>
           <div className="">
           </div>
