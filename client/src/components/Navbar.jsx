@@ -9,7 +9,7 @@ function Navbar() {
 
       {/* Logo */}
       <NavLink to="/" className="text-xl font-bold text-gray-900">
-        GruhaBuddy
+        Kanvas
       </NavLink>
 
       {/* Navigation */}

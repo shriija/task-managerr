@@ -11,25 +11,18 @@ function Home() {
     <div className="max-w-7xl mx-auto px-4 text-center">
 
       <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-8">
-        Reimagine your <br />
-        <span className="text-blue-600">Dream Space</span>
+        Organize Your Work<br />
+        <span className="text-blue-600">Simplify Your Life</span>
       </h1>
 
       <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
-        Transform your room photos into personalized interior designs using AI.
+        Plan tasks, Track progress, and collaborate with your team in one powerful workspace
       </p>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
         <button className="px-8 py-4 bg-blue-600 text-white rounded-full font-semibold">
           Get Started
         </button>
-
-        <NavLink
-          to="/demo"
-          className="px-8 py-4 border border-gray-300 rounded-full font-semibold"
-        >
-          View Demo
-        </NavLink>
       </div>
 
     </div>
@@ -41,17 +34,18 @@ function Home() {
     <div className="max-w-7xl mx-auto px-4">
 
       <div className="text-center mb-16">
-        <h2 className="text-3xl font-bold text-gray-900">
+        <h2 className="text-3xl font-bold text-gray-900 mb-3">
           Features
         </h2>
+        <h3>Everything You Need to Stay Productive</h3>
       </div>
 
       <div className="grid md:grid-cols-3 gap-8">
 
         <div className="p-8 bg-white border rounded-xl">
-          <h3 className="text-xl font-bold mb-3">AI Design</h3>
+          <h3 className="text-xl font-bold mb-3">Turn Ideas into Action</h3>
           <p className="text-gray-600">
-            Upload a room photo and generate multiple design ideas instantly.
+            A simple and powerful task manager to organize projects, track progress, and stay productive every day
           </p>
         </div>
 
