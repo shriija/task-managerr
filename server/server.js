@@ -5,8 +5,9 @@ import UserApi from "./Apis/UserApi.js";
 import CookieParser from "cookie-parser";
 import http from "http";
 import { Server } from "socket.io";
+import BoardApp from './Apis/BoardApi.js'
 import boardSocket from "./sockets/boardSocket.js";
-
+import cors from 'cors'
 export const app = exp();
 
 config();
