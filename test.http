@@ -1,0 +1,20 @@
+###
+POST http://localhost:4001/user-api/signup
+Content-Type: application/json
+
+{
+    "name":"dsp",
+    "email":"dsp@gmail.com",
+    "password":"123456"
+}
+
+###
+GET http://localhost:4001/user-api/signin
+Content-Type: application/json
+
+{
+    "name":"dsp",
+    "password":"123456"
+}
+
+###
