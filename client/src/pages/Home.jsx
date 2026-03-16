@@ -20,8 +20,8 @@ function Home() {
       </p>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <NavLink to="/register" className="px-8 py-4 bg-blue-600 text-white rounded-full font-semibold">
-          Get Started
+        <NavLink to="/register" className="group relative w-40 flex justify-center py-3 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-primary-600 hover:bg-primary-700 transition-all shadow-lg hover:shadow-primary-500/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+          Get Started 
         </NavLink>
       </div>
 
