@@ -6,19 +6,23 @@ function CreateBoardPage() {
 
   const [title, setTitle] = useState("")
   const [loading, setLoading] = useState(false)
+  const [error,setError] = useState("")
 
   const navigate = useNavigate()
 
   const createBoard = async () => {
-    if (!title.trim()) return
+    if (!title.trim()){ 
+        setError("Board title is required") 
+        return }
 
     try {
+      setError("")
       setLoading(true)
 
       const res = await axios.post(
         "http://localhost:4001/board-api/addBoard",
         {
-          title,
+          title: title.trim(),
           background:"#0052cc"
         },
         {
@@ -33,6 +37,8 @@ function CreateBoardPage() {
 
     } catch (err) {
       console.log(err)
+
+      setError(err?.response?.message || "Something went wrong while creating board")
     } finally {
       setLoading(false)
     }
@@ -52,9 +58,12 @@ function CreateBoardPage() {
           className="w-full border p-2 rounded mb-4"
         />
 
+        {error && (<p className="text-red-500 text-sm mb-2">{error}</p>)}
+
         <button
+          disabled={loading}
           onClick={createBoard}
-          className="w-full bg-primary text-white py-2 rounded"
+          className="w-full bg-blue-500 text-white py-2 rounded disabled:opacity-50"
         >
           {loading ? "Creating..." : "Create Board"}
         </button>
