@@ -6,7 +6,6 @@ import CookieParser from "cookie-parser";
 import http from "http";
 import { Server } from "socket.io";
 import boardSocket from "./sockets/boardSocket.js";
-import cors from "cors";
 
 export const app = exp();
 
@@ -25,7 +24,7 @@ app.use(
 
 // Routes
 app.use("/user-api", UserApi);
-
+app.use("/board-api",BoardApp)
 // Connect DB
 await connectDB();
 

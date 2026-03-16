@@ -30,7 +30,7 @@ const boardSchema = new Schema(
   },
 );
 
-export const Board = model("Board", boardSchema);
+export const BoardModel = model("board", boardSchema);
 
 // collection: boards
 // Field
