@@ -6,7 +6,7 @@ import RootLayout from './pages/RootLayout'
 import Home from './pages/Home'
 import UserDashboard from './pages/UserDashboard'
 import CreateBoardPage from './pages/CreateBoardPage'
-import BoardPage from './pages/BoardPage'
+import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   const routerObj=createBrowserRouter([
@@ -28,15 +28,19 @@ function App() {
         },
         {
           path:"/dashboard",
-          element:<UserDashboard />
+          element:(
+            <ProtectedRoute>
+              <UserDashboard />
+            </ProtectedRoute>
+          )
         },
         {
           path:"create-board",
-          element:<CreateBoardPage/>
-        },
-        {
-          path:"board/:id",
-          element:<BoardPage/>
+          element:(
+            <ProtectedRoute>
+              <CreateBoardPage/>
+            </ProtectedRoute>
+          )
         }
       ]
     }

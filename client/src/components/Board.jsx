@@ -1,4 +1,5 @@
 import { useState } from "react"
+import List from "../components/List"
 
 function Board() {
 
@@ -7,88 +8,93 @@ function Board() {
       id: 1,
       title: "Todo",
       cards: [
-        { id: 1, text: "qwerfgikujh" },
-        { id: 2, text: "aedfs" }
+        { id: 1, text: "Create login page" },
+        { id: 2, text: "Setup backend auth" }
       ]
     },
     {
       id: 2,
       title: "In Progress",
       cards: [
-        { id: 3, text: "esdfd" }
+        { id: 3, text: "Build dashboard UI" }
       ]
     }
   ])
 
-  const [newListTitle, setNewListTitle] = useState("")
-
   const addList = () => {
-    if (!newListTitle.trim()) return
-
     const newList = {
       id: Date.now(),
-      title: newListTitle,
+      title: "New List",
       cards: []
     }
 
     setLists([...lists, newList])
-    setNewListTitle("")
+  }
+
+  const deleteList = (listId) => {
+    setLists(lists.filter(list => list.id !== listId))
+  }
+
+  const updateListTitle = (listId, newTitle) => {
+    setLists(
+      lists.map(list =>
+        list.id === listId ? { ...list, title: newTitle } : list
+      )
+    )
+  }
+
+  const addCard = (listId, text) => {
+    setLists(
+      lists.map(list =>
+        list.id === listId
+          ? { ...list, cards: [...list.cards, { id: Date.now(), text }] }
+          : list
+      )
+    )
+  }
+
+  const moveCard = (listId, cardIndex, direction) => {
+
+    setLists(lists.map(list => {
+
+      if (list.id !== listId) return list
+
+      const cards = [...list.cards]
+      const newIndex = cardIndex + direction
+
+      if (newIndex < 0 || newIndex >= cards.length) return list
+
+      const temp = cards[cardIndex]
+      cards[cardIndex] = cards[newIndex]
+      cards[newIndex] = temp
+
+      return { ...list, cards }
+
+    }))
   }
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
 
-      <h1 className="text-2xl font-bold mb-6">
-        Task Board
-      </h1>
-
       <div className="flex gap-6 items-start">
 
-        {lists.map((list) => (
-          <div
+        {lists.map(list => (
+          <List
             key={list.id}
-            className="bg-white w-72 p-4 rounded shadow"
-          >
-
-            <h2 className="font-semibold mb-4">
-              {list.title}
-            </h2>
-
-            <div className="flex flex-col gap-3">
-
-              {list.cards.map((card) => (
-                <div
-                  key={card.id}
-                  className="bg-gray-100 p-3 rounded shadow-sm"
-                >
-                  {card.text}
-                </div>
-              ))}
-
-            </div>
-
-          </div>
+            list={list}
+            deleteList={deleteList}
+            updateListTitle={updateListTitle}
+            addCard={addCard}
+            moveCard={moveCard}
+          />
         ))}
 
-        {/* Add List Section */}
-        <div className="bg-gray-200 w-72 p-4 rounded shadow flex flex-col gap-3">
-
-          <input
-            type="text"
-            placeholder="New list title"
-            value={newListTitle}
-            onChange={(e) => setNewListTitle(e.target.value)}
-            className="p-2 border rounded"
-          />
-
-          <button
-            onClick={addList}
-            className="bg-black text-white py-2 rounded"
-          >
-            Add List
-          </button>
-
-        </div>
+        <button
+          onClick={addList}
+          className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+        >
+          + Add List
+        </button>
 
       </div>
     </div>
