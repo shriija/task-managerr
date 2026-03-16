@@ -5,7 +5,7 @@ import { useNavigate } from "react-router";
 import { errorClass, submitBtn, formCard, formTitle, inputClass, formGroup } from "../styles/common";
 import {toast} from 'react-hot-toast'
 
-function Login() {
+function Loginpage() {
 
   const {register,handleSubmit,formState:{errors}}=useForm()
   const login = useAuth(state => state.login)
@@ -51,4 +51,4 @@ function Login() {
   )
 }
 
-export default Login
+export default Loginpage
