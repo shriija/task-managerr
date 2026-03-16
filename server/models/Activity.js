@@ -1,5 +1,7 @@
-import exp from "express";
 import { Schema, model } from "mongoose";
+
+
+
 
 //Activity Schema
 const activitySchema = new Schema(
@@ -26,8 +28,8 @@ const activitySchema = new Schema(
   },
   {
     strict: true,
-    timeStamp: true,
+    timestamps: true,
   },
 );
 
-export const Activity = model("activity", activitySchema);
+export const Activity = model("Activity", activitySchema);

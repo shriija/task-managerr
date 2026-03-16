@@ -1,4 +1,3 @@
-import exp from "express";
 import { Schema, model } from "mongoose";
 
 //List schema
@@ -36,4 +35,4 @@ const listSchema = new Schema(
   },
 );
 
-export const List = model("list", listSchema);
+export const List = model("List", listSchema);
