@@ -1,6 +1,6 @@
 import { CardModel } from "../models/Card.js";
 
-const addCard=async(req,res)=>{
+export const addCard=async(req,res)=>{
     const createCard = req.body;
     try{
         const newCard=new CardModel(createCard)

@@ -7,6 +7,7 @@ import http from "http";
 import { Server } from "socket.io";
 import BoardApp from './Apis/BoardApi.js'
 import ListApp from "./Apis/ListApi.js";
+import CardApp from "./Apis/CardApi.js";
 import boardSocket from "./sockets/boardSocket.js";
 import cors from 'cors'
 export const app = exp();
@@ -28,6 +29,7 @@ app.use(
 app.use("/user-api", UserApi);
 app.use("/board-api",BoardApp);
 app.use("/list-api",ListApp)
+app.use("/card-api",CardApp)
 // Connect DB
 await connectDB();
 
