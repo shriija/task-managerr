@@ -7,7 +7,7 @@ export const signup = async(req,res) =>{
     const user = req.body;
     const response = await UserModel.findOne({email:user.email})
     if(response){
-        return res.status(501).json({message:"email already exists"})
+        return res.status(409).json({message:"email already exists"})
     }
     try {
         await UserModel.validate(user);
@@ -26,7 +26,8 @@ export const signup = async(req,res) =>{
     }
 }
 export const signin = async(req,res)=>{
-    const {email,password} = req.body;
+
+    const { email, password } = req.body
     try {
         const user = await UserModel.findOne({email})
         if(!user){
@@ -47,7 +48,7 @@ export const signin = async(req,res)=>{
             secure: false,
             sameSite: "lax"
         });
-        res.status(501).json({message:"signin sucessfull",payload:userObj})
+        res.status(200).json({message:"signin sucessfull",payload:userObj})
 
     } catch (error) {
         console.log("error in signin")

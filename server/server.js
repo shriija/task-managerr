@@ -17,7 +17,7 @@ config();
 // Middlewares
 app.use(exp.json());
 app.use(CookieParser());
-app.use(cors());
+
 app.use(
   cors({
     origin: "http://localhost:5173",

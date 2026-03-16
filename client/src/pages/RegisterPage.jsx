@@ -9,7 +9,6 @@ const { register, handleSubmit, formState: { errors } } = useForm();
   const [error,setError] = useState(null);  
 
   const onSubmit = async (newUser) => {
-    console.log(newUser)
     try {
       setLoading(true);
       setError(null);
@@ -23,7 +22,7 @@ const { register, handleSubmit, formState: { errors } } = useForm();
       alert("User registered successfully");
 
     } catch (err) {
-      console.error(err);
+      console.log(err)
       setError("Registration failed");
     } finally {
       setLoading(false);

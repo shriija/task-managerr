@@ -9,12 +9,12 @@ Content-Type: application/json
 }
 
 ###
-GET http://localhost:4001/user-api/signin
+POSt http://localhost:4001/user-api/signin
 Content-Type: application/json
 
 {
-    "email":"charan@gmail.com",
-    "password":"123456"
+    "email":"userB1@example.com",
+    "password":"password123"
 }
 
 ###
@@ -29,6 +29,16 @@ Content-Type: application/json
     "owner":"69b7ba3eaee7c3f3b3359832"
 }
 
+###ListModel Test
+POST http://localhost:4001/list-api/addList
+Content-Type: application/json
+
+{
+    "title":"review",
+    "board":"69b7c87124910fd7a0449b69",
+    "position":1
+}
+
 ### Card Test
 POST http://localhost:4001/card-api/addCard
 Content-Type: application/json
@@ -36,15 +46,6 @@ Content-Type: application/json
 {
     "title":"Maths",
     "description":"Complete the exercises",
-    "listId":"64b7ba3eaee7c3f3b3359832"
-}
-
-###ListModel Test
-POST http://localhost:4001/list-api/addList
-Content-Type: application/json
-
-{
-    "title":"maths",
-    "board":"69b7c87124910fd7a0449b69",
+    "list":"69b7d40857a3b511aaa4558b",
     "position":1
 }
