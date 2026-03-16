@@ -5,8 +5,10 @@ import UserApi from "./Apis/UserApi.js";
 import CookieParser from "cookie-parser";
 import http from "http";
 import { Server } from "socket.io";
+import BoardApp from './Apis/BoardApi.js'
+import ListApp from "./Apis/ListApi.js";
 import boardSocket from "./sockets/boardSocket.js";
-
+import cors from 'cors'
 export const app = exp();
 
 config();
@@ -24,7 +26,8 @@ app.use(
 
 // Routes
 app.use("/user-api", UserApi);
-app.use("/board-api",BoardApp)
+app.use("/board-api",BoardApp);
+app.use("/list-api",ListApp)
 // Connect DB
 await connectDB();
 

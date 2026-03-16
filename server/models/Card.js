@@ -55,4 +55,4 @@ const cardSchema = new Schema(
   },
 );
 
-export const Card = model("Card", cardSchema);
+export const CardModel = model("Card", cardSchema);

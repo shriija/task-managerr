@@ -24,10 +24,6 @@ const listSchema = new Schema(
       ref: "Card",
       default: [],
     }, // []
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
   },
   {
     strict: true,
@@ -35,4 +31,4 @@ const listSchema = new Schema(
   },
 );
 
-export const List = model("List", listSchema);
+export const ListModel = model("List", listSchema);
