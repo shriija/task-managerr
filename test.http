@@ -28,3 +28,13 @@ Content-Type: application/json
     "title":"HomeWork",
     "owner":"69b7ba3eaee7c3f3b3359832"
 }
+
+###ListModel Test
+POST http://localhost:4001/list-api/addList
+Content-Type: application/json
+
+{
+    "title":"maths",
+    "board":"69b7c87124910fd7a0449b69",
+    "position":1
+}
