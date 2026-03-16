@@ -18,11 +18,9 @@ config();
 app.use(exp.json());
 app.use(CookieParser());
 
-const FRONTEND_URL = "http://localhost:5173" || "http://localhost:5174";
-
 app.use(
   cors({
-    origin: FRONTEND_URL,
+    origin: true,
     credentials: true
   })
 );
@@ -42,7 +40,7 @@ const server = http.createServer(app);
 // 🔹 Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: FRONTEND_URL, // change later to frontend URL
+    origin: true, // change later to frontend URL
     credentials: true
   },
 });

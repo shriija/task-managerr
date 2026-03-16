@@ -47,7 +47,7 @@ function UserDashboard() {
             className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-primary"
           >
             <span className="text-4xl">+</span>
-            <p className="font-bold mt-2">Create Board</p>
+            <p className="font-bold mt-2">Create Board.</p>
           </div>
 
           {/* Dynamic Boards */}
