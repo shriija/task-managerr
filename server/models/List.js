@@ -31,4 +31,4 @@ const listSchema = new Schema(
   },
 );
 
-export const List = model("List", listSchema);
+export const ListModel = model("List", listSchema);
