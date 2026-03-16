@@ -27,7 +27,7 @@ const server = http.createServer(app);
 // 🔹 Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: "*", // change later to frontend URL
+    origin: "http://localhost:5173/", // change later to frontend URL
   },
 });
 
