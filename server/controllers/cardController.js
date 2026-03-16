@@ -5,7 +5,7 @@ export const addCard=async(req,res)=>{
     try{
         const newCard=new CardModel(createCard)
         const saveCard=await newCard.save();
-        res.status(201).json({message:"New card addted successfullt", payload:saveCard})
+        res.status(201).json({message:"New card added successfullt", payload:saveCard})
     }
     catch(error){
         console.error("Error adding card:", error.message);
