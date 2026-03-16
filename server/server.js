@@ -6,6 +6,7 @@ import CookieParser from "cookie-parser";
 import http from "http";
 import { Server } from "socket.io";
 import boardSocket from "./sockets/boardSocket.js";
+import cors from "cors";
 
 export const app = exp();
 
@@ -14,6 +15,13 @@ config();
 // Middlewares
 app.use(exp.json());
 app.use(CookieParser());
+app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true
+  })
+);
 
 // Routes
 app.use("/user-api", UserApi);
