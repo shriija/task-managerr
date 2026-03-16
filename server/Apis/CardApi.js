@@ -1,5 +1,5 @@
 import exp from "express"
-import { addCard } from "../controllers/cardController";
+import { addCard } from "../controllers/cardController.js";
 const CardApp=exp.Router()
 
 CardApp.post("/addCard",addCard)
