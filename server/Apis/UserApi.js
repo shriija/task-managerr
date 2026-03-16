@@ -3,7 +3,7 @@ import {signup,signin,logout} from '../controllers/authController.js'
 const UserApi = exp.Router()
 
 UserApi.post('/signup',signup)
-UserApi.get('/signin',signin)
+UserApi.post('/signin',signin)
 UserApi.get('/logout/:id',logout)
 
 export default UserApi;

@@ -4,6 +4,7 @@ import RegisterPage from './pages/RegisterPage'
 import Loginpage from './pages/Loginpage'
 import RootLayout from './pages/RootLayout'
 import Home from './pages/Home'
+import UserDashboard from './pages/UserDashboard'
 
 function App() {
   const routerObj=createBrowserRouter([
@@ -22,6 +23,10 @@ function App() {
         {
           path:"/login",
           element:<Loginpage />
+        },
+        {
+          path:"/login",
+          element:<UserDashboard />
         },
       ]
     }
