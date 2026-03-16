@@ -5,6 +5,7 @@ import Loginpage from './pages/Loginpage'
 import RootLayout from './pages/RootLayout'
 import Home from './pages/Home'
 import UserDashboard from './pages/UserDashboard'
+import BoardPage from './pages/BoardPage'
 
 function App() {
   const routerObj=createBrowserRouter([
@@ -28,6 +29,10 @@ function App() {
           path:"/dashboard",
           element:<UserDashboard />
         },
+        {
+          path:"board/:id",
+          element:<BoardPage/>
+        }
       ]
     }
   ])
