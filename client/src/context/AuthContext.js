@@ -40,7 +40,7 @@ export const useAuthStore = create((set) => ({
       set({ loading: true, error: null })
 
       await axios.get(
-        "http://localhost:3000/common-api/logout",
+        "http://localhost:4001/user-api/logout",
         { withCredentials: true }
       )
 

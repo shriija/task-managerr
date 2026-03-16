@@ -1,8 +1,13 @@
 import React from 'react'
 import { NavLink } from 'react-router'
+import { useAuthStore } from '../context/AuthContext'
 
 
 function Home() {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+
+  const startPath = isAuthenticated ? "/dashboard" : "/register"
+
   return (
     <div className="bg-white overflow-hidden">
 
@@ -20,7 +25,7 @@ function Home() {
       </p>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <NavLink to="/register" className="group relative w-40 flex justify-center py-3 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-primary-600 hover:bg-primary-700 transition-all shadow-lg hover:shadow-primary-500/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+        <NavLink to={startPath} className="group relative w-40 flex justify-center py-3 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-primary-600 hover:bg-primary-700 transition-all shadow-lg hover:shadow-primary-500/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
           Get Started 
         </NavLink>
       </div>
