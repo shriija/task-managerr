@@ -29,6 +29,16 @@ Content-Type: application/json
     "owner":"69b7ba3eaee7c3f3b3359832"
 }
 
+### Card Test
+POST http://localhost:4001/card-api/addCard
+Content-Type: application/json
+
+{
+    "title":"Maths",
+    "description":"Complete the exercises",
+    "listId":"64b7ba3eaee7c3f3b3359832"
+}
+
 ###ListModel Test
 POST http://localhost:4001/list-api/addList
 Content-Type: application/json
