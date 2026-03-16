@@ -45,7 +45,11 @@ function App() {
         },
         {
           path:"board/:id",
-          element:<BoardPage/>
+          element:(
+            <ProtectedRoute>
+              <BoardPage/>
+            </ProtectedRoute>
+          )
         },
       ]
     }
