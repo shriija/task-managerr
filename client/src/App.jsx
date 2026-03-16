@@ -5,6 +5,8 @@ import Loginpage from './pages/Loginpage'
 import RootLayout from './pages/RootLayout'
 import Home from './pages/Home'
 import UserDashboard from './pages/UserDashboard'
+import ProtectedRoute from './components/ProtectedRoute'
+
 
 function App() {
   const routerObj=createBrowserRouter([
@@ -25,8 +27,12 @@ function App() {
           element:<Loginpage />
         },
         {
-          path:"/dashboard",
-          element:<UserDashboard />
+          path: "/dashboard",
+          element: (
+            <ProtectedRoute>
+              <UserDashboard />
+            </ProtectedRoute>
+          )
         },
       ]
     }
