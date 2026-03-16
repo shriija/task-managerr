@@ -106,7 +106,7 @@ function Home() {
       <div className="flex-1">
         <img
           src="../assets/react.svg"
-          alt="Room design"
+          alt="Kanvas Final Screenshot"
           className="rounded-lg shadow-lg"
         />
       </div>
