@@ -12,23 +12,10 @@ function Loginpage() {
   const isAuthenticated = useAuth((state)=> state.isAuthenticated)
   const currentUser = useAuth((state)=>state.currentUser)
   const error = useAuth((state)=>state.error)
-  const navigate = useNavigate()
 
   const onUserLogin = async(userCredObj) => {
     await login(userCredObj)
   }
-
-  useEffect(()=>{
-    if (isAuthenticated){
-      if(currentUser.role === "USER"){
-        toast.success("Logged in successfully")
-        navigate("/userdashboard")
-      }
-    if(currentUser.role === "AUTHOR"){
-      toast.success("Logged in successfully")
-      navigate("/authordashboard")
-    }
-  }},[isAuthenticated,currentUser])
 
   return(
     <div className=" mt-10">
