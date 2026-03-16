@@ -1,25 +1,33 @@
 import exp from "express";
 import { config } from "dotenv";
 import connectDB from "./config/db.js";
+import UserApi from "./Apis/UserApi.js";
+import CookieParser from "cookie-parser";
 import http from "http";
 import { Server } from "socket.io";
-import boardSocket from "./sockets/boardSocket.js"; 
+import boardSocket from "./sockets/boardSocket.js";
 
 export const app = exp();
 
 config();
-app.use(exp.json());
 
-// Connect database
+// Middlewares
+app.use(exp.json());
+app.use(CookieParser());
+
+// Routes
+app.use("/user-api", UserApi);
+
+// Connect DB
 await connectDB();
 
-// 🔹 Create HTTP server
+// 🔹 Create HTTP server (needed for Socket.io)
 const server = http.createServer(app);
 
 // 🔹 Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: "*", 
+    origin: "*", // change later to frontend URL
   },
 });
 
