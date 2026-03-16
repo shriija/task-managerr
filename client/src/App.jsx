@@ -30,7 +30,7 @@ function App() {
           element:<UserDashboard />
         },
         {
-          path:"board/:id",
+          path:"create-board",
           element:<BoardPage/>
         }
       ]
