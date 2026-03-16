@@ -74,31 +74,38 @@ function Board() {
   }
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
+  <div className="h-screen bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 overflow-x-auto">
 
-      <div className="flex gap-6 items-start">
+    <div className="flex gap-5 p-6 min-w-max items-start">
 
-        {lists.map(list => (
-          <List
-            key={list.id}
-            list={list}
-            deleteList={deleteList}
-            updateListTitle={updateListTitle}
-            addCard={addCard}
-            moveCard={moveCard}
-          />
-        ))}
+      {lists.map(list => (
+        <List
+          key={list.id}
+          list={list}
+          deleteList={deleteList}
+          updateListTitle={updateListTitle}
+          addCard={addCard}
+          moveCard={moveCard}
+        />
+      ))}
 
-        <button
-          onClick={addList}
-          className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
-        >
-          + Add List
-        </button>
-
+      {/* Add List Card */}
+      <div
+        onClick={addList}
+        className="w-72 h-fit bg-white/60 backdrop-blur-md 
+                   border border-white/40 shadow-lg 
+                   rounded-2xl p-4 cursor-pointer 
+                   hover:bg-white/80 transition"
+      >
+        <p className="text-gray-700 font-semibold">
+          + Add another list
+        </p>
       </div>
+
     </div>
-  )
+
+  </div>
+)
 }
 
 export default Board
