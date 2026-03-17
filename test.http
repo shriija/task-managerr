@@ -77,6 +77,15 @@ GET http://localhost:4001/card-api/getCards/:id
 ###Get card by id
 GET http://localhost:4001/card-api/getCardById/:id
 
+###Update card by
+PUT http://localhost:4001/card-api/updateCard/:id
+Content-Type: application/json
+
+{
+    "title":"Science",
+    "description":"Draw Diagrams"
+}
+
 ### Delete Card by id
 DELETE http://localhost:4001/card-api/deleteCards/:id
 

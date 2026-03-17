@@ -37,6 +37,18 @@ export const getCards=async(req,res)=>{
     }
 }
 
+//Update card
+export const updateCard=async(req,res)=>{
+    const cardId=req.params.id
+    const {title, description}=req.body
+    try{
+        const updatedCard=await CardModel.findByIdAndUpdate(cardId,{title, description},{new:true})
+        res.status(200).json({message:"Card updated successfully",payload:updatedCard})
+    }catch(error){
+        res.status(500).json({message:"Could not update card",error:error.message})
+    }
+}
+
 //Delete Cards
 export const deleteCards=async(req,res)=>{
     const cardId=req.params.id
