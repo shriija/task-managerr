@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { NavLink,useNavigate } from "react-router";
 import axios from 'axios'
+import { API_URL } from "../services/api"
 
 function RegisterPage() {
 const { register, handleSubmit, formState: { errors } } = useForm();
@@ -14,7 +15,7 @@ const { register, handleSubmit, formState: { errors } } = useForm();
       setError(null);
 
       const res = await axios.post(
-        "http://localhost:4001/user-api/signup",
+        `${API_URL}/user-api/signup`,
         newUser
       );
 

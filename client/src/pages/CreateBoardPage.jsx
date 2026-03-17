@@ -1,6 +1,7 @@
 import { useState } from "react"
 import axios from "axios"
 import { useNavigate } from "react-router"
+import { API_URL } from "../services/api"
 
 function CreateBoardPage() {
 
@@ -20,7 +21,7 @@ function CreateBoardPage() {
       setLoading(true)
 
       const res = await axios.post(
-        "http://localhost:4001/board-api/addBoard",
+        `${API_URL}/board-api/addBoard`,
         {
           title: title.trim(),
           background:"#0052cc"

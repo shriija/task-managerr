@@ -1,7 +1,6 @@
 import { create } from "zustand"
 import axios from "axios"
-
-const API = "http://localhost:4001"
+import { API_URL as API } from "../services/api"
 
 export const useAuthStore = create((set, get) => ({
   currentUser: null,

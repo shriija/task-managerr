@@ -7,7 +7,7 @@ function Modal({ card, listId, onClose }) {
   const deleteCard = useBoardStore(s => s.deleteCard)
 
   const [title, setTitle] = useState(card?.title || "")
-  const [desc, setDesc] = useState(card?.desc || "")
+  const [description, setDescription] = useState(card?.description || "")
   const [dueDate, setDueDate] = useState(
     card?.dueDate ? new Date(card.dueDate).toISOString().split("T")[0] : ""
   )
@@ -35,7 +35,7 @@ function Modal({ card, listId, onClose }) {
   const handleSave = () => {
     updateCard(card._id, listId, {
       title: title.trim() || card.title,
-      desc,
+      desc: description,
       dueDate: dueDate || null,
       priority: priority || undefined
     })
@@ -84,8 +84,8 @@ function Modal({ card, listId, onClose }) {
               Description
             </label>
             <textarea
-              value={desc}
-              onChange={(e) => setDesc(e.target.value)}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               rows={4}
               placeholder="Add a detailed description..."
               className="w-full border border-gray-200 rounded-xl p-3 text-sm

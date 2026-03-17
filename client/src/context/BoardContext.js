@@ -1,7 +1,6 @@
 import { create } from "zustand"
 import axios from "axios"
-
-const API = "http://localhost:4001"
+import { API_URL as API } from "../services/api"
 
 export const useBoardStore = create((set, get) => ({
 
@@ -126,7 +125,7 @@ export const useBoardStore = create((set, get) => ({
     set({ lists: get().lists.filter(l => l._id !== listId) })
 
     axios.delete(
-      `${API}/list-api/${listId}`,
+      `${API}/list-api/deleteList/${listId}`,
       { withCredentials: true }
     ).catch(() => {})
   },
@@ -199,7 +198,7 @@ export const useBoardStore = create((set, get) => ({
     })
 
     axios.delete(
-      `${API}/card-api/${cardId}`,
+      `${API}/card-api/deleteCards/${cardId}`,
       { withCredentials: true }
     ).catch(() => {})
   },
@@ -219,8 +218,8 @@ export const useBoardStore = create((set, get) => ({
     })
 
     axios.put(
-      `${API}/card-api/${cardId}`,
-      updates,
+      `${API}/card-api/updateCard/${cardId}`,
+      { ...updates, description: updates.desc },
       { withCredentials: true }
     ).catch(() => {})
   },

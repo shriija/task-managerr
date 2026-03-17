@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router"
 import axios from "axios"
+import { API_URL } from "../services/api"
 
 function UserDashboard() {
 
@@ -16,7 +17,7 @@ function UserDashboard() {
       try {
         setLoading(true)
         const res = await axios.get(
-          "http://localhost:4001/board-api/",
+          `${API_URL}/board-api/`,
           { withCredentials: true }
         )
         setBoards(res.data.payload || [])
