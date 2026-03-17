@@ -14,6 +14,18 @@ export const addCard=async(req,res)=>{
     }
 }
 
+//Get card by id
+export const getCardById=async(req,res)=>{
+    const getCard=req.params.id;
+    try{
+        const card=await CardModel.findById(getCard)
+        if(card){res.status(200).json({message:"Card fetched successfully",payload:card})}
+        else{res.status(404).json({message:"Card not found"})}
+    }catch(error){
+        res.status(500).json({message:"Could not fetch card",error:error.message})
+    }
+}
+
 //Fetch Cards
 export const getCards=async(req,res)=>{
     const list=req.params.id
