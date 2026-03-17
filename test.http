@@ -49,3 +49,30 @@ Content-Type: application/json
     "list":"69b7d40857a3b511aaa4558b",
     "position":1
 }
+
+### Get Boards
+
+
+### Delete Board
+
+
+### Add members to board
+
+
+### Get Lists
+
+
+### Delete List
+
+
+### Move List
+
+
+
+### Get Cards
+GET http://localhost:4001/card-api/getCards/
+
+### Delete Card
+
+
+### Move Card

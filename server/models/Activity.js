@@ -33,3 +33,5 @@ const activitySchema = new Schema(
 );
 
 export const Activity = model("Activity", activitySchema);
+
+//This schema is used for logging user activities on boards, such as creating a card, moving a card, etc. It includes references to the board and user involved, a description of the action, and a timestamp.
