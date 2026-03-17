@@ -1,29 +1,54 @@
 import { create } from "zustand"
 import axios from "axios"
 
-// 🔹 Load saved user from localStorage
-const savedUser = JSON.parse(localStorage.getItem("user"))
+const API = "http://localhost:4001"
 
-export const useAuthStore = create((set) => ({
-  currentUser: savedUser || null,
+export const useAuthStore = create((set, get) => ({
+  currentUser: null,
   loading: false,
-  isAuthenticated: !!savedUser,
+  isAuthenticated: false,
   error: null,
+
+  // Verify session on page load — checks if JWT cookie is still valid
+  verifySession: async () => {
+    try {
+      set({ loading: true, error: null })
+
+      const res = await axios.get(
+        `${API}/user-api/verify`,
+        { withCredentials: true }
+      )
+
+      set({
+        loading: false,
+        isAuthenticated: true,
+        currentUser: res.data.payload
+      })
+
+      return true
+
+    } catch {
+      set({
+        loading: false,
+        isAuthenticated: false,
+        currentUser: null
+      })
+
+      return false
+    }
+  },
 
   login: async (userCredObj) => {
     try {
       set({ loading: true, error: null })
 
       let res = await axios.post(
-        "http://localhost:4001/user-api/signin",
+        `${API}/user-api/signin`,
         userCredObj,
         { withCredentials: true }
       )
 
       const data = res.data
-
-      // 🔹 Save to localStorage
-      localStorage.setItem("user", JSON.stringify(data.payload))
 
       set({
         loading: false,
@@ -36,7 +61,7 @@ export const useAuthStore = create((set) => ({
         loading: false,
         isAuthenticated: false,
         currentUser: null,
-        error: err.response?.data?.error || "Login failed"
+        error: err.response?.data?.message || err.response?.data?.error || "Login failed"
       })
     }
   },
@@ -46,12 +71,9 @@ export const useAuthStore = create((set) => ({
       set({ loading: true, error: null })
 
       await axios.get(
-        "http://localhost:4001/user-api/logout",
+        `${API}/user-api/logout`,
         { withCredentials: true }
       )
-
-      // 🔹 Remove saved user
-      localStorage.removeItem("user")
 
       set({
         loading: false,
@@ -60,10 +82,23 @@ export const useAuthStore = create((set) => ({
       })
 
     } catch (err) {
+      // Even if logout API fails, clear local state
       set({
         loading: false,
+        isAuthenticated: false,
+        currentUser: null,
         error: err.response?.data?.error || "Logout failed"
       })
     }
+  },
+
+  // Clear auth state (called when 401 is detected)
+  clearAuth: () => {
+    set({
+      loading: false,
+      isAuthenticated: false,
+      currentUser: null,
+      error: null
+    })
   }
 }))
