@@ -1,3 +1,5 @@
+<-- DSP ->
+
 ###
 POST http://localhost:4001/user-api/signup
 Content-Type: application/json
@@ -58,29 +60,21 @@ Content-Type: application/json
     "position":1
 }
 
-### Get Boards
 
-
-### Delete Board
-
+--------------------------------------------------------------------------------------------------
+<-- Sanath ->
 
 ### Add members to board
 
-
-### Get Lists
-
-
-### Delete List
-
-
 ### Move List
-
-
 
 ### Get Cards
 GET http://localhost:4001/card-api/getCards/
 
 ### Delete Card
-
+DELETE http://localhost:4001/card-api/deleteCards/
 
 ### Move Card
+
+--------------------------------------------------------------------------------------------------
+<-- Manohar ->
