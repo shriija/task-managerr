@@ -1,10 +1,13 @@
 import { create } from "zustand"
 import axios from "axios"
 
+// 🔹 Load saved user from localStorage
+const savedUser = JSON.parse(localStorage.getItem("user"))
+
 export const useAuthStore = create((set) => ({
-  currentUser: null,
+  currentUser: savedUser || null,
   loading: false,
-  isAuthenticated: false,
+  isAuthenticated: !!savedUser,
   error: null,
 
   login: async (userCredObj) => {
@@ -12,18 +15,21 @@ export const useAuthStore = create((set) => ({
       set({ loading: true, error: null })
 
       let res = await axios.post(
-      "http://localhost:4001/user-api/signin",
-      userCredObj,
-      { withCredentials: true }
-    	)
+        "http://localhost:4001/user-api/signin",
+        userCredObj,
+        { withCredentials: true }
+      )
 
-    	const data = res.data
+      const data = res.data
 
-  	  set({
-    	  loading:false,
-	      isAuthenticated:true,
-  	    currentUser:data.payload
-    	})
+      // 🔹 Save to localStorage
+      localStorage.setItem("user", JSON.stringify(data.payload))
+
+      set({
+        loading: false,
+        isAuthenticated: true,
+        currentUser: data.payload
+      })
 
     } catch (err) {
       set({
@@ -43,6 +49,9 @@ export const useAuthStore = create((set) => ({
         "http://localhost:4001/user-api/logout",
         { withCredentials: true }
       )
+
+      // 🔹 Remove saved user
+      localStorage.removeItem("user")
 
       set({
         loading: false,
