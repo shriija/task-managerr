@@ -15,6 +15,6 @@ CardApp.get("/getCardById/:id",getCardById)
 CardApp.put("/updateCard/:id",updateCard)
 
 //delete cards
-CardApp.delete("/deleteCard/:id",deleteCards)
+CardApp.delete("/deleteCards/:id",deleteCards)
 
 export default CardApp;

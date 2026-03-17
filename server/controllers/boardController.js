@@ -29,8 +29,8 @@ export const getBoard = async (req, res) => {
   try {
 
     const board = await BoardModel.findById(req.params.id)
-
-    if (!board) {
+    console.log(board)
+    if (!board || board.length==0) {
       return res.status(404).json({ message: "Board not found" })
     }
 

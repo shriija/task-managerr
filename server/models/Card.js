@@ -9,7 +9,7 @@ const cardSchema = new Schema(
       trim: [true, "Title cannot have leading or trailing spaces"],
       maxLength: [200, "Maxlength for title is 200"],
     },
-    desc: {
+    description: {
       type: String,
       default: "",
     },

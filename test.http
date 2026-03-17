@@ -11,7 +11,7 @@ Content-Type: application/json
 }
 
 ###
-POSt http://localhost:4001/user-api/signin
+POST http://localhost:4001/user-api/signin
 Content-Type: application/json
 
 {
@@ -67,27 +67,100 @@ Content-Type: application/json
 --------------------------------------------------------------------------------------------------
 <-- Sanath ->
 
-### Add members to board
-
-### Move List
-
-### Get Cards
-GET http://localhost:4001/card-api/getCards/:id
-
-###Get card by id
-GET http://localhost:4001/card-api/getCardById/:id
-
-###Update card by
-PUT http://localhost:4001/card-api/updateCard/:id
+###
+POST http://localhost:4001/user-api/signup
 Content-Type: application/json
 
 {
-    "title":"Science",
-    "description":"Draw Diagrams"
+    "name":"charan",
+    "email":"charan@gmail.com",
+    "password":"123456"
+}
+
+###
+POST http://localhost:4001/user-api/signin
+Content-Type: application/json
+
+{
+    "email":"charan@gmail.com",
+    "password":"123456"
+}
+
+###
+GET http://localhost:4001/user-api/logout
+
+
+
+                                                    <---Board-->
+### Board Test
+POST http://localhost:4001/board-api/addBoard
+Content-Type: application/json
+
+{
+    "title":"HomeWork",
+    "owner":"69b7ba3eaee7c3f3b3359832"
+}
+
+### fetch all boards
+GET http://localhost:4001/board-api
+
+### fetch board by id
+GET http://localhost:4001/board-api/69b90ef55f4ffc8cecc0ae5c
+
+### delete board
+DELETE http://localhost:4001/board-api/deleteBoard/69b90daba331eb0f3e8c9eff
+
+### Add members to board
+
+                                                    <---List-->
+
+###ListModel Test
+POST http://localhost:4001/list-api/addList
+Content-Type: application/json
+
+{
+    "title":"review",
+    "board":"69b90ef55f4ffc8cecc0ae5c",
+    "position":1
+}
+
+### deleteList by id
+DELETE http://localhost:4001/list-api/deleteList/69b90eb85f4ffc8cecc0ae56
+
+### Move List
+
+
+
+                                                    <---Card-->
+
+### Card Test
+POST http://localhost:4001/card-api/addCard
+Content-Type: application/json
+
+{
+    "title":"Maths",
+    "description":"Complete the exercises",
+    "list":"69b90f0f5f4ffc8cecc0ae63",
+    "position":1
+}
+
+### Get Cards
+GET http://localhost:4001/card-api/getCards/69b90f0f5f4ffc8cecc0ae63
+
+###Get card by id
+GET http://localhost:4001/card-api/getCardById/69b915209fa05fd5622d9920
+
+###Update card by
+PUT http://localhost:4001/card-api/updateCard/69b915209fa05fd5622d9920
+Content-Type: application/json
+
+{
+    "title":"Maths",
+    "description":"Complete Sums"
 }
 
 ### Delete Card by id
-DELETE http://localhost:4001/card-api/deleteCards/:id
+DELETE http://localhost:4001/card-api/deleteCards/69b914b19fa05fd5622d9919
 
 ### Move Card
 
