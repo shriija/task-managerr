@@ -133,6 +133,14 @@ GET http://localhost:4001/list-api/getLists/69b8edc31a3f075dc425ed8d
 ###Get list by id
 GET http://localhost:4001/list-api/getListById/69b9170809a0fe3d2144bd77
 
+###Update list
+PUT http://localhost:4001/list-api/updateList/69b8f19cc015a4acbd9e287d
+Content-Type: application/json
+
+{
+    "title":"First list"
+}
+
 ### Move List
 
 

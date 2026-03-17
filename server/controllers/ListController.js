@@ -52,3 +52,16 @@ export const getListsByBoard = async (req, res) => {
     res.status(500).json({ error: error.message })
   }
 }
+
+
+//Change list name
+export const updateList = async(req,res) =>{
+  const list=req.params.id
+  const {title}=req.body
+  try{
+    const updatedList=await ListModel.findByIdAndUpdate(list,{title},{new:true})
+    res.status(200).json({message:"List updated successfully",payload:updatedList})
+  }catch(error){
+    res.status(500).json({message:"Could not update list",error:error.message})
+  }
+}

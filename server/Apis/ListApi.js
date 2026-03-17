@@ -1,5 +1,5 @@
 import exp from 'express'
-import { AddList, deleteList, getListsByBoard, getList } from '../controllers/ListController.js';
+import { AddList, deleteList, getListsByBoard, getList, updateList } from '../controllers/ListController.js';
 const ListApp = exp.Router()
 
 //create list
@@ -13,4 +13,7 @@ ListApp.get('/getLists/:boardId', getListsByBoard)
 
 //get list by id
 ListApp.get('/getListById/:id', getList )
+
+//update list
+ListApp.put('/updateList/:id', updateList)
 export default ListApp;
