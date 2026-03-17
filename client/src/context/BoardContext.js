@@ -27,7 +27,7 @@ export const useBoardStore = create((set, get) => ({
       let lists = []
       try {
         const listRes = await axios.get(
-          `${API}/list-api/board/${boardId}`,
+          `${API}/list-api/getLists/${boardId}`,
           { withCredentials: true }
         )
 
