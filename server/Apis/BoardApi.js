@@ -5,6 +5,6 @@ import verifyToken from '../utils/verifyToken.js'
 const BoardApp = exp.Router()
 
 BoardApp.post('/addBoard', verifyToken, addBoard)
-BoardApp.get('/:id', verifyToken, getBoard)
+BoardApp.get('/:id',  getBoard)
 BoardApp.delete('/deleteBoard/:id',deleteBoard)
 export default BoardApp

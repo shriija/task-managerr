@@ -50,5 +50,5 @@ export const deleteBoard = async(req,res) =>{
   if(!response){
     return res.status(404).json({message:"board not found"})
   }
-  res.status(201).json({message:"board deleted",payload:response})
+  res.status(201).json({message:"board deleted",payload:res})
 }

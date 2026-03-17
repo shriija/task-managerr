@@ -22,7 +22,7 @@ export const AddList = async(req,res) =>{
 }
 export const deleteList = async(req,res) =>{
     const listId = req.params.id
-    const response = ListModel.findByIdAndDelete(listId)
+    const response = await ListModel.findByIdAndDelete(listId)
     if(!response){
     return res.status(404).json({message:"list not found"})
     }
