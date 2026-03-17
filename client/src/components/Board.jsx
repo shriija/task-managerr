@@ -1,111 +1,84 @@
 import { useState } from "react"
-import List from "../components/List"
+import { useBoardStore } from "../context/BoardContext"
+import List from "./List"
+import Modal from "./Modal"
 
 function Board() {
 
-  const [lists, setLists] = useState([
-    {
-      id: 1,
-      title: "Todo",
-      cards: [
-        { id: 1, text: "Create login page" },
-        { id: 2, text: "Setup backend auth" }
-      ]
-    },
-    {
-      id: 2,
-      title: "In Progress",
-      cards: [
-        { id: 3, text: "Build dashboard UI" }
-      ]
-    }
-  ])
+  const lists = useBoardStore(s => s.lists)
+  const board = useBoardStore(s => s.board)
+  const addList = useBoardStore(s => s.addList)
 
-  const addList = () => {
-    const newList = {
-      id: Date.now(),
-      title: "New List",
-      cards: []
-    }
+  // Modal state
+  const [modalCard, setModalCard] = useState(null)
+  const [modalListId, setModalListId] = useState(null)
 
-    setLists([...lists, newList])
+  const handleOpenModal = (card, listId) => {
+    setModalCard(card)
+    setModalListId(listId)
   }
 
-  const deleteList = (listId) => {
-    setLists(lists.filter(list => list.id !== listId))
+  const handleCloseModal = () => {
+    setModalCard(null)
+    setModalListId(null)
   }
 
-  const updateListTitle = (listId, newTitle) => {
-    setLists(
-      lists.map(list =>
-        list.id === listId ? { ...list, title: newTitle } : list
-      )
-    )
-  }
-
-  const addCard = (listId, text) => {
-    setLists(
-      lists.map(list =>
-        list.id === listId
-          ? { ...list, cards: [...list.cards, { id: Date.now(), text }] }
-          : list
-      )
-    )
-  }
-
-  const moveCard = (listId, cardIndex, direction) => {
-
-    setLists(lists.map(list => {
-
-      if (list.id !== listId) return list
-
-      const cards = [...list.cards]
-      const newIndex = cardIndex + direction
-
-      if (newIndex < 0 || newIndex >= cards.length) return list
-
-      const temp = cards[cardIndex]
-      cards[cardIndex] = cards[newIndex]
-      cards[newIndex] = temp
-
-      return { ...list, cards }
-
-    }))
+  const handleAddList = () => {
+    const boardId = board?._id || "local"
+    addList(boardId, "New List")
   }
 
   return (
-  <div className="h-screen from-blue-200 via-indigo-200 to-purple-200 overflow-x-auto">
+    <>
+      <div className="flex-1 overflow-x-auto p-6 custom-scrollbar">
 
-    <div className="flex gap-5 p-6 min-w-max items-start">
+        <div className="flex gap-5 items-start min-w-max">
 
-      {lists.map(list => (
-        <List
-          key={list.id}
-          list={list}
-          deleteList={deleteList}
-          updateListTitle={updateListTitle}
-          addCard={addCard}
-          moveCard={moveCard}
-        />
-      ))}
+          {lists.map((list, index) => (
+            <div
+              key={list._id}
+              className="group"
+              style={{ animationDelay: `${index * 60}ms` }}
+            >
+              <List
+                list={list}
+                onOpenModal={handleOpenModal}
+              />
+            </div>
+          ))}
 
-      {/* Add List Card */}
-      <div
-        onClick={addList}
-        className="w-72 h-fit bg-white/60 backdrop-blur-md 
-                   border border-white/40 shadow-lg 
-                   rounded-2xl p-4 cursor-pointer 
-                   hover:bg-white/80 transition"
-      >
-        <p className="text-gray-700 font-semibold">
-          + Add another list
-        </p>
+          {/* Add Column Button */}
+          <button
+            onClick={handleAddList}
+            className="w-80 flex-shrink-0 h-24
+                       border-2 border-dashed border-gray-200
+                       rounded-2xl text-gray-400 font-medium text-sm
+                       hover:border-primary-300 hover:text-primary-500
+                       hover:bg-primary-50/50
+                       transition-all duration-300 cursor-pointer
+                       flex items-center justify-center gap-2
+                       hover:shadow-sm"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Column
+          </button>
+
+        </div>
+
       </div>
 
-    </div>
-
-  </div>
-)
+      {/* Card Detail Modal */}
+      {modalCard && (
+        <Modal
+          card={modalCard}
+          listId={modalListId}
+          onClose={handleCloseModal}
+        />
+      )}
+    </>
+  )
 }
 
 export default Board

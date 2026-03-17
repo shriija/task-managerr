@@ -1,0 +1,237 @@
+import { create } from "zustand"
+import axios from "axios"
+
+const API = "http://localhost:4001"
+
+export const useBoardStore = create((set, get) => ({
+
+  // ── State ──────────────────────────────────────────────
+  board: null,
+  lists: [],
+  loading: false,
+  error: null,
+
+  // ── Fetch board + lists + cards ────────────────────────
+  fetchBoard: async (boardId) => {
+    try {
+      set({ loading: true, error: null })
+
+      const res = await axios.get(
+        `${API}/board-api/${boardId}`,
+        { withCredentials: true }
+      )
+
+      const board = res.data.payload
+
+      // Try fetching lists for this board
+      let lists = []
+      try {
+        const listRes = await axios.get(
+          `${API}/list-api/board/${boardId}`,
+          { withCredentials: true }
+        )
+        lists = listRes.data?.payload || []
+      } catch {
+        // Lists endpoint may not exist yet — use empty
+        lists = []
+      }
+
+      set({ board, lists, loading: false })
+
+    } catch (err) {
+      set({
+        loading: false,
+        error: err.response?.data?.message || "Failed to load board"
+      })
+    }
+  },
+
+  // ── List Actions ───────────────────────────────────────
+  addList: async (boardId, title) => {
+    const { lists } = get()
+    const position = lists.length
+
+    // Optimistic update
+    const tempList = {
+      _id: `temp-${Date.now()}`,
+      title,
+      board: boardId,
+      position,
+      cards: []
+    }
+    set({ lists: [...lists, tempList] })
+
+    try {
+      const res = await axios.post(
+        `${API}/list-api/addList`,
+        { title, board: boardId, position },
+        { withCredentials: true }
+      )
+      const saved = res.data.payload
+
+      set({
+        lists: get().lists.map(l =>
+          l._id === tempList._id ? { ...saved, cards: [] } : l
+        )
+      })
+    } catch {
+      // Revert on failure
+      set({ lists: get().lists.filter(l => l._id !== tempList._id) })
+    }
+  },
+
+  updateListTitle: (listId, newTitle) => {
+    set({
+      lists: get().lists.map(l =>
+        l._id === listId ? { ...l, title: newTitle } : l
+      )
+    })
+    // Fire & forget API call
+    axios.put(
+      `${API}/list-api/${listId}`,
+      { title: newTitle },
+      { withCredentials: true }
+    ).catch(() => {})
+  },
+
+  deleteList: (listId) => {
+    set({ lists: get().lists.filter(l => l._id !== listId) })
+
+    axios.delete(
+      `${API}/list-api/${listId}`,
+      { withCredentials: true }
+    ).catch(() => {})
+  },
+
+  // ── Card Actions ───────────────────────────────────────
+  addCard: async (listId, title) => {
+    const { lists } = get()
+    const targetList = lists.find(l => l._id === listId)
+    if (!targetList) return
+
+    const position = targetList.cards?.length || 0
+    const tempCard = {
+      _id: `temp-${Date.now()}`,
+      title,
+      desc: "",
+      list: listId,
+      position,
+      labels: [],
+      dueDate: null
+    }
+
+    set({
+      lists: lists.map(l =>
+        l._id === listId
+          ? { ...l, cards: [...(l.cards || []), tempCard] }
+          : l
+      )
+    })
+
+    try {
+      const res = await axios.post(
+        `${API}/card-api/addCard`,
+        { title, list: listId, position },
+        { withCredentials: true }
+      )
+      const saved = res.data.payload
+
+      set({
+        lists: get().lists.map(l =>
+          l._id === listId
+            ? {
+                ...l,
+                cards: l.cards.map(c =>
+                  c._id === tempCard._id ? saved : c
+                )
+              }
+            : l
+        )
+      })
+    } catch {
+      // Revert
+      set({
+        lists: get().lists.map(l =>
+          l._id === listId
+            ? { ...l, cards: l.cards.filter(c => c._id !== tempCard._id) }
+            : l
+        )
+      })
+    }
+  },
+
+  deleteCard: (cardId, listId) => {
+    set({
+      lists: get().lists.map(l =>
+        l._id === listId
+          ? { ...l, cards: l.cards.filter(c => c._id !== cardId) }
+          : l
+      )
+    })
+
+    axios.delete(
+      `${API}/card-api/${cardId}`,
+      { withCredentials: true }
+    ).catch(() => {})
+  },
+
+  updateCard: (cardId, listId, updates) => {
+    set({
+      lists: get().lists.map(l =>
+        l._id === listId
+          ? {
+              ...l,
+              cards: l.cards.map(c =>
+                c._id === cardId ? { ...c, ...updates } : c
+              )
+            }
+          : l
+      )
+    })
+
+    axios.put(
+      `${API}/card-api/${cardId}`,
+      updates,
+      { withCredentials: true }
+    ).catch(() => {})
+  },
+
+  moveCard: (cardId, fromListId, toListId, newPosition) => {
+    const { lists } = get()
+
+    if (fromListId === toListId) {
+      // Reorder within same list
+      set({
+        lists: lists.map(l => {
+          if (l._id !== fromListId) return l
+          const cards = [...l.cards]
+          const oldIdx = cards.findIndex(c => c._id === cardId)
+          if (oldIdx === -1 || newPosition < 0 || newPosition >= cards.length) return l
+          const [moved] = cards.splice(oldIdx, 1)
+          cards.splice(newPosition, 0, moved)
+          return { ...l, cards }
+        })
+      })
+    } else {
+      // Move across lists
+      let movedCard = null
+      set({
+        lists: lists.map(l => {
+          if (l._id === fromListId) {
+            movedCard = l.cards.find(c => c._id === cardId)
+            return { ...l, cards: l.cards.filter(c => c._id !== cardId) }
+          }
+          if (l._id === toListId && movedCard) {
+            const cards = [...l.cards]
+            cards.splice(newPosition, 0, { ...movedCard, list: toListId })
+            return { ...l, cards }
+          }
+          return l
+        })
+      })
+    }
+  },
+
+  // ── Reset ──────────────────────────────────────────────
+  reset: () => set({ board: null, lists: [], loading: false, error: null })
+}))
