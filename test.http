@@ -13,8 +13,8 @@ POSt http://localhost:4001/user-api/signin
 Content-Type: application/json
 
 {
-    "email":"userB1@example.com",
-    "password":"password123"
+    "email":"charan@gmail.com",
+    "password":"123456"
 }
 
 ###
@@ -29,6 +29,12 @@ Content-Type: application/json
     "owner":"69b7ba3eaee7c3f3b3359832"
 }
 
+###
+GET http://localhost:4001/board-api/
+
+### delete board
+DELETE http://localhost:4001/board-api/deleteBoard/69b7c86f24910fd7a0449b67
+
 ###ListModel Test
 POST http://localhost:4001/list-api/addList
 Content-Type: application/json
@@ -38,6 +44,8 @@ Content-Type: application/json
     "board":"69b7c87124910fd7a0449b69",
     "position":1
 }
+### deleteList
+DELETE http://localhost:4001/list-api/deleteList/69b7c87124910fd7a0449b69
 
 ### Card Test
 POST http://localhost:4001/card-api/addCard

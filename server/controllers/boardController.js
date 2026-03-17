@@ -44,3 +44,11 @@ export const getBoard = async (req, res) => {
   }
 
 }
+export const deleteBoard = async(req,res) =>{
+  const boardId = req.params.id;
+  const response = await BoardModel.findByIdAndDelete(boardId)
+  if(!response){
+    return res.status(404).json({message:"board not found"})
+  }
+  res.status(201).json({message:"board deleted",payload:response})
+}

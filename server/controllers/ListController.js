@@ -20,3 +20,19 @@ export const AddList = async(req,res) =>{
         res.json(500).json({error:error.message})
     }
 }
+export const deleteList = async(req,res) =>{
+    const listId = req.params.id
+    const response = ListModel.findByIdAndDelete(listId)
+    if(!response){
+    return res.status(404).json({message:"list not found"})
+    }
+    res.status(201).json({message:"list deleted",payload:response})
+}
+export const getList = async(req,res) =>{
+    const BoardId = req.params.id;
+    const response = ListModel.find(BoardId)
+    if(!response){
+        return res.status(404).json({message:"no lists found"})
+    }
+    res.status(201).json({message:"lists found for board",payload:response})
+}
