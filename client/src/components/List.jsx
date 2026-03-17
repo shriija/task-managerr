@@ -68,7 +68,7 @@ function List({ list, onOpenModal }) {
   const accent = accentColors[(list.position || 0) % accentColors.length]
 
   return (
-    <div className="w-80 flex-shrink-0 flex flex-col max-h-[82vh]
+    <div className="w-full flex-shrink-0 flex flex-col max-h-[82vh]
                     bg-white/85 backdrop-blur-xl border border-white/50
                     rounded-2xl shadow-lg overflow-hidden">
 
