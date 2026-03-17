@@ -63,7 +63,9 @@ function CreateBoardPage() {
         <button
           disabled={loading}
           onClick={createBoard}
-          className="w-full bg-blue-500 text-white py-2 rounded disabled:opacity-50"
+          className="p-2.5 rounded-xl hover:bg-primary-50 hover:text-primary-600
+                       cursor-pointer text-sm text-gray-700 font-medium
+                       transition-colors duration-150"
         >
           {loading ? "Creating..." : "Create Board"}
         </button>
