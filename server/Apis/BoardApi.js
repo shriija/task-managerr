@@ -8,7 +8,7 @@ BoardApp.post('/addBoard', verifyToken, addBoard)
 
 BoardApp.get('/', verifyToken, getMyBoards)     
 
-BoardApp.get('/:id', verifyToken, getBoard)
+BoardApp.get('/:id',  getBoard)
 
 BoardApp.delete('/deleteBoard/:id', verifyToken, deleteBoard)
 export default BoardApp

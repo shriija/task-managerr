@@ -31,8 +31,11 @@ Content-Type: application/json
     "owner":"69b7ba3eaee7c3f3b3359832"
 }
 
-###
-GET http://localhost:4001/board-api/
+### fetch all boards
+GET http://localhost:4001/board-api
+
+### fetch board by id
+GET http://localhost:4001/board-api/69b7c87124910fd7a0449b69
 
 ### delete board
 DELETE http://localhost:4001/board-api/deleteBoard/69b7c86f24910fd7a0449b67
@@ -46,8 +49,8 @@ Content-Type: application/json
     "board":"69b7c87124910fd7a0449b69",
     "position":1
 }
-### deleteList
-DELETE http://localhost:4001/list-api/deleteList/69b7c87124910fd7a0449b69
+### deleteList by id
+DELETE http://localhost:4001/list-api/deleteList/69b7d40857a3b511aaa4558b
 
 ### Card Test
 POST http://localhost:4001/card-api/addCard

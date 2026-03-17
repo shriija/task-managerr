@@ -9,6 +9,7 @@ function BoardPage() {
   const { id } = useParams()
   const { board, loading, error, fetchBoard, addList, reset } = useBoardStore()
   const currentUser = useAuthStore(s => s.currentUser)
+  
 
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -85,19 +86,6 @@ function BoardPage() {
       <aside className="w-64 bg-white/80 backdrop-blur-xl border-r border-gray-100
                          flex-col p-6 hidden lg:flex">
 
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 mb-8">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600
-                          rounded-xl flex items-center justify-center shadow-sm">
-            <svg className="w-4.5 h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-            </svg>
-          </div>
-          <h1 className="font-extrabold text-lg text-gray-900 tracking-tight">
-            Kanvas
-          </h1>
-        </div>
-
         {/* Nav items */}
         <nav className="space-y-1 text-sm">
           <a href="#" className="flex items-center gap-3 px-3 py-2.5 rounded-xl
@@ -105,7 +93,7 @@ function BoardPage() {
             <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
             </svg>
-            Boards
+            Lists
           </a>
           <a href="#" className="flex items-center gap-3 px-3 py-2.5 rounded-xl
                                  text-gray-500 hover:bg-gray-50 hover:text-gray-700
@@ -136,7 +124,7 @@ function BoardPage() {
                      flex items-center justify-center gap-2"
         >
           <span className="text-lg leading-none">+</span>
-          New Column
+          New List
         </button>
 
       </aside>
