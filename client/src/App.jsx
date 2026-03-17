@@ -5,7 +5,6 @@ import Loginpage from './pages/Loginpage'
 import RootLayout from './pages/RootLayout'
 import Home from './pages/Home'
 import UserDashboard from './pages/UserDashboard'
-import CreateBoardPage from './pages/CreateBoardPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import BoardPage from './pages/BoardPage'
 
@@ -32,14 +31,6 @@ function App() {
           element:(
             <ProtectedRoute>
               <UserDashboard />
-            </ProtectedRoute>
-          )
-        },
-        {
-          path:"create-board",
-          element:(
-            <ProtectedRoute>
-              <CreateBoardPage/>
             </ProtectedRoute>
           )
         },
