@@ -16,6 +16,7 @@ export const useBoardStore = create((set, get) => ({
     try {
       set({ loading: true, error: null })
 
+      // 1️⃣ Fetch board
       const res = await axios.get(
         `${API}/board-api/${boardId}`,
         { withCredentials: true }
@@ -23,20 +24,47 @@ export const useBoardStore = create((set, get) => ({
 
       const board = res.data.payload
 
-      // Try fetching lists for this board
+      // 2️⃣ Fetch lists of this board
       let lists = []
       try {
         const listRes = await axios.get(
           `${API}/list-api/board/${boardId}`,
           { withCredentials: true }
         )
+
         lists = listRes.data?.payload || []
       } catch {
-        // Lists endpoint may not exist yet — use empty
         lists = []
       }
 
-      set({ board, lists, loading: false })
+      // ⭐ 3️⃣ Fetch cards for each list (FIXED PART)
+      const listsWithCards = await Promise.all(
+        lists.map(async (list) => {
+          try {
+            const cardRes = await axios.get(
+              `${API}/card-api/getCards/${list._id}`,
+              { withCredentials: true }
+            )
+
+            return {
+              ...list,
+              cards: cardRes.data?.payload || []
+            }
+          } catch {
+            return {
+              ...list,
+              cards: []
+            }
+          }
+        })
+      )
+
+      // ⭐ 4️⃣ Save combined data
+      set({
+        board,
+        lists: listsWithCards,
+        loading: false
+      })
 
     } catch (err) {
       set({
@@ -51,7 +79,6 @@ export const useBoardStore = create((set, get) => ({
     const { lists } = get()
     const position = lists.length
 
-    // Optimistic update
     const tempList = {
       _id: `temp-${Date.now()}`,
       title,
@@ -59,6 +86,7 @@ export const useBoardStore = create((set, get) => ({
       position,
       cards: []
     }
+
     set({ lists: [...lists, tempList] })
 
     try {
@@ -67,6 +95,7 @@ export const useBoardStore = create((set, get) => ({
         { title, board: boardId, position },
         { withCredentials: true }
       )
+
       const saved = res.data.payload
 
       set({
@@ -75,7 +104,6 @@ export const useBoardStore = create((set, get) => ({
         )
       })
     } catch {
-      // Revert on failure
       set({ lists: get().lists.filter(l => l._id !== tempList._id) })
     }
   },
@@ -86,7 +114,7 @@ export const useBoardStore = create((set, get) => ({
         l._id === listId ? { ...l, title: newTitle } : l
       )
     })
-    // Fire & forget API call
+
     axios.put(
       `${API}/list-api/${listId}`,
       { title: newTitle },
@@ -110,6 +138,7 @@ export const useBoardStore = create((set, get) => ({
     if (!targetList) return
 
     const position = targetList.cards?.length || 0
+
     const tempCard = {
       _id: `temp-${Date.now()}`,
       title,
@@ -134,6 +163,7 @@ export const useBoardStore = create((set, get) => ({
         { title, list: listId, position },
         { withCredentials: true }
       )
+
       const saved = res.data.payload
 
       set({
@@ -149,7 +179,6 @@ export const useBoardStore = create((set, get) => ({
         )
       })
     } catch {
-      // Revert
       set({
         lists: get().lists.map(l =>
           l._id === listId
@@ -200,7 +229,6 @@ export const useBoardStore = create((set, get) => ({
     const { lists } = get()
 
     if (fromListId === toListId) {
-      // Reorder within same list
       set({
         lists: lists.map(l => {
           if (l._id !== fromListId) return l
@@ -213,7 +241,6 @@ export const useBoardStore = create((set, get) => ({
         })
       })
     } else {
-      // Move across lists
       let movedCard = null
       set({
         lists: lists.map(l => {
@@ -234,4 +261,5 @@ export const useBoardStore = create((set, get) => ({
 
   // ── Reset ──────────────────────────────────────────────
   reset: () => set({ board: null, lists: [], loading: false, error: null })
+
 }))

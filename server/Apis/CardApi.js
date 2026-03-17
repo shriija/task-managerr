@@ -12,7 +12,7 @@ CardApp.get("/getCards/:id",getCards)
 CardApp.get("/getCardById/:id",getCardById)
 
 //Update card
-CardApp.put("updateCard/:id",updateCard)
+CardApp.put("/updateCard/:id",updateCard)
 
 //delete cards
 CardApp.delete("/deleteCard/:id",deleteCards)

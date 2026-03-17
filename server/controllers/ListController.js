@@ -36,3 +36,19 @@ export const getList = async(req,res) =>{
     }
     res.status(201).json({message:"lists found for board",payload:response})
 }
+export const getListsByBoard = async (req, res) => {
+  try {
+
+    const lists = await ListModel.find({
+      board: req.params.boardId
+    }).sort({ position: 1 })
+
+    res.json({
+      message: "Lists fetched",
+      payload: lists
+    })
+
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}

@@ -61,6 +61,6 @@ export const deleteCards=async(req,res)=>{
             res.status(404).json({message:"Card not found"})
         }
     }catch(error){
-        res.ststus(500).json({message:"Could not delete card",error:error.message})
+        res.status(500).json({message:"Could not delete card",error:error.message})
     }
 }
