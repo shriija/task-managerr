@@ -116,7 +116,7 @@ function BoardPage() {
         {/* Bottom: New Project */}
         <button
           onClick={() => addList(board?._id || "local", "New List")}
-          className="mt-auto bg-gradient-to-r from-primary-500 to-primary-600
+          className="mt-3.5 bg-gradient-to-r from-primary-500 to-primary-600
                      hover:from-primary-600 hover:to-primary-700
                      text-white text-sm font-semibold py-3 rounded-xl
                      shadow-sm hover:shadow-md
