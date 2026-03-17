@@ -12,6 +12,7 @@ function List({ list, onOpenModal }) {
   const [title, setTitle] = useState(list.title)
   const [showAddCard, setShowAddCard] = useState(false)
   const [cardText, setCardText] = useState("")
+  const [cardError, setCardError] = useState("") // ← Add error state for card
 
   const titleRef = useRef(null)
   const addCardRef = useRef(null)
@@ -26,11 +27,12 @@ function List({ list, onOpenModal }) {
 
   const handleTitleSave = () => {
     const trimmed = title.trim()
-    if (trimmed && trimmed !== list.title) {
-      updateListTitle(list._id, trimmed)
-    } else {
+    if (!trimmed) {
+      alert("List name required")
       setTitle(list.title)
+      return
     }
+    if (trimmed !== list.title) updateListTitle(list._id, trimmed)
     setEditing(false)
   }
 
@@ -43,10 +45,14 @@ function List({ list, onOpenModal }) {
   }
 
   const handleAddCard = () => {
-    if (!cardText.trim()) return
+    if (!cardText.trim()) {
+      setCardError("Card name required") // ← Show error
+      return
+    }
     addCard(list._id, cardText.trim())
     setCardText("")
     setShowAddCard(false)
+    setCardError("") // Clear error after successful add
   }
 
   const handleAddCardKeyDown = (e) => {
@@ -54,6 +60,7 @@ function List({ list, onOpenModal }) {
     if (e.key === "Escape") {
       setCardText("")
       setShowAddCard(false)
+      setCardError("")
     }
   }
 
@@ -77,7 +84,6 @@ function List({ list, onOpenModal }) {
 
       {/* Header */}
       <div className="px-4 pt-4 pb-3 flex items-center justify-between">
-
         {editing ? (
           <input
             ref={titleRef}
@@ -115,7 +121,6 @@ function List({ list, onOpenModal }) {
             ✕
           </button>
         </div>
-
       </div>
 
       {/* Cards container */}
@@ -141,14 +146,19 @@ function List({ list, onOpenModal }) {
             <input
               ref={addCardRef}
               value={cardText}
-              onChange={(e) => setCardText(e.target.value)}
+              onChange={(e) => { setCardText(e.target.value); setCardError("") }} // clear error as user types
               onKeyDown={handleAddCardKeyDown}
               placeholder="Enter card title..."
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
                          placeholder-gray-400 text-gray-700
                          focus:outline-none focus:ring-2 focus:ring-primary-200
-                         focus:border-primary-300 transition-all mb-2"
+                         focus:border-primary-300 transition-all mb-1"
             />
+
+            {cardError && (
+              <p className="text-red-500 text-xs mb-1">{cardError}</p>
+            )}
+
             <div className="flex gap-2">
               <button
                 onClick={handleAddCard}
@@ -161,7 +171,7 @@ function List({ list, onOpenModal }) {
                 Add Card
               </button>
               <button
-                onClick={() => { setCardText(""); setShowAddCard(false) }}
+                onClick={() => { setCardText(""); setShowAddCard(false); setCardError("") }}
                 className="text-sm text-gray-400 hover:text-gray-600
                            px-3 py-2 rounded-xl hover:bg-gray-100
                            transition-all duration-200 cursor-pointer"
