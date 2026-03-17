@@ -69,10 +69,13 @@ Content-Type: application/json
 ### Move List
 
 ### Get Cards
-GET http://localhost:4001/card-api/getCards/
+GET http://localhost:4001/card-api/getCards/:id
 
-### Delete Card
-DELETE http://localhost:4001/card-api/deleteCards/
+###Get card by id
+GET http://localhost:4001/card-api/getCardById/:id
+
+### Delete Card by id
+DELETE http://localhost:4001/card-api/deleteCards/:id
 
 ### Move Card
 
