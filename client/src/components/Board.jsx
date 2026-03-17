@@ -30,28 +30,12 @@ function Board() {
 
   return (
     <>
-      <div className="flex-1 overflow-x-auto p-6 custom-scrollbar">
-
-        <div className="flex gap-5 items-start min-w-max">
-
-          {lists.map((list, index) => (
-            <div
-              key={list._id}
-              className="group"
-              style={{ animationDelay: `${index * 60}ms` }}
-            >
-              <List
-                list={list}
-                onOpenModal={handleOpenModal}
-              />
-            </div>
-          ))}
-
-          {/* Add Column Button */}
+      <div className="flex-1 overflow-auto p-6 custom-scrollbar">
+        {/* Grid layout for lists */}
+        {/* Add List button */}
           <button
             onClick={handleAddList}
-            className="w-80 flex-shrink-0 h-24
-                       border-2 border-dashed border-gray-200
+            className="w-full h-24 border-2 border-dashed border-gray-200
                        rounded-2xl text-gray-400 font-medium text-sm
                        hover:border-primary-300 hover:text-primary-500
                        hover:bg-primary-50/50
@@ -64,9 +48,18 @@ function Board() {
             </svg>
             Add List
           </button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+          {/* Render existing lists */}
+          {lists.map((list) => (
+            <List
+              key={list._id}
+              list={list}
+              onOpenModal={handleOpenModal}
+            />
+          ))}
 
         </div>
-
       </div>
 
       {/* Card Detail Modal */}
