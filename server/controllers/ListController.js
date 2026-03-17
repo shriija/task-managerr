@@ -29,12 +29,12 @@ export const deleteList = async(req,res) =>{
     res.status(201).json({message:"list deleted",payload:response})
 }
 export const getList = async(req,res) =>{
-    const BoardId = req.params.id;
-    const response = ListModel.find(BoardId)
+    const listId = req.params.id;
+    const response = await ListModel.findById(listId)
     if(!response){
-        return res.status(404).json({message:"no lists found"})
+        return res.status(404).json({message:"list not found"})
     }
-    res.status(201).json({message:"lists found for board",payload:response})
+    res.status(201).json({message:"list found",payload:response})
 }
 export const getListsByBoard = async (req, res) => {
   try {

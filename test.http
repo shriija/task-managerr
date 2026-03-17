@@ -120,12 +120,18 @@ Content-Type: application/json
 
 {
     "title":"review",
-    "board":"69b90ef55f4ffc8cecc0ae5c",
+    "board":"69b8edc31a3f075dc425ed8d",
     "position":1
 }
 
 ### deleteList by id
 DELETE http://localhost:4001/list-api/deleteList/69b90eb85f4ffc8cecc0ae56
+
+###Get list by boardID
+GET http://localhost:4001/list-api/getLists/69b8edc31a3f075dc425ed8d
+
+###Get list by id
+GET http://localhost:4001/list-api/getListById/69b9170809a0fe3d2144bd77
 
 ### Move List
 
@@ -138,10 +144,11 @@ POST http://localhost:4001/card-api/addCard
 Content-Type: application/json
 
 {
-    "title":"Maths",
-    "description":"Complete the exercises",
+    "title":"computers",
+    "description":"Complete the program",
     "list":"69b90f0f5f4ffc8cecc0ae63",
-    "position":1
+    "position":1,
+    "dueDate":"2026-03-18"
 }
 
 ### Get Cards
@@ -156,7 +163,9 @@ Content-Type: application/json
 
 {
     "title":"Maths",
-    "description":"Complete Sums"
+    "description":"Complete Sums",
+    "dueDate":"2026-03-18"
+
 }
 
 ### Delete Card by id

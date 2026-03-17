@@ -1,9 +1,16 @@
 import exp from 'express'
-import { AddList, deleteList } from '../controllers/ListController.js';
-import { getListsByBoard } from '../controllers/ListController.js';
+import { AddList, deleteList, getListsByBoard, getList } from '../controllers/ListController.js';
 const ListApp = exp.Router()
 
+//create list
 ListApp.post('/addList',AddList)
+
+//delete list
 ListApp.delete('/deleteList/:id',deleteList)
-ListApp.get('/board/:boardId', getListsByBoard)
+
+//get list by board ID
+ListApp.get('/getLists/:boardId', getListsByBoard)
+
+//get list by id
+ListApp.get('/getListById/:id', getList )
 export default ListApp;

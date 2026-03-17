@@ -1,8 +1,15 @@
 import { CardModel } from "../models/Card.js";
+import Date from "date-and-time";
 
 //Create Cards
 export const addCard=async(req,res)=>{
     const createCard = req.body;
+    const date= new Date();
+    const dueDate=new Date(createCard.dueDate);
+    if(dueDate<date){
+        return res.status(400).json({message:"Due date cannot be in the past",payload: createCard.dueDate} )
+        
+    }
     try{
         const newCard=new CardModel(createCard)
         const saveCard=await newCard.save();
@@ -40,9 +47,15 @@ export const getCards=async(req,res)=>{
 //Update card
 export const updateCard=async(req,res)=>{
     const cardId=req.params.id
-    const {title, description}=req.body
+    const {title, description, dueDate}=req.body
+    const date= new Date();
+    const due=new Date(dueDate);
+    if(due<date){
+        return res.status(400).json({message:"Due date cannot be in the past",payload:dueDate})
+        
+    }
     try{
-        const updatedCard=await CardModel.findByIdAndUpdate(cardId,{title, description},{new:true})
+        const updatedCard=await CardModel.findByIdAndUpdate(cardId,{title, description, dueDate},{new:true})
         res.status(200).json({message:"Card updated successfully",payload:updatedCard})
     }catch(error){
         res.status(500).json({message:"Could not update card",error:error.message})
