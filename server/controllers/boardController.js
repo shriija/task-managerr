@@ -52,3 +52,20 @@ export const deleteBoard = async(req,res) =>{
   }
   res.status(201).json({message:"board deleted",payload:response})
 }
+
+export const getMyBoards = async (req, res) => {
+  try {
+
+    const boards = await BoardModel.find({
+      owner: req.userId
+    })
+
+    res.json({
+      message: "Boards fetched",
+      payload: boards
+    })
+
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
