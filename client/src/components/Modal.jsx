@@ -35,9 +35,9 @@ function Modal({ card, listId, onClose }) {
   const handleSave = () => {
     updateCard(card._id, listId, {
       title: title.trim() || card.title,
-      desc: description,
+      description: description,
       dueDate: dueDate || null,
-      priority: priority || undefined
+      priority: priority || ""
     })
     onClose()
   }

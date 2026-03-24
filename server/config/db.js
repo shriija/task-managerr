@@ -1,5 +1,4 @@
 import { config } from "dotenv";
-import {app} from '../server.js'
 import {connect} from 'mongoose'
 config()
 const connectDB = async() =>{

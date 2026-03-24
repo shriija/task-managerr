@@ -58,7 +58,7 @@ function Loginpage() {
 					disabled={loading}
       	  className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-semibold rounded-xl text-white bg-gray-900 hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
       	  >
-      	    {loading ? "Signning in..." : "Sign in"}
+      	    {loading ? "Signing in..." : "Sign in"}
       	  </button>
 
       	  <p className="text-center text-sm text-gray-600">

@@ -7,12 +7,14 @@ function List({ list, onOpenModal }) {
   const addCard = useBoardStore(s => s.addCard)
   const deleteList = useBoardStore(s => s.deleteList)
   const updateListTitle = useBoardStore(s => s.updateListTitle)
+  const moveCard = useBoardStore(s => s.moveCard)
 
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(list.title)
   const [showAddCard, setShowAddCard] = useState(false)
   const [cardText, setCardText] = useState("")
-  const [cardError, setCardError] = useState("") // ← Add error state for card
+  const [cardError, setCardError] = useState("")
+  const [isDragOver, setIsDragOver] = useState(false)
 
   const titleRef = useRef(null)
   const addCardRef = useRef(null)
@@ -46,13 +48,13 @@ function List({ list, onOpenModal }) {
 
   const handleAddCard = () => {
     if (!cardText.trim()) {
-      setCardError("Card name required") // ← Show error
+      setCardError("Card name required")
       return
     }
     addCard(list._id, cardText.trim())
     setCardText("")
     setShowAddCard(false)
-    setCardError("") // Clear error after successful add
+    setCardError("")
   }
 
   const handleAddCardKeyDown = (e) => {
@@ -61,6 +63,65 @@ function List({ list, onOpenModal }) {
       setCardText("")
       setShowAddCard(false)
       setCardError("")
+    }
+  }
+
+  // ── Drag & Drop handlers ────────────────────────────
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = "move"
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e) => {
+    // Only set false if we're actually leaving the list container
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDragOver(false)
+    }
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setIsDragOver(false)
+
+    try {
+      const data = JSON.parse(e.dataTransfer.getData("application/json"))
+      const { cardId, fromListId } = data
+
+      if (!cardId) return
+
+      // Determine drop position
+      const toListId = list._id
+      const cardCount = list.cards?.length || 0
+
+      // Calculate position based on where the card was dropped
+      const dropTarget = e.target.closest("[data-card-index]")
+      let newPosition = cardCount // Default: drop at end
+
+      if (dropTarget) {
+        const targetIndex = parseInt(dropTarget.dataset.cardIndex, 10)
+        const rect = dropTarget.getBoundingClientRect()
+        const midY = rect.top + rect.height / 2
+
+        if (e.clientY < midY) {
+          newPosition = targetIndex
+        } else {
+          newPosition = targetIndex + 1
+        }
+
+        // Adjust if moving within the same list
+        if (fromListId === toListId) {
+          const cards = list.cards || []
+          const oldIdx = cards.findIndex(c => c._id === cardId)
+          if (oldIdx !== -1 && oldIdx < newPosition) {
+            newPosition = Math.max(0, newPosition - 1)
+          }
+        }
+      }
+
+      moveCard(cardId, fromListId, toListId, newPosition)
+    } catch (err) {
+      console.error("Drop error:", err)
     }
   }
 
@@ -75,12 +136,21 @@ function List({ list, onOpenModal }) {
   const accent = accentColors[(list.position || 0) % accentColors.length]
 
   return (
-    <div className="w-full flex-shrink-0 flex flex-col max-h-[82vh]
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`w-full flex-shrink-0 flex flex-col max-h-[82vh]
                     bg-white/85 backdrop-blur-xl border border-white/50
-                    rounded-2xl shadow-lg overflow-hidden">
+                    rounded-2xl shadow-lg overflow-hidden
+                    transition-all duration-200
+                    ${isDragOver
+                      ? "ring-2 ring-primary-400 ring-offset-2 border-primary-300 bg-primary-50/50 shadow-xl"
+                      : ""}`}
+    >
 
       {/* Colored accent bar */}
-      <div className={`h-1 bg-gradient-to-r ${accent}`} />
+      <div className={`h-1 bg-gradient-to-r ${accent} ${isDragOver ? "h-1.5" : ""} transition-all`} />
 
       {/* Header */}
       <div className="px-4 pt-4 pb-3 flex items-center justify-between">
@@ -124,18 +194,30 @@ function List({ list, onOpenModal }) {
       </div>
 
       {/* Cards container */}
-      <div className="flex-1 overflow-y-auto px-3 pb-2 space-y-2.5
+      <div className={`flex-1 overflow-y-auto px-3 pb-2 space-y-2.5
                       [&::-webkit-scrollbar]:w-1.5
                       [&::-webkit-scrollbar-track]:bg-transparent
                       [&::-webkit-scrollbar-thumb]:bg-gray-300/40
-                      [&::-webkit-scrollbar-thumb]:rounded-full">
-        {list.cards?.map((card) => (
-          <Card
-            key={card._id}
-            card={card}
-            listId={list._id}
-            onOpenModal={onOpenModal}
-          />
+                      [&::-webkit-scrollbar-thumb]:rounded-full
+                      ${isDragOver && (!list.cards || list.cards.length === 0) ? "min-h-[60px]" : ""}`}>
+
+        {/* Drop zone placeholder when empty and dragging over */}
+        {isDragOver && (!list.cards || list.cards.length === 0) && (
+          <div className="border-2 border-dashed border-primary-300 rounded-xl p-4
+                          text-center text-primary-400 text-xs font-medium
+                          bg-primary-50/50 animate-pulse">
+            Drop card here
+          </div>
+        )}
+
+        {list.cards?.map((card, index) => (
+          <div key={card._id} data-card-index={index}>
+            <Card
+              card={card}
+              listId={list._id}
+              onOpenModal={onOpenModal}
+            />
+          </div>
         ))}
       </div>
 
@@ -146,7 +228,7 @@ function List({ list, onOpenModal }) {
             <input
               ref={addCardRef}
               value={cardText}
-              onChange={(e) => { setCardText(e.target.value); setCardError("") }} // clear error as user types
+              onChange={(e) => { setCardText(e.target.value); setCardError("") }}
               onKeyDown={handleAddCardKeyDown}
               placeholder="Enter card title..."
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm

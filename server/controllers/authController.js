@@ -1,7 +1,7 @@
 import {UserModel} from '../models/User.js'
 import bcrypt from 'bcryptjs'
 import {generateToken} from '../utils/generateToken.js'
-import { response } from 'express';
+
 
 export const signup = async(req,res) =>{
     const user = req.body;
@@ -18,7 +18,7 @@ export const signup = async(req,res) =>{
             password:hashedPass,
             avatar:user.avatar
         })
-        newUser.save()
+        await newUser.save()
         res.status(201).json({message:"user created sucessfully"})
     } catch (error) {
         console.log("error in signup")
@@ -52,7 +52,7 @@ export const signin = async(req,res)=>{
 
     } catch (error) {
         console.log("error in signin")
-        res.status(200).json({error:error.message})
+        res.status(500).json({error:error.message})
     }
 }
 export const logout = async(req,res)=>{

@@ -40,13 +40,10 @@ const cardSchema = new Schema(
       type: [String],
       default: [],
     },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now,
+    priority: {
+      type: String,
+      enum: ["High", "Medium", "Low", ""],
+      default: "",
     },
   },
   {

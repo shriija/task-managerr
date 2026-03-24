@@ -62,16 +62,52 @@ export default function boardSocket(io) {
     });
 
     // ===============================
-// CARD MOVED (Drag & Drop Sync)
-// ===============================
-socket.on("move-card", (data) => {
-  const { boardId } = data;
+    // CARD EVENTS
+    // ===============================
+    socket.on("move-card", (data) => {
+      const { boardId } = data;
+      socket.to(boardId).emit("card-moved", data);
+      console.log("Card moved on board:", boardId);
+    });
 
-  // Send update to others in same board
-  socket.to(boardId).emit("card-moved", data);
+    socket.on("card-added", (data) => {
+      const { boardId } = data;
+      socket.to(boardId).emit("card-added", data);
+      console.log("Card added on board:", boardId);
+    });
 
-  console.log("Card moved on board:", boardId);
-});
+    socket.on("card-updated", (data) => {
+      const { boardId } = data;
+      socket.to(boardId).emit("card-updated", data);
+      console.log("Card updated on board:", boardId);
+    });
+
+    socket.on("card-deleted", (data) => {
+      const { boardId } = data;
+      socket.to(boardId).emit("card-deleted", data);
+      console.log("Card deleted on board:", boardId);
+    });
+
+    // ===============================
+    // LIST EVENTS
+    // ===============================
+    socket.on("list-added", (data) => {
+      const { boardId } = data;
+      socket.to(boardId).emit("list-added", data);
+      console.log("List added on board:", boardId);
+    });
+
+    socket.on("list-updated", (data) => {
+      const { boardId } = data;
+      socket.to(boardId).emit("list-updated", data);
+      console.log("List updated on board:", boardId);
+    });
+
+    socket.on("list-deleted", (data) => {
+      const { boardId } = data;
+      socket.to(boardId).emit("list-deleted", data);
+      console.log("List deleted on board:", boardId);
+    });
 
   });
 }
