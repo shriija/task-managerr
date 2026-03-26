@@ -3,11 +3,12 @@ import { useEffect, useState } from "react"
 import { useBoardStore } from "../context/BoardContext"
 import { useAuthStore } from "../context/AuthContext"
 import Board from "../components/Board"
+import * as socketService from "../socket/socketService"
 
 function BoardPage() {
 
   const { id } = useParams()
-  const { board, loading, error, fetchBoard, addList, reset } = useBoardStore()
+  const { board, loading, error, fetchBoard, addList, reset, setupSocket } = useBoardStore()
   const currentUser = useAuthStore(s => s.currentUser)
   
 
@@ -18,6 +19,18 @@ function BoardPage() {
     if (id) fetchBoard(id)
     return () => reset()
   }, [id, fetchBoard, reset])
+
+  // Socket setup
+  useEffect(() => {
+    if (id && currentUser) {
+      const socket = socketService.connectSocket()
+      setupSocket(socket)
+      socketService.joinBoard(id, currentUser)
+    }
+    return () => {
+      if (id) socketService.leaveBoard(id)
+    }
+  }, [id, currentUser, setupSocket])
 
   // ── Loading Skeleton ─────────────────────────────────
   if (loading) {

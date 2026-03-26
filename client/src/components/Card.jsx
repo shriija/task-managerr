@@ -1,8 +1,9 @@
 import { useState } from "react"
 
-function Card({ card, listId, onOpenModal }) {
+function Card({ card, listId, onOpenModal, onDragStart, onDragEnd }) {
 
   const [isHovered, setIsHovered] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   const priorityStyles = {
     High: "bg-red-500/10 text-red-600",
@@ -18,16 +19,40 @@ function Card({ card, listId, onOpenModal }) {
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
   }
 
+  const handleDragStart = (e) => {
+    setIsDragging(true)
+    e.dataTransfer.effectAllowed = "move"
+    e.dataTransfer.setData("application/json", JSON.stringify({
+      cardId: card._id,
+      fromListId: listId
+    }))
+    // Add a slight delay for the drag image
+    setTimeout(() => {
+      e.target.style.opacity = "0.4"
+    }, 0)
+    onDragStart?.(card._id, listId)
+  }
+
+  const handleDragEnd = (e) => {
+    setIsDragging(false)
+    e.target.style.opacity = "1"
+    onDragEnd?.()
+  }
+
   return (
     <div
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onClick={() => onOpenModal?.(card, listId)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group relative bg-white rounded-xl p-3.5 shadow-sm
+      className={`group relative bg-white rounded-xl p-3.5 shadow-sm
                  border border-gray-100
                  hover:shadow-md hover:border-primary-200
                  hover:-translate-y-0.5
-                 transition-all duration-200 cursor-pointer"
+                 transition-all duration-200 cursor-grab active:cursor-grabbing
+                 ${isDragging ? "opacity-40 scale-95 ring-2 ring-primary-300" : ""}`}
     >
 
       {/* Labels */}
@@ -47,6 +72,13 @@ function Card({ card, listId, onOpenModal }) {
       <p className="text-sm font-medium text-gray-800 leading-snug">
         {card.title}
       </p>
+
+      {/* Description indicator */}
+      {card.description && (
+        <p className="text-xs text-gray-400 mt-1 line-clamp-1">
+          {card.description}
+        </p>
+      )}
 
       {/* Meta row */}
       <div className="flex items-center gap-2 mt-2.5 flex-wrap">
@@ -71,6 +103,11 @@ function Card({ card, listId, onOpenModal }) {
             {formatDate(card.dueDate)}
           </span>
         )}
+
+        {/* Drag handle indicator */}
+        <svg className="w-3.5 h-3.5 text-gray-300 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+        </svg>
 
       </div>
 

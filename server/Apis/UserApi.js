@@ -5,7 +5,7 @@ const UserApi = exp.Router()
 
 UserApi.post('/signup',signup)
 UserApi.post('/signin',signin)
-UserApi.use('/logout',logout)
+UserApi.post('/logout',logout)
 UserApi.get('/verify', verifyToken, verifySession)
 
 export default UserApi;
