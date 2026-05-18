@@ -11,9 +11,9 @@ function Card({ card, listId, onOpenModal, onDragStart, onDragEnd }) {
   };
 
   const statusBgStyles = {
-    "to do": "bg-blue-50/20 border border-blue-100/60 hover:border-blue-300",
-    "in progress": "bg-amber-50/20 border border-amber-100/60 hover:border-amber-300",
-    "completed": "bg-emerald-50/20 border border-emerald-100/60 hover:border-emerald-300"
+    "to do": "bg-blue-50 border border-blue-100/60 hover:border-blue-300",
+    "in progress": "bg-amber-50 border border-amber-100/60 hover:border-amber-300",
+    "completed": "bg-emerald-50 border border-emerald-100/60 hover:border-emerald-300"
   };
 
   const hoverIndicatorColors = {
