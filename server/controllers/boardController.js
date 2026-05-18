@@ -54,6 +54,8 @@ export const getBoard = async (req, res) => {
   try {
 
     const board = await BoardModel.findById(req.params.id)
+      .populate("owner", "name email avatar")
+      .populate("members", "name email avatar")
 
     console.log(board)
 
