@@ -125,15 +125,34 @@ function List({ list, onOpenModal }) {
     }
   }
 
+  const getAccentColor = () => {
+
+  const title = list.title?.toLowerCase()
+
+  if (title === "to do") {
+    return "from-red-400 to-red-500"
+  }
+
+  if (title === "in progress") {
+    return "from-amber-400 to-yellow-500"
+  }
+
+  if (title === "done") {
+    return "from-emerald-400 to-green-500"
+  }
+
+  // Default colors for custom lists
   const accentColors = [
     "from-primary-400 to-primary-500",
-    "from-emerald-400 to-emerald-500",
-    "from-amber-400 to-amber-500",
-    "from-rose-400 to-rose-500",
     "from-cyan-400 to-cyan-500",
-    "from-violet-400 to-violet-500"
+    "from-violet-400 to-violet-500",
+    "from-pink-400 to-pink-500"
   ]
-  const accent = accentColors[(list.position || 0) % accentColors.length]
+
+  return accentColors[(list.position || 0) % accentColors.length]
+}
+
+const accent = getAccentColor()
 
   return (
     <div
