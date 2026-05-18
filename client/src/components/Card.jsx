@@ -10,7 +10,19 @@ function Card({ card, listId, onOpenModal, onDragStart, onDragEnd }) {
     Low: "bg-green-500/10 text-green-600",
   };
 
-  const isOverdue = card.dueDate && new Date(card.dueDate) < new Date();
+  const statusBgStyles = {
+    "to do": "bg-blue-50/20 border border-blue-100/60 hover:border-blue-300",
+    "in progress": "bg-amber-50/20 border border-amber-100/60 hover:border-amber-300",
+    "completed": "bg-emerald-50/20 border border-emerald-100/60 hover:border-emerald-300"
+  };
+
+  const hoverIndicatorColors = {
+    "to do": "bg-blue-500",
+    "in progress": "bg-amber-500",
+    "completed": "bg-emerald-500"
+  };
+
+  const isOverdue = card.dueDate && card.status !== "completed" && new Date(card.dueDate) < new Date();
 
   const formatDate = (dateStr) => {
     if (!dateStr) return null;
@@ -49,11 +61,9 @@ function Card({ card, listId, onOpenModal, onDragStart, onDragEnd }) {
       onClick={() => onOpenModal?.(card, listId)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`group relative bg-white rounded-xl p-3.5 shadow-sm
-                 border border-gray-100
-                 hover:shadow-md hover:border-primary-200
-                 hover:-translate-y-0.5
-                 transition-all duration-200 cursor-grab active:cursor-grabbing
+      className={`group relative rounded-xl p-3.5 shadow-sm transition-all duration-200 cursor-grab active:cursor-grabbing
+                 ${statusBgStyles[card.status] || "bg-white border border-gray-100 hover:border-primary-200 hover:-translate-y-0.5"}
+                 hover:shadow-md hover:-translate-y-0.5
                  ${isDragging ? "opacity-40 scale-95 ring-2 ring-primary-300" : ""}`}
     >
       {/* Labels */}
@@ -83,6 +93,14 @@ function Card({ card, listId, onOpenModal, onDragStart, onDragEnd }) {
 
       {/* Meta row */}
       <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+        {/* Due status tag in red */}
+        {isOverdue && (
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100 flex items-center gap-1 animate-pulse uppercase tracking-wider">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+            Due
+          </span>
+        )}
+
         {/* Priority badge */}
         {card.priority && (
           <span
@@ -120,9 +138,24 @@ function Card({ card, listId, onOpenModal, onDragStart, onDragEnd }) {
           </span>
         )}
 
+        {/* Assignee Avatar */}
+        {card.assignedTo && (
+          <div 
+            className="w-5 h-5 rounded-full bg-gradient-to-br from-primary-400 to-primary-600
+                       flex items-center justify-center text-white text-[9px] font-bold shadow-sm ml-auto flex-shrink-0"
+            title={`Assigned to ${card.assignedTo.name}`}
+          >
+            {card.assignedTo.avatar ? (
+              <img src={card.assignedTo.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+            ) : (
+              card.assignedTo.name?.charAt(0).toUpperCase() || "A"
+            )}
+          </div>
+        )}
+
         {/* Drag handle indicator */}
         <svg
-          className="w-3.5 h-3.5 text-gray-300 ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+          className={`w-3.5 h-3.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ${!card.assignedTo ? 'ml-auto' : 'ml-1.5'}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -138,9 +171,9 @@ function Card({ card, listId, onOpenModal, onDragStart, onDragEnd }) {
 
       {/* Hover indicator */}
       <div
-        className={`absolute top-0 left-0 w-0.5 h-full rounded-l-xl bg-primary-500
-                        transition-opacity duration-200
-                        ${isHovered ? "opacity-100" : "opacity-0"}`}
+        className={`absolute top-0 left-0 w-0.5 h-full rounded-l-xl transition-opacity duration-200
+                    ${isOverdue ? 'bg-red-500' : (hoverIndicatorColors[card.status] || 'bg-primary-500')}
+                    ${isHovered ? "opacity-100" : "opacity-0"}`}
       />
     </div>
   );

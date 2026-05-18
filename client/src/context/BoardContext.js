@@ -104,9 +104,39 @@ export const useBoardStore = create((set, get) => ({
     })
 
     socket.on("card-updated", (data) => {
-      const { cardId, listId, updates } = data
-      set({
-        lists: get().lists.map(l =>
+      const { cardId, listId, updates, targetListId } = data
+      const destListId = targetListId || (updates && updates.list) || listId
+      
+      const { lists } = get()
+      let updatedLists = [...lists]
+      
+      if (listId !== destListId) {
+        // Find card to move
+        const sourceList = lists.find(l => l._id === listId)
+        const movedCard = sourceList?.cards.find(c => c._id === cardId) || updates
+        
+        // Remove from old list
+        updatedLists = updatedLists.map(l => {
+          if (l._id === listId) {
+            return { ...l, cards: l.cards.filter(c => c._id !== cardId) }
+          }
+          return l
+        })
+        
+        // Add/Update in new list
+        updatedLists = updatedLists.map(l => {
+          if (l._id === destListId) {
+            const alreadyExists = l.cards?.some(c => c._id === cardId)
+            if (alreadyExists) {
+              return { ...l, cards: l.cards.map(c => c._id === cardId ? { ...c, ...updates } : c) }
+            }
+            return { ...l, cards: [...(l.cards || []), { ...movedCard, ...updates }] }
+          }
+          return l
+        })
+      } else {
+        // Simple update in same list
+        updatedLists = updatedLists.map(l =>
           l._id === listId
             ? {
                 ...l,
@@ -116,7 +146,9 @@ export const useBoardStore = create((set, get) => ({
               }
             : l
         )
-      })
+      }
+      
+      set({ lists: updatedLists })
     })
 
     socket.on("card-deleted", (data) => {
@@ -262,11 +294,12 @@ export const useBoardStore = create((set, get) => ({
     if (boardId) socketService.emitCardDeleted(boardId, { cardId, listId })
   },
 
-  updateCard: (cardId, listId, updates) => {
+  updateCard: async (cardId, listId, updates) => {
     const boardId = get().board?._id
     const stateUpdates = { ...updates }
     if (updates.description !== undefined) stateUpdates.description = updates.description
 
+    // Optimistic UI updates
     set({
       lists: get().lists.map(l =>
         l._id === listId
@@ -278,14 +311,66 @@ export const useBoardStore = create((set, get) => ({
       )
     })
 
-    axios.put(`${API}/card-api/updateCard/${cardId}`, {
-      title: updates.title,
-      description: updates.description,
-      dueDate: updates.dueDate,
-      priority: updates.priority
-    }, { withCredentials: true }).catch(() => {})
+    try {
+      const res = await axios.put(`${API}/card-api/updateCard/${cardId}`, {
+        title: updates.title,
+        description: updates.description,
+        dueDate: updates.dueDate,
+        priority: updates.priority,
+        status: updates.status,
+        assignedTo: updates.assignedTo && typeof updates.assignedTo === 'object' ? updates.assignedTo._id : updates.assignedTo
+      }, { withCredentials: true })
 
-    if (boardId) socketService.emitCardUpdated(boardId, { cardId, listId, updates: stateUpdates })
+      const savedCard = res.data.payload
+      const targetListId = savedCard.list
+
+      const { lists } = get()
+      let updatedLists = [...lists]
+
+      if (listId !== targetListId) {
+        // Remove from old list
+        updatedLists = updatedLists.map(l => {
+          if (l._id === listId) {
+            return { ...l, cards: l.cards.filter(c => c._id !== cardId) }
+          }
+          return l
+        })
+        // Add to new list
+        updatedLists = updatedLists.map(l => {
+          if (l._id === targetListId) {
+            return { ...l, cards: [...(l.cards || []), savedCard] }
+          }
+          return l
+        })
+      } else {
+        // Just update in the same list
+        updatedLists = updatedLists.map(l => {
+          if (l._id === listId) {
+            return {
+              ...l,
+              cards: l.cards.map(c => c._id === cardId ? savedCard : c)
+            }
+          }
+          return l
+        })
+      }
+
+      set({ lists: updatedLists })
+
+      // If a new assignee is set, refetch board to synchronize header member list
+      if (updates.assignedTo && boardId) {
+        axios.get(`${API}/board-api/${boardId}`, { withCredentials: true }).then(boardRes => {
+          set({ board: boardRes.data.payload })
+        }).catch(() => {})
+      }
+
+      if (boardId) {
+        socketService.emitCardUpdated(boardId, { cardId, listId, updates: savedCard, targetListId })
+      }
+    } catch (error) {
+      console.error("Error updating card:", error)
+      if (boardId) get().fetchBoard(boardId)
+    }
   },
 
   moveCard: (cardId, fromListId, toListId, newPosition) => {

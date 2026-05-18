@@ -31,6 +31,12 @@ export const getBoard = async (req, res) => {
   try {
 
     const board = await BoardModel.findById(req.params.id)
+<<<<<<< Updated upstream
+=======
+      .populate("owner", "name email avatar")
+      .populate("members", "name email avatar")
+
+>>>>>>> Stashed changes
     console.log(board)
     if (!board || board.length==0) {
       return res.status(404).json({ message: "Board not found" })
