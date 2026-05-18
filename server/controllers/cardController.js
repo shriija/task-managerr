@@ -1,4 +1,6 @@
 import { CardModel } from "../models/Card.js";
+import { ListModel } from "../models/List.js";
+import { BoardModel } from "../models/Board.js";
 
 //Create Cards
 export const addCard=async(req,res)=>{
@@ -11,8 +13,52 @@ export const addCard=async(req,res)=>{
         }
     }
     try{
-        const newCard=new CardModel(createCard)
-        const saveCard=await newCard.save();
+        let initialStatus = "to do";
+        const list = await ListModel.findById(createCard.list);
+        if (list) {
+            const title = list.title.toLowerCase();
+            if (title === "to do") {
+                initialStatus = "to do";
+            } else if (title === "in progress") {
+                initialStatus = "in progress";
+            } else if (title === "done" || title === "completed") {
+                initialStatus = "completed";
+            }
+        }
+
+        const assignedUserId = createCard.assignedTo || req.userId;
+        const newCard = new CardModel({
+            ...createCard,
+            createdBy: req.userId,
+            assignedTo: assignedUserId,
+            status: createCard.status || initialStatus
+        })
+        let saveCard = await newCard.save();
+
+        // Auto-join creator and assignee to board members if they aren't owner or already a member
+        if (list) {
+            const board = await BoardModel.findById(list.board);
+            if (board) {
+                const checkAndAdd = async (userId) => {
+                    if (!userId) return;
+                    const isOwner = board.owner.toString() === userId.toString();
+                    const isMember = board.members.some(m => m.toString() === userId.toString());
+                    if (!isOwner && !isMember) {
+                        board.members.push(userId);
+                        await board.save();
+                    }
+                };
+                await checkAndAdd(req.userId);
+                if (assignedUserId && assignedUserId.toString() !== req.userId.toString()) {
+                    await checkAndAdd(assignedUserId);
+                }
+            }
+        }
+
+        saveCard = await CardModel.findById(saveCard._id)
+            .populate("assignedTo", "name email avatar")
+            .populate("createdBy", "name email avatar");
+
         res.status(201).json({message:"New card added successfully", payload:saveCard})
     }
     catch(error){
@@ -26,6 +72,8 @@ export const getCardById=async(req,res)=>{
     const getCard=req.params.id;
     try{
         const card=await CardModel.findById(getCard)
+            .populate("assignedTo", "name email avatar")
+            .populate("createdBy", "name email avatar")
         if(card){res.status(200).json({message:"Card fetched successfully",payload:card})}
         else{res.status(404).json({message:"Card not found"})}
     }catch(error){
@@ -37,7 +85,10 @@ export const getCardById=async(req,res)=>{
 export const getCards=async(req,res)=>{
     const list=req.params.id
     try{
-        const cards=await CardModel.find({list:list}).sort({ position: 1 })
+        const cards=await CardModel.find({list:list})
+            .sort({ position: 1 })
+            .populate("assignedTo", "name email avatar")
+            .populate("createdBy", "name email avatar")
         res.status(200).json({message:"Cards fetched",payload:cards})
     }catch(error){
         res.status(500).json({message:"Could not fetch cards",error:error.message})
@@ -47,7 +98,7 @@ export const getCards=async(req,res)=>{
 //Update card
 export const updateCard=async(req,res)=>{
     const cardId=req.params.id
-    const {title, description, dueDate, priority}=req.body
+    const {title, description, dueDate, priority, status, assignedTo}=req.body
     if(dueDate){
         const date= new Date();
         const due=new Date(dueDate);
@@ -56,10 +107,37 @@ export const updateCard=async(req,res)=>{
         }
     }
     try{
+        const card = await CardModel.findById(cardId);
+        if (!card) {
+            return res.status(404).json({message:"Card not found"})
+        }
+
         const updateFields = { title, description }
         if (dueDate !== undefined) updateFields.dueDate = dueDate
         if (priority !== undefined) updateFields.priority = priority
+        if (status !== undefined) {
+            updateFields.status = status
+        }
+        if (assignedTo !== undefined) {
+            updateFields.assignedTo = assignedTo
+            if (assignedTo) {
+                const list = await ListModel.findById(card.list);
+                if (list) {
+                    const board = await BoardModel.findById(list.board);
+                    if (board) {
+                        const isOwner = board.owner.toString() === assignedTo.toString();
+                        const isMember = board.members.some(m => m.toString() === assignedTo.toString());
+                        if (!isOwner && !isMember) {
+                            board.members.push(assignedTo);
+                            await board.save();
+                        }
+                    }
+                }
+            }
+        }
         const updatedCard=await CardModel.findByIdAndUpdate(cardId, updateFields, {new:true})
+            .populate("assignedTo", "name email avatar")
+            .populate("createdBy", "name email avatar")
         res.status(200).json({message:"Card updated successfully",payload:updatedCard})
     }catch(error){
         res.status(500).json({message:"Could not update card",error:error.message})
@@ -78,11 +156,24 @@ export const moveCard=async(req,res)=>{
 
         const oldListId = cardToMove.list.toString();
 
-        // 1. Assign it to the new list temporarily so it gets fetched
+        // 1. Sync card status with destination list title
+        const destList = await ListModel.findById(toListId);
+        if (destList) {
+            const title = destList.title.toLowerCase();
+            if (title === "to do") {
+                cardToMove.status = "to do";
+            } else if (title === "in progress") {
+                cardToMove.status = "in progress";
+            } else if (title === "done" || title === "completed") {
+                cardToMove.status = "completed";
+            }
+        }
+
+        // 2. Assign it to the new list temporarily so it gets fetched
         cardToMove.list = toListId;
         await cardToMove.save();
 
-        // 2. Re-sequence the destination list
+        // 3. Re-sequence the destination list
         const toListCards = await CardModel.find({ list: toListId }).sort({ position: 1 });
         const filteredCards = toListCards.filter(c => c._id.toString() !== cardId);
         
@@ -93,7 +184,7 @@ export const moveCard=async(req,res)=>{
             await CardModel.findByIdAndUpdate(filteredCards[i]._id, { position: i });
         }
 
-        // 3. Re-sequence the old list if cross-list move
+        // 4. Re-sequence the old list if cross-list move
         if (oldListId !== toListId) {
             const oldListCards = await CardModel.find({ list: oldListId }).sort({ position: 1 });
             const filteredOld = oldListCards.filter(c => c._id.toString() !== cardId);
@@ -102,7 +193,9 @@ export const moveCard=async(req,res)=>{
             }
         }
 
-        const updatedCard = await CardModel.findById(cardId);
+        const updatedCard = await CardModel.findById(cardId)
+            .populate("assignedTo", "name email avatar")
+            .populate("createdBy", "name email avatar");
         res.status(200).json({ message: "Card moved successfully", payload: updatedCard });
     }catch(error){
         console.error("Error moving card:", error)

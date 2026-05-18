@@ -24,6 +24,21 @@ const cardSchema = new Schema(
       ref: "User",
       default: [],
     },
+    assignedTo: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    status: {
+      type: String,
+      enum: ["to do", "in progress", "completed"],
+      default: "to do",
+    },
     attachments: {
       type: [Schema.Types.Mixed],
       default: [],
