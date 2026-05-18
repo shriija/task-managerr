@@ -27,39 +27,72 @@ export const useBoardStore = create((set, get) => ({
     socket.off("online-users")
 
     socket.on("card-moved", (data) => {
-      const { cardId, fromListId, toListId, newPosition } = data
-      const { lists } = get()
-      
-      if (fromListId === toListId) {
-        set({
-          lists: lists.map(l => {
-            if (l._id !== fromListId) return l
-            const cards = [...l.cards]
-            const oldIdx = cards.findIndex(c => c._id === cardId)
-            if (oldIdx === -1) return l
-            const [moved] = cards.splice(oldIdx, 1)
-            cards.splice(newPosition, 0, moved)
-            return { ...l, cards }
-          })
-        })
-      } else {
-        let movedCard = null
-        set({
-          lists: lists.map(l => {
-            if (l._id === fromListId) {
-              movedCard = l.cards.find(c => c._id === cardId)
-              return { ...l, cards: l.cards.filter(c => c._id !== cardId) }
-            }
-            if (l._id === toListId && movedCard) {
-              const cards = [...l.cards]
-              cards.splice(newPosition, 0, { ...movedCard, list: toListId })
-              return { ...l, cards }
-            }
-            return l
-          })
-        })
+
+  const { cardId, fromListId, toListId, newPosition } = data
+
+  const { lists } = get()
+
+  const sourceList = lists.find(l => l._id === fromListId)
+
+  if (!sourceList) return
+
+  const movedCard = sourceList.cards.find(c => c._id === cardId)
+
+  if (!movedCard) return
+
+  const updatedLists = lists.map(l => {
+
+    // Same list reorder
+    if (fromListId === toListId && l._id === fromListId) {
+
+      const cards = [...l.cards]
+
+      const oldIdx = cards.findIndex(c => c._id === cardId)
+
+      if (oldIdx === -1) return l
+
+      const [moved] = cards.splice(oldIdx, 1)
+
+      cards.splice(newPosition, 0, moved)
+
+      return {
+        ...l,
+        cards
       }
-    })
+    }
+
+    // Remove from source
+    if (l._id === fromListId) {
+
+      return {
+        ...l,
+        cards: l.cards.filter(c => c._id !== cardId)
+      }
+    }
+
+    // Add to destination
+    if (l._id === toListId) {
+
+      const cards = [...l.cards]
+
+      cards.splice(newPosition, 0, {
+        ...movedCard,
+        list: toListId
+      })
+
+      return {
+        ...l,
+        cards
+      }
+    }
+
+    return l
+  })
+
+  set({
+    lists: updatedLists
+  })
+})
 
     socket.on("card-added", (data) => {
       const { card, listId } = data
@@ -256,43 +289,88 @@ export const useBoardStore = create((set, get) => ({
   },
 
   moveCard: (cardId, fromListId, toListId, newPosition) => {
-    const boardId = get().board?._id
-    const { lists } = get()
 
-    if (fromListId === toListId) {
-      set({
-        lists: lists.map(l => {
-          if (l._id !== fromListId) return l
-          const cards = [...l.cards]
-          const oldIdx = cards.findIndex(c => c._id === cardId)
-          if (oldIdx === -1) return l
-          const [moved] = cards.splice(oldIdx, 1)
-          cards.splice(newPosition, 0, moved)
-          return { ...l, cards }
-        })
-      })
-    } else {
-      let movedCard = null
-      set({
-        lists: lists.map(l => {
-          if (l._id === fromListId) {
-            movedCard = l.cards.find(c => c._id === cardId)
-            return { ...l, cards: l.cards.filter(c => c._id !== cardId) }
-          }
-          if (l._id === toListId && movedCard) {
-            const cards = [...l.cards]
-            cards.splice(newPosition, 0, { ...movedCard, list: toListId })
-            return { ...l, cards }
-          }
-          return l
-        })
-      })
+  const boardId = get().board?._id
+
+  const { lists } = get()
+
+  const sourceList = lists.find(l => l._id === fromListId)
+
+  if (!sourceList) return
+
+  const movedCard = sourceList.cards.find(c => c._id === cardId)
+
+  if (!movedCard) return
+
+  const updatedLists = lists.map(l => {
+
+    // Same list reorder
+    if (fromListId === toListId && l._id === fromListId) {
+
+      const cards = [...l.cards]
+
+      const oldIdx = cards.findIndex(c => c._id === cardId)
+
+      if (oldIdx === -1) return l
+
+      const [moved] = cards.splice(oldIdx, 1)
+
+      cards.splice(newPosition, 0, moved)
+
+      return {
+        ...l,
+        cards
+      }
     }
 
-    axios.put(`${API}/card-api/moveCard/${cardId}`, { toListId, newPosition }, { withCredentials: true }).catch(() => {})
-    if (boardId) socketService.emitCardMoved(boardId, { cardId, fromListId, toListId, newPosition })
-  },
+    // Remove from source
+    if (l._id === fromListId) {
 
+      return {
+        ...l,
+        cards: l.cards.filter(c => c._id !== cardId)
+      }
+    }
+
+    // Add to destination
+    if (l._id === toListId) {
+
+      const cards = [...l.cards]
+
+      cards.splice(newPosition, 0, {
+        ...movedCard,
+        list: toListId
+      })
+
+      return {
+        ...l,
+        cards
+      }
+    }
+
+    return l
+  })
+
+  set({
+    lists: updatedLists
+  })
+
+  axios.put(
+    `${API}/card-api/moveCard/${cardId}`,
+    { toListId, newPosition },
+    { withCredentials: true }
+  ).catch(() => {})
+
+  if (boardId) {
+
+    socketService.emitCardMoved(boardId, {
+      cardId,
+      fromListId,
+      toListId,
+      newPosition
+    })
+  }
+},
   reset: () => {
     const boardId = get().board?._id
     if (boardId) socketService.leaveBoard(boardId)
