@@ -2,7 +2,7 @@ import { create } from "zustand"
 import axios from "axios"
 import { API_URL as API } from "../services/api"
 
-export const useAuthStore = create((set, get) => ({
+export const useAuthStore = create((set) => ({
   currentUser: null,
   loading: false,
   isAuthenticated: false,
