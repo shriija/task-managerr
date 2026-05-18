@@ -6,7 +6,6 @@ function Navbar() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const logout = useAuthStore((state) => state.logout)
   const currentUser = useAuthStore((state)=>state.currentUser)
-  console.log(currentUser)
 
   return (
     <nav className=" top-0 w-full bg-white border-b z-50">

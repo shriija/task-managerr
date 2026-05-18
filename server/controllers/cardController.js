@@ -62,7 +62,6 @@ export const addCard=async(req,res)=>{
         res.status(201).json({message:"New card added successfully", payload:saveCard})
     }
     catch(error){
-        console.error("Error adding card:", error.message);
         res.status(500).json({ message: "Error adding card" });
     }
 }
@@ -198,7 +197,6 @@ export const moveCard=async(req,res)=>{
             .populate("createdBy", "name email avatar");
         res.status(200).json({ message: "Card moved successfully", payload: updatedCard });
     }catch(error){
-        console.error("Error moving card:", error)
         res.status(500).json({message:"Could not move card",error:error.message})
     }
 }

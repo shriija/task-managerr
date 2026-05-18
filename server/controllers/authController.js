@@ -21,7 +21,6 @@ export const signup = async(req,res) =>{
         await newUser.save()
         res.status(201).json({message:"user created sucessfully"})
     } catch (error) {
-        console.log("error in signup")
         res.json({error:error.message})
     }
 }
@@ -51,7 +50,6 @@ export const signin = async(req,res)=>{
         res.status(200).json({message:"signin sucessfull",payload:userObj})
 
     } catch (error) {
-        console.log("error in signin")
         res.status(500).json({error:error.message})
     }
 }
@@ -65,7 +63,6 @@ export const logout = async(req,res)=>{
         res.status(200).json({message:"logout success"})
         
     } catch (error) {
-        console.log("error in logout")
         res.status(201).json({error:error.message})
     }
 }

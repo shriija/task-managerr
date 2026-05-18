@@ -61,7 +61,7 @@ function Modal({ card, listId, onClose }) {
         const res = await axios.get(`${API_URL}/user-api/search?q=${searchTerm.trim()}`, { withCredentials: true })
         setSearchResults(res.data.payload || [])
       } catch (err) {
-        console.error("Search error", err)
+        // Search error
       } finally {
         setSearchLoading(false)
       }

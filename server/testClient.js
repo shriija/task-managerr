@@ -3,8 +3,6 @@ import { io } from "socket.io-client";
 const socket = io("http://localhost:4001");
 
 socket.on("connect", () => {
-  console.log("Connected as:", socket.id);
-
   // Join board
   socket.emit("join-board", {
     boardId: "board123",
@@ -24,9 +22,7 @@ socket.on("connect", () => {
 });
 
 socket.on("online-users", (users) => {
-  console.log("Online users:", users);
 });
 
 socket.on("card-moved", (data) => {
-  console.log("Card moved received:", data);
 });

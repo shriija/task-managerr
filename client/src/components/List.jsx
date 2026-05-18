@@ -121,7 +121,7 @@ function List({ list, onOpenModal }) {
 
       moveCard(cardId, fromListId, toListId, newPosition)
     } catch (err) {
-      console.error("Drop error:", err)
+      // Drop error
     }
   }
 

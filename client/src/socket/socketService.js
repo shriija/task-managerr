@@ -16,17 +16,11 @@ export const connectSocket = () => {
     reconnectionDelay: 1000
   })
 
-  socket.on("connect", () => {
-    console.log("🟢 Socket connected:", socket.id)
-  })
+  socket.on("connect", () => {})
 
-  socket.on("disconnect", (reason) => {
-    console.log("🔴 Socket disconnected:", reason)
-  })
+  socket.on("disconnect", (reason) => {})
 
-  socket.on("connect_error", (err) => {
-    console.log("⚠️ Socket connection error:", err.message)
-  })
+  socket.on("connect_error", (err) => {})
 
   return socket
 }

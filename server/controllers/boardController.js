@@ -40,8 +40,6 @@ export const addBoard = async (req, res) => {
 
   } catch (error) {
 
-    console.log("error in addBoard")
-
     res.status(500).json({
       error: error.message
     })
@@ -56,8 +54,6 @@ export const getBoard = async (req, res) => {
     const board = await BoardModel.findById(req.params.id)
       .populate("owner", "name email avatar")
       .populate("members", "name email avatar")
-
-    console.log(board)
 
     if (!board || board.length == 0) {
 

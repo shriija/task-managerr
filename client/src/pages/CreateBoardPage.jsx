@@ -37,8 +37,6 @@ function CreateBoardPage() {
       navigate(`/board/${board._id}`)
 
     } catch (err) {
-      console.log(err)
-
       setError(err?.response?.message || "Something went wrong while creating board")
     } finally {
       setLoading(false)

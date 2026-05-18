@@ -4,7 +4,6 @@ import { CardModel } from '../models/Card.js'
 export const AddList = async(req,res) =>{
     const listInfo = req.body;
     const {title,board,position} = req.body;
-    console.log(title,board,position)
     try {
         await ListModel.validate(listInfo)
 
@@ -17,7 +16,6 @@ export const AddList = async(req,res) =>{
         await list.save()
         res.status(201).json({message:"list created",payload:list})
     } catch (error) {
-        console.log("error in addlist")
         res.status(500).json({error:error.message})
     }
 }

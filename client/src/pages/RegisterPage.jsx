@@ -29,12 +29,10 @@ function RegisterPage() {
         payload
       );
 
-      console.log(res.data);
       toast.success("Account created successfully!");
       navigate("/login");
 
     } catch (err) {
-      console.log(err);
       const msg = err.response?.data?.message || err.response?.data?.error || "Registration failed";
       setError(msg);
       toast.error(msg);

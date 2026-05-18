@@ -368,7 +368,6 @@ export const useBoardStore = create((set, get) => ({
         socketService.emitCardUpdated(boardId, { cardId, listId, updates: savedCard, targetListId })
       }
     } catch (error) {
-      console.error("Error updating card:", error)
       if (boardId) get().fetchBoard(boardId)
     }
   },
