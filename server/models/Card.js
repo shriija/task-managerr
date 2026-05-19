@@ -60,14 +60,6 @@ const cardSchema = new Schema(
       enum: ["High", "Medium", "Low", ""],
       default: "",
     },
-    isDeleted: {
-      type: Boolean,
-      default: false,
-    },
-    deletedAt: {
-      type: Date,
-      default: null,
-    },
   },
   {
     strict: true,
