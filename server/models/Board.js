@@ -23,6 +23,14 @@ const boardSchema = new Schema(
       type: String,
       default: "#0052cc",
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     strict: true,

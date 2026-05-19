@@ -78,44 +78,27 @@ export const getBoard = async (req, res) => {
 
 
 export const deleteBoard = async (req, res) => {
-
   try {
-
     const boardId = req.params.id
 
-    const response = await BoardModel.findByIdAndDelete(boardId)
+    const response = await BoardModel.findByIdAndUpdate(
+      boardId,
+      { isDeleted: true, deletedAt: new Date() },
+      { new: true }
+    )
 
     if (!response) {
-
       return res.status(404).json({
         message: "board not found"
       })
     }
 
-    // Find all lists for this board
-    const lists = await ListModel.find({
-      board: boardId
-    })
-
-    const listIds = lists.map(list => list._id)
-
-    // Delete all cards inside lists
-    await CardModel.deleteMany({
-      list: { $in: listIds }
-    })
-
-    // Delete all lists
-    await ListModel.deleteMany({
-      board: boardId
-    })
-
     res.status(200).json({
-      message: "board deleted",
+      message: "board deleted (soft delete)",
       payload: response
     })
 
   } catch (error) {
-
     res.status(500).json({
       message: "Could not delete board",
       error: error.message
@@ -125,11 +108,10 @@ export const deleteBoard = async (req, res) => {
 
 
 export const getMyBoards = async (req, res) => {
-
   try {
-
     const boards = await BoardModel.find({
-      owner: req.userId
+      owner: req.userId,
+      isDeleted: { $ne: true }
     })
 
     res.json({
@@ -138,9 +120,58 @@ export const getMyBoards = async (req, res) => {
     })
 
   } catch (error) {
-
     res.status(500).json({
       error: error.message
     })
+  }
+}
+
+export const getDeletedBoards = async (req, res) => {
+  try {
+    const boards = await BoardModel.find({
+      owner: req.userId,
+      isDeleted: true
+    })
+    res.status(200).json({ message: "Deleted boards fetched", payload: boards })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+export const restoreBoard = async (req, res) => {
+  try {
+    const boardId = req.params.id;
+    const restored = await BoardModel.findByIdAndUpdate(
+      boardId,
+      { isDeleted: false, deletedAt: null },
+      { new: true }
+    )
+    if (!restored) {
+      return res.status(404).json({ message: "Board not found" })
+    }
+    res.status(200).json({ message: "Board restored", payload: restored })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+export const permanentDeleteBoard = async (req, res) => {
+  try {
+    const boardId = req.params.id;
+    const board = await BoardModel.findByIdAndDelete(boardId);
+    
+    if (!board) {
+      return res.status(404).json({ message: "Board not found" })
+    }
+
+    // Cascade hard delete
+    const lists = await ListModel.find({ board: boardId })
+    const listIds = lists.map(l => l._id)
+    await CardModel.deleteMany({ list: { $in: listIds } })
+    await ListModel.deleteMany({ board: boardId })
+
+    res.status(200).json({ message: "Board permanently deleted" })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
   }
 }

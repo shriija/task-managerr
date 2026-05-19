@@ -17,7 +17,15 @@ const listSchema = new Schema(
     }, // (ref),
     position: {
       type: Number,
-      required: true,
+      default: 0,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
     },
     cards: {
       type: [Schema.Types.ObjectId],
