@@ -4,8 +4,10 @@ config()
 const connectDB = async() =>{
     try {
         await connect(process.env.DB_URL) 
+        console.log("database connected")
     } catch (error) {
-        // Failed to connect to database
+        console.log(error.message)
+        console.log("error in connecting DB")
     }
 }
 export default connectDB;
