@@ -273,7 +273,11 @@ function CalendarView() {
                       setIsDayModalOpen(false)
                       handleOpenModal(card, listId)
                     }}
-                    className="flex items-start p-3 bg-white border border-gray-100 rounded-xl cursor-pointer hover:border-primary-300 hover:bg-primary-50/30 hover:shadow-sm transition-all group"
+                    className={`flex items-start p-3 border rounded-xl cursor-pointer hover:shadow-sm transition-all group ${
+                      card.status === 'completed' ? 'bg-emerald-50 border-emerald-100/60 hover:border-emerald-300' :
+                      card.status === 'in progress' ? 'bg-amber-50 border-amber-100/60 hover:border-amber-300' :
+                      'bg-blue-50 border-blue-100/60 hover:border-blue-300'
+                    }`}
                   >
                      <div className="flex-1">
                        <p className="text-sm font-semibold text-gray-800 group-hover:text-primary-600">{card.title}</p>
