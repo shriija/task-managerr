@@ -57,7 +57,7 @@ function UserDashboard() {
 
         <button
           onClick={() => navigate("/create-board")}
-          className="w-full bg-gradient-to-r from-primary-500 to-primary-600
+          className="w-full bg-linear-to-r from-primary-500 to-primary-600
                      hover:from-primary-600 hover:to-primary-700
                      text-white py-2.5 rounded-xl mb-6 font-semibold text-sm
                      shadow-sm hover:shadow transition-all duration-200 cursor-pointer"
@@ -137,7 +137,7 @@ function UserDashboard() {
                            cursor-pointer transition-all duration-200"
               >
                 <div className="w-10 h-10 rounded-xl mb-3
-                               bg-gradient-to-br from-primary-400 to-primary-600
+                               bg-linear-to-br from-primary-400 to-primary-600
                                flex items-center justify-center shadow-sm">
                   <span className="text-white font-bold text-sm">
                     {board.title?.charAt(0)?.toUpperCase() || "B"}
