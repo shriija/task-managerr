@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router"
 import axios from "axios"
 import { API_URL } from "../services/api"
+import { useBoardStore } from "../context/BoardContext"
 
 function UserDashboard() {
 
@@ -11,24 +12,43 @@ function UserDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
-  // Fetch boards from API on mount
-  useEffect(() => {
-    const fetchBoards = async () => {
-      try {
-        setLoading(true)
-        const res = await axios.get(
-          `${API_URL}/board-api/`,
-          { withCredentials: true }
-        )
-        setBoards(res.data.payload || [])
-      } catch (err) {
-        setError(err.response?.data?.message || "Failed to load boards")
-      } finally {
-        setLoading(false)
-      }
+  const [currentView, setCurrentView] = useState("boards") // "boards" or "trash"
+  const deletedBoards = useBoardStore(s => s.deletedBoards)
+  const fetchDeletedBoards = useBoardStore(s => s.fetchDeletedBoards)
+  const restoreBoard = useBoardStore(s => s.restoreBoard)
+  const permanentDeleteBoard = useBoardStore(s => s.permanentDeleteBoard)
+
+  // Fetch active boards
+  const fetchBoards = async () => {
+    try {
+      setLoading(true)
+      const res = await axios.get(`${API_URL}/board-api/`, { withCredentials: true })
+      setBoards(res.data.payload || [])
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load boards")
+    } finally {
+      setLoading(false)
     }
-    fetchBoards()
-  }, [])
+  }
+
+  useEffect(() => {
+    if (currentView === "boards") {
+      fetchBoards()
+    } else if (currentView === "trash") {
+      fetchDeletedBoards()
+    }
+  }, [currentView, fetchDeletedBoards])
+
+  // Delete Board (soft delete) directly via axios in Dashboard
+  const handleDeleteBoard = async (e, boardId) => {
+    e.stopPropagation()
+    try {
+      await axios.delete(`${API_URL}/board-api/deleteBoard/${boardId}`, { withCredentials: true })
+      setBoards(boards.filter(b => b._id !== boardId))
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   return (
     <div className="min-h-screen flex bg-background-light">
@@ -47,30 +67,41 @@ function UserDashboard() {
           + Create Board
         </button>
 
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          Boards
-        </p>
-
-        {boards.map((b) => (
-          <div
-            key={b._id}
-            onClick={() => navigate(`/board/${b._id}`)}
-            className="p-2.5 rounded-xl hover:bg-primary-50 hover:text-primary-600
-                       cursor-pointer text-sm text-gray-700 font-medium
-                       transition-colors duration-150"
+        <div className="space-y-1">
+          <button
+            onClick={() => setCurrentView("boards")}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-sm font-medium
+              ${currentView === "boards" ? "bg-primary-50 text-primary-600" : "text-gray-600 hover:bg-gray-50"}
+            `}
           >
-            {b.title}
-          </div>
-        ))}
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25z" />
+            </svg>
+            My Boards
+          </button>
+          <button
+            onClick={() => setCurrentView("trash")}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-sm font-medium
+              ${currentView === "trash" ? "bg-red-50 text-red-600" : "text-gray-600 hover:bg-gray-50"}
+            `}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+            </svg>
+            Trash
+          </button>
+        </div>
       </aside>
 
       {/* Main */}
       <main className="flex-1 p-8">
 
-        <h1 className="text-3xl font-black mb-8 mt-20">My Boards</h1>
+        <h1 className="text-3xl font-black mb-8 mt-20">
+          {currentView === "boards" ? "My Boards" : "Trash"}
+        </h1>
 
         {/* Loading */}
-        {loading && (
+        {loading && currentView === "boards" && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="animate-pulse bg-gray-200 rounded-xl h-32" />
@@ -84,9 +115,8 @@ function UserDashboard() {
         )}
 
         {/* Boards grid */}
-        {!loading && !error && (
+        {currentView === "boards" && !loading && !error && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-
             {/* Create New Board Card */}
             <div
               onClick={() => navigate("/create-board")}
@@ -94,10 +124,8 @@ function UserDashboard() {
                          justify-center cursor-pointer hover:border-primary-400
                          hover:bg-primary-50/50 transition-all duration-200 group"
             >
-              <span className="text-4xl text-gray-300 group-hover:text-primary-400
-                               transition-colors">+</span>
-              <p className="font-bold mt-2 text-gray-500 group-hover:text-primary-600
-                            transition-colors">Create Board</p>
+              <span className="text-4xl text-gray-300 group-hover:text-primary-400 transition-colors">+</span>
+              <p className="font-bold mt-2 text-gray-500 group-hover:text-primary-600 transition-colors">Create Board</p>
             </div>
 
             {/* Dynamic Boards */}
@@ -107,7 +135,7 @@ function UserDashboard() {
                 onClick={() => navigate(`/board/${board._id}`)}
                 className="bg-white rounded-xl shadow-sm border border-gray-100
                            p-6 hover:shadow-md hover:border-primary-200
-                           hover:-translate-y-0.5
+                           hover:-translate-y-0.5 relative group
                            cursor-pointer transition-all duration-200"
               >
                 <div className="w-10 h-10 rounded-xl mb-3
@@ -123,9 +151,49 @@ function UserDashboard() {
                     month: "short", day: "numeric", year: "numeric"
                   })}
                 </p>
+                <button
+                  onClick={(e) => handleDeleteBoard(e, board._id)}
+                  className="absolute top-4 right-4 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-2"
+                  title="Move to Trash"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                  </svg>
+                </button>
               </div>
             ))}
+          </div>
+        )}
 
+        {/* Trash View */}
+        {currentView === "trash" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            {deletedBoards.length === 0 ? (
+              <p className="text-gray-400 text-sm">Trash is empty.</p>
+            ) : (
+              deletedBoards.map(board => (
+                <div key={board._id} className="bg-white rounded-xl shadow-sm border border-red-100 p-6 opacity-75 hover:opacity-100 transition-opacity">
+                  <h3 className="font-bold text-lg text-gray-800 line-through decoration-red-400">{board.title}</h3>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Deleted on {new Date(board.deletedAt).toLocaleDateString("en-US")}
+                  </p>
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      onClick={() => restoreBoard(board._id)}
+                      className="flex-1 text-xs font-semibold py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
+                    >
+                      Restore
+                    </button>
+                    <button
+                      onClick={() => permanentDeleteBoard(board._id)}
+                      className="flex-1 text-xs font-semibold py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                      Delete Forever
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
 

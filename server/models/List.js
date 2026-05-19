@@ -24,6 +24,14 @@ const listSchema = new Schema(
       ref: "Card",
       default: [],
     }, // []
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     strict: true,
