@@ -1,5 +1,5 @@
 import exp from "express"
-import { addCard, getCards, deleteCards, getCardById, updateCard, moveCard } from "../controllers/cardController.js";
+import { addCard, getCards, deleteCards, getCardById, updateCard, moveCard, getDeletedCardsByBoard, restoreCard, permanentDeleteCard } from "../controllers/cardController.js";
 import verifyToken from '../utils/verifyToken.js'
 const CardApp=exp.Router()
 
@@ -20,5 +20,10 @@ CardApp.put("/moveCard/:id", verifyToken, moveCard)
 
 //delete cards
 CardApp.delete("/deleteCards/:id", verifyToken, deleteCards)
+
+// Trash routes
+CardApp.get("/trash/deleted/:boardId", verifyToken, getDeletedCardsByBoard)
+CardApp.put("/restore/:id", verifyToken, restoreCard)
+CardApp.delete("/permanent/:id", verifyToken, permanentDeleteCard)
 
 export default CardApp;
