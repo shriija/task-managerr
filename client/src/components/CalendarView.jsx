@@ -14,6 +14,11 @@ function CalendarView() {
   const [modalCard, setModalCard] = useState(null)
   const [modalListId, setModalListId] = useState(null)
 
+  // Day tasks modal state
+  const [selectedDate, setSelectedDate] = useState(null)
+  const [selectedDateTasks, setSelectedDateTasks] = useState([])
+  const [isDayModalOpen, setIsDayModalOpen] = useState(false)
+
   const externalEventsRef = useRef(null)
 
   // Initialize Draggable for external events (Unscheduled tasks)
@@ -57,44 +62,7 @@ function CalendarView() {
     return { scheduledCards: scheduled, unscheduledCards: unscheduled }
   }, [lists])
 
-  // Map to FullCalendar events format
-  const events = useMemo(() => {
-    return scheduledCards.map(({ card, listId }) => {
-      let color = "#3b82f6" // blue
-      let borderColor = "#2563eb"
-
-      if (card.status === "completed") {
-        color = "#10b981" // emerald
-        borderColor = "#059669"
-      } else if (card.status === "in progress") {
-        color = "#f59e0b" // amber
-        borderColor = "#d97706"
-      } else if (card.status === "to do") {
-        color = "#ef4444" // red
-        borderColor = "#dc2626"
-      }
-
-      return {
-        id: card._id,
-        title: card.title,
-        start: card.dueDate,
-        allDay: true, 
-        backgroundColor: color,
-        borderColor: borderColor,
-        extendedProps: { listId, card }
-      }
-    })
-  }, [scheduledCards])
-
   // Handlers
-  const handleEventDrop = (info) => {
-    const cardId = info.event.id
-    const listId = info.event.extendedProps.listId
-    const newDate = info.event.start
-
-    updateCard(cardId, listId, { dueDate: newDate.toISOString() })
-  }
-
   const handleEventReceive = (info) => {
     const cardId = info.event.id
     const listId = info.event.extendedProps.listId
@@ -104,15 +72,13 @@ function CalendarView() {
     updateCard(cardId, listId, { dueDate: newDate.toISOString() })
     
     // Revert the local drop so React state is the single source of truth
+    // and since we hide pills, this ensures FullCalendar doesn't leave a dummy pill behind.
     info.revert()
   }
 
-  const handleEventClick = (info) => {
-    // Check if the event came from state (has full card obj)
-    if (info.event.extendedProps.card) {
-      setModalCard(info.event.extendedProps.card)
-      setModalListId(info.event.extendedProps.listId)
-    }
+  const handleOpenModal = (card, listId) => {
+    setModalCard(card)
+    setModalListId(listId)
   }
 
   const handleCloseModal = () => {
@@ -173,7 +139,7 @@ function CalendarView() {
       </div>
 
       {/* Main Calendar Area */}
-      <div className="flex-1 p-6 overflow-hidden flex flex-col bg-white">
+      <div className="flex-1 p-6 overflow-hidden flex flex-col bg-white relative">
         <style>{`
           .fc {
             --fc-border-color: #f3f4f6;
@@ -184,8 +150,6 @@ function CalendarView() {
             --fc-button-hover-border-color: #d1d5db;
             --fc-button-active-bg-color: #f3f4f6;
             --fc-button-active-border-color: #d1d5db;
-            --fc-event-bg-color: #3b82f6;
-            --fc-event-border-color: #2563eb;
             --fc-today-bg-color: #eff6ff;
             font-family: inherit;
           }
@@ -206,18 +170,6 @@ function CalendarView() {
             color: #2563eb;
             font-weight: 700;
           }
-          .fc-event {
-            cursor: pointer;
-            border-radius: 6px;
-            padding: 2px 6px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            border: 1px solid transparent;
-            transition: opacity 0.2s;
-          }
-          .fc-event:hover {
-            opacity: 0.9;
-          }
           .fc-toolbar-title {
             font-size: 1.5rem !important;
             font-weight: 700 !important;
@@ -236,6 +188,14 @@ function CalendarView() {
             border-color: #d1d5db;
             color: #111827;
           }
+          
+          /* Custom hover & selection styles for day cells */
+          .fc-daygrid-day {
+            transition: background-color 0.2s ease;
+          }
+          .fc-daygrid-day.cursor-pointer:hover {
+            background-color: #f8fafc;
+          }
         `}</style>
         
         <div className="flex-1 h-full w-full custom-calendar-wrapper">
@@ -245,20 +205,106 @@ function CalendarView() {
             headerToolbar={{
               left: "prev,next today",
               center: "title",
-              right: "dayGridMonth,timeGridWeek,timeGridDay"
+              right: "dayGridMonth,timeGridWeek"
             }}
-            editable={true}
             droppable={true}
-            events={events}
             drop={handleEventReceive}
-            eventDrop={handleEventDrop}
-            eventClick={handleEventClick}
             height="100%"
-            dayMaxEvents={true}
+            // Hide event pills by not passing `events={...}` at all.
+            dayCellClassNames={(arg) => {
+              const hasEvents = scheduledCards.some(({ card }) => {
+                const d = new Date(card.dueDate)
+                return d.getDate() === arg.date.getDate() && 
+                       d.getMonth() === arg.date.getMonth() && 
+                       d.getFullYear() === arg.date.getFullYear()
+              })
+              
+              // If it has tasks, apply a distinct background color. Always show pointer for interactivity.
+              return hasEvents 
+                ? "bg-violet-300 cursor-pointer hover:bg-primary-100/50 transition-colors" 
+                : "cursor-pointer"
+            }}
+            dateClick={(info) => {
+              const clickedDate = info.date
+              const tasks = scheduledCards.filter(({ card }) => {
+                const d = new Date(card.dueDate)
+                return d.getDate() === clickedDate.getDate() && 
+                       d.getMonth() === clickedDate.getMonth() && 
+                       d.getFullYear() === clickedDate.getFullYear()
+              })
+              
+              setSelectedDate(clickedDate)
+              setSelectedDateTasks(tasks)
+              setIsDayModalOpen(true)
+            }}
           />
         </div>
       </div>
 
+      {/* Day Tasks Modal */}
+      {isDayModalOpen && selectedDate && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/30 backdrop-blur-[2px]">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in-up">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-800">
+                Tasks for {selectedDate.toLocaleDateString("en-US", { weekday: 'short', month: 'short', day: 'numeric' })}
+              </h3>
+              <button 
+                onClick={() => setIsDayModalOpen(false)}
+                className="text-gray-400 hover:bg-gray-100 hover:text-gray-600 p-1.5 rounded-lg transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="p-5 max-h-[60vh] overflow-y-auto custom-scrollbar space-y-3">
+              {selectedDateTasks.length === 0 ? (
+                <div className="text-center py-6 text-gray-400 text-sm">
+                  <svg className="w-10 h-10 mx-auto mb-3 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  No tasks scheduled for this day.
+                </div>
+              ) : (
+                selectedDateTasks.map(({ card, listId }) => (
+                  <div 
+                    key={card._id}
+                    onClick={() => {
+                      setIsDayModalOpen(false)
+                      handleOpenModal(card, listId)
+                    }}
+                    className="flex items-start p-3 bg-white border border-gray-100 rounded-xl cursor-pointer hover:border-primary-300 hover:bg-primary-50/30 hover:shadow-sm transition-all group"
+                  >
+                     <div className="flex-1">
+                       <p className="text-sm font-semibold text-gray-800 group-hover:text-primary-600">{card.title}</p>
+                       {card.description && <p className="text-xs text-gray-500 line-clamp-1 mt-1">{card.description}</p>}
+                     </div>
+                     {card.priority && (
+                       <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ml-3 flex-shrink-0
+                        ${card.priority === 'High' ? 'bg-red-50 text-red-600' : 
+                          card.priority === 'Medium' ? 'bg-amber-50 text-amber-600' : 
+                          'bg-green-50 text-green-600'}`}>
+                         {card.priority}
+                       </span>
+                     )}
+                  </div>
+                ))
+              )}
+            </div>
+            
+            <div className="p-4 border-t border-gray-50 bg-gray-50/50 text-center">
+              <button 
+                onClick={() => setIsDayModalOpen(false)}
+                className="text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Task Edit Modal */}
       {modalCard && (
         <Modal
           card={modalCard}
