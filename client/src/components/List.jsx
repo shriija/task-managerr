@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react"
 import { useBoardStore } from "../context/BoardContext"
+import { useAuthStore } from "../context/AuthContext"
 import Card from "./Card"
 
-function List({ list, onOpenModal }) {
+function List({ list, onOpenModal, searchQuery, filterByMe }) {
 
   const addCard = useBoardStore(s => s.addCard)
   const deleteList = useBoardStore(s => s.deleteList)
@@ -15,6 +16,8 @@ function List({ list, onOpenModal }) {
   const [cardText, setCardText] = useState("")
   const [cardError, setCardError] = useState("")
   const [isDragOver, setIsDragOver] = useState(false)
+
+  const currentUser = useAuthStore(s => s.currentUser)
 
   const titleRef = useRef(null)
   const addCardRef = useRef(null)
@@ -229,8 +232,30 @@ const accent = getAccentColor()
           </div>
         )}
 
-        {list.cards?.map((card, index) => (
-          <div key={card._id} data-card-index={index}>
+        {(list.cards || [])
+          .map((c, i) => ({ ...c, originalIndex: i }))
+          .filter(card => {
+            let match = true;
+            if (searchQuery) {
+              const query = searchQuery.toLowerCase();
+              const titleMatch = card.title?.toLowerCase().includes(query);
+              const descMatch = card.description?.toLowerCase().includes(query);
+              match = match && (titleMatch || descMatch);
+            }
+            if (filterByMe && currentUser) {
+              // Assumes assignee might have _id or email matching the current user
+              const assignedId = card.assignedTo?._id || card.assignedTo?.id;
+              const assignedEmail = card.assignedTo?.email;
+              match = match && (
+                assignedId === currentUser._id || 
+                (assignedEmail && assignedEmail === currentUser.email) ||
+                (card.assignedTo?.name && card.assignedTo.name === currentUser.name)
+              );
+            }
+            return match;
+          })
+          .map((card) => (
+          <div key={card._id} data-card-index={card.originalIndex}>
             <Card
               card={card}
               listId={list._id}

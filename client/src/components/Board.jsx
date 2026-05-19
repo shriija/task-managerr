@@ -3,7 +3,7 @@ import { useBoardStore } from "../context/BoardContext"
 import List from "./List"
 import Modal from "./Modal"
 
-function Board() {
+function Board({ searchQuery, filterByMe }) {
 
   const lists = useBoardStore(s => s.lists)
   const board = useBoardStore(s => s.board)
@@ -70,6 +70,8 @@ function Board() {
               key={list._id}
               list={list}
               onOpenModal={handleOpenModal}
+              searchQuery={searchQuery}
+              filterByMe={filterByMe}
             />
           ))}
         </div>
