@@ -531,4 +531,28 @@ export const useBoardStore = create((set, get) => ({
     } catch (err) { console.error(err) }
   },
 
+  // ── Collaboration Actions ─────────────────────────────────────
+
+  // Add a registered user to the board by their login email
+  inviteByEmail: async (boardId, email) => {
+    const res = await axios.post(
+      `${API}/board-api/invite/email/${boardId}`,
+      { email },
+      { withCredentials: true }
+    )
+    // Update local board state with the new member list
+    set({ board: res.data.payload })
+    return res.data
+  },
+
+  // Generate (or retrieve) a shareable invite link for the board
+  generateInviteLink: async (boardId) => {
+    const res = await axios.post(
+      `${API}/board-api/invite/link/${boardId}`,
+      {},
+      { withCredentials: true }
+    )
+    return res.data.payload // { link, token }
+  },
+
 }))
