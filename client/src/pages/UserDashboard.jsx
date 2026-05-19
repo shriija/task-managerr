@@ -32,6 +32,19 @@ function UserDashboard() {
         }
       }
       fetchBoards()
+    } else if (currentView === "shared") {
+      const fetchShared = async () => {
+        try {
+          setLoading(true)
+          const res = await axios.get(`${API_URL}/board-api/shared/all`, { withCredentials: true })
+          setBoards(res.data.payload || [])
+        } catch (err) {
+          setError(err.response?.data?.message || "Failed to load shared boards")
+        } finally {
+          setLoading(false)
+        }
+      }
+      fetchShared()
     } else if (currentView === "trash") {
       fetchDeletedBoards()
     }
@@ -78,6 +91,17 @@ function UserDashboard() {
             My Boards
           </button>
           <button
+            onClick={() => setCurrentView("shared")}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-sm font-medium
+              ${currentView === "shared" ? "bg-primary-50 text-primary-600" : "text-gray-600 hover:bg-gray-50"}
+            `}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+            </svg>
+            Shared Boards
+          </button>
+          <button
             onClick={() => setCurrentView("trash")}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-sm font-medium
               ${currentView === "trash" ? "bg-red-50 text-red-600" : "text-gray-600 hover:bg-gray-50"}
@@ -95,11 +119,11 @@ function UserDashboard() {
       <main className="flex-1 p-8">
 
         <h1 className="text-3xl font-black mb-8 mt-20">
-          {currentView === "boards" ? "My Boards" : "Trash"}
+          {currentView === "boards" ? "My Boards" : currentView === "shared" ? "Shared Boards" : "Trash"}
         </h1>
 
         {/* Loading */}
-        {loading && currentView === "boards" && (
+        {loading && (currentView === "boards" || currentView === "shared") && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="animate-pulse bg-gray-200 rounded-xl h-32" />
@@ -113,18 +137,20 @@ function UserDashboard() {
         )}
 
         {/* Boards grid */}
-        {currentView === "boards" && !loading && !error && (
+        {(currentView === "boards" || currentView === "shared") && !loading && !error && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             {/* Create New Board Card */}
-            <div
-              onClick={() => navigate("/create-board")}
-              className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center
-                         justify-center cursor-pointer hover:border-primary-400
-                         hover:bg-primary-50/50 transition-all duration-200 group"
-            >
-              <span className="text-4xl text-gray-300 group-hover:text-primary-400 transition-colors">+</span>
-              <p className="font-bold mt-2 text-gray-500 group-hover:text-primary-600 transition-colors">Create Board</p>
-            </div>
+            {currentView === "boards" && (
+              <div
+                onClick={() => navigate("/create-board")}
+                className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center
+                           justify-center cursor-pointer hover:border-primary-400
+                           hover:bg-primary-50/50 transition-all duration-200 group"
+              >
+                <span className="text-4xl text-gray-300 group-hover:text-primary-400 transition-colors">+</span>
+                <p className="font-bold mt-2 text-gray-500 group-hover:text-primary-600 transition-colors">Create Board</p>
+              </div>
+            )}
 
             {/* Dynamic Boards */}
             {boards.map((board) => (
@@ -149,15 +175,30 @@ function UserDashboard() {
                     month: "short", day: "numeric", year: "numeric"
                   })}
                 </p>
-                <button
-                  onClick={(e) => handleDeleteBoard(e, board._id)}
-                  className="absolute top-4 right-4 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-2"
-                  title="Move to Trash"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                  </svg>
-                </button>
+                {currentView === "shared" && board.owner && (
+                  <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-md border border-gray-100 shadow-sm">
+                    <span className="text-[10px] font-medium text-gray-500">Owner:</span>
+                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-[8px] font-bold text-white">
+                      {board.owner.avatar ? (
+                        <img src={board.owner.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                      ) : (
+                        board.owner.name?.charAt(0).toUpperCase() || "O"
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {currentView !== "shared" && (
+                  <button
+                    onClick={(e) => handleDeleteBoard(e, board._id)}
+                    className="absolute top-4 right-4 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-2"
+                    title="Move to Trash"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                  </button>
+                )}
               </div>
             ))}
           </div>

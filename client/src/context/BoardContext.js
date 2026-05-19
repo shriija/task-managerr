@@ -323,7 +323,8 @@ export const useBoardStore = create((set, get) => ({
         dueDate: updates.dueDate,
         priority: updates.priority,
         status: updates.status,
-        assignedTo: updates.assignedTo && typeof updates.assignedTo === 'object' ? updates.assignedTo._id : updates.assignedTo
+        assignedTo: updates.assignedTo && typeof updates.assignedTo === 'object' ? updates.assignedTo._id : updates.assignedTo,
+        assignees: updates.assignees ? updates.assignees.map(a => typeof a === 'object' ? a._id : a) : undefined
       }, { withCredentials: true })
 
       const savedCard = res.data.payload
@@ -532,6 +533,17 @@ export const useBoardStore = create((set, get) => ({
   },
 
   // ── Collaboration Actions ─────────────────────────────────────
+
+  updateBoardSettings: async (boardId, updates) => {
+    try {
+      const res = await axios.put(
+        `${API}/board-api/updateBoard/${boardId}`,
+        updates,
+        { withCredentials: true }
+      )
+      set({ board: res.data.payload })
+    } catch (err) { console.error(err) }
+  },
 
   // Add a registered user to the board by their login email
   inviteByEmail: async (boardId, email) => {

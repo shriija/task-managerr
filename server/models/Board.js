@@ -31,6 +31,10 @@ const boardSchema = new Schema(
       type: Date,
       default: null,
     },
+    allowMultipleAssignees: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     strict: true,

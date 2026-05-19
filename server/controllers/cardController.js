@@ -31,6 +31,7 @@ export const addCard=async(req,res)=>{
             ...createCard,
             createdBy: req.userId,
             assignedTo: assignedUserId,
+            assignees: createCard.assignees || [],
             status: createCard.status || initialStatus
         })
         let saveCard = await newCard.save();
@@ -52,11 +53,19 @@ export const addCard=async(req,res)=>{
                 if (assignedUserId && assignedUserId.toString() !== req.userId.toString()) {
                     await checkAndAdd(assignedUserId);
                 }
+                if (createCard.assignees && Array.isArray(createCard.assignees)) {
+                    for (const assignee of createCard.assignees) {
+                        if (assignee.toString() !== req.userId.toString()) {
+                            await checkAndAdd(assignee);
+                        }
+                    }
+                }
             }
         }
 
         saveCard = await CardModel.findById(saveCard._id)
             .populate("assignedTo", "name email avatar")
+            .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar");
 
         res.status(201).json({message:"New card added successfully", payload:saveCard})
@@ -72,6 +81,7 @@ export const getCardById=async(req,res)=>{
     try{
         const card=await CardModel.findById(getCard)
             .populate("assignedTo", "name email avatar")
+            .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar")
         if(card){res.status(200).json({message:"Card fetched successfully",payload:card})}
         else{res.status(404).json({message:"Card not found"})}
@@ -87,6 +97,7 @@ export const getCards=async(req,res)=>{
         const cards=await CardModel.find({list:list, isDeleted: { $ne: true }})
             .sort({ position: 1 })
             .populate("assignedTo", "name email avatar")
+            .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar")
         res.status(200).json({message:"Cards fetched",payload:cards})
     }catch(error){
@@ -97,7 +108,7 @@ export const getCards=async(req,res)=>{
 //Update card
 export const updateCard=async(req,res)=>{
     const cardId=req.params.id
-    const {title, description, dueDate, priority, status, assignedTo}=req.body
+    const {title, description, dueDate, priority, status, assignedTo, assignees}=req.body
     if(dueDate){
         const date= new Date();
         const due=new Date(dueDate);
@@ -116,6 +127,25 @@ export const updateCard=async(req,res)=>{
         if (priority !== undefined) updateFields.priority = priority
         if (status !== undefined) {
             updateFields.status = status
+        }
+        if (assignees !== undefined) {
+            updateFields.assignees = assignees;
+            if (assignees && Array.isArray(assignees)) {
+                const list = await ListModel.findById(card.list);
+                if (list) {
+                    const board = await BoardModel.findById(list.board);
+                    if (board) {
+                        for (const assignee of assignees) {
+                            const isOwner = board.owner.toString() === assignee.toString();
+                            const isMember = board.members.some(m => m.toString() === assignee.toString());
+                            if (!isOwner && !isMember) {
+                                board.members.push(assignee);
+                            }
+                        }
+                        await board.save();
+                    }
+                }
+            }
         }
         if (assignedTo !== undefined) {
             updateFields.assignedTo = assignedTo
@@ -136,6 +166,7 @@ export const updateCard=async(req,res)=>{
         }
         const updatedCard=await CardModel.findByIdAndUpdate(cardId, updateFields, {new:true})
             .populate("assignedTo", "name email avatar")
+            .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar")
         res.status(200).json({message:"Card updated successfully",payload:updatedCard})
     }catch(error){
@@ -194,6 +225,7 @@ export const moveCard=async(req,res)=>{
 
         const updatedCard = await CardModel.findById(cardId)
             .populate("assignedTo", "name email avatar")
+            .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar");
         res.status(200).json({ message: "Card moved successfully", payload: updatedCard });
     }catch(error){
@@ -231,6 +263,7 @@ export const getDeletedCardsByBoard = async (req, res) => {
             isDeleted: true
         })
         .populate("assignedTo", "name email avatar")
+        .populate("assignees", "name email avatar")
         .populate("createdBy", "name email avatar")
         res.status(200).json({ message: "Deleted cards fetched", payload: deletedCards })
     } catch (error) {
@@ -247,6 +280,7 @@ export const restoreCard = async (req, res) => {
             { new: true }
         )
         .populate("assignedTo", "name email avatar")
+        .populate("assignees", "name email avatar")
         .populate("createdBy", "name email avatar")
 
         if (restoredCard) {

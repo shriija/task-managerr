@@ -17,6 +17,7 @@ function Modal({ card, listId, onClose }) {
   const [priority, setPriority] = useState(card?.priority || "")
   const [status, setStatus] = useState(card?.status || "to do")
   const [assignedTo, setAssignedTo] = useState(card?.assignedTo || null)
+  const [assignees, setAssignees] = useState(card?.assignees || [])
 
   const [searchTerm, setSearchTerm] = useState("")
   const [searchResults, setSearchResults] = useState([])
@@ -80,7 +81,8 @@ function Modal({ card, listId, onClose }) {
       dueDate: dueDate || null,
       priority: priority || "",
       status: status || "to do",
-      assignedTo: assignedTo || null
+      assignedTo: assignedTo || null,
+      assignees: assignees || []
     })
     onClose()
   }
@@ -157,41 +159,68 @@ function Modal({ card, listId, onClose }) {
             {/* Assignee Search Dropdown */}
             <div className="relative" ref={assigneeRef}>
               <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">
-                Assignee
+                {board?.allowMultipleAssignees ? "Assignees" : "Assignee"}
               </label>
               
               <div 
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
                            text-gray-700 bg-white flex items-center justify-between
-                           hover:border-primary-300 transition-all cursor-pointer shadow-sm"
+                           hover:border-primary-300 transition-all cursor-pointer shadow-sm min-h-[46px]"
               >
-                {assignedTo ? (
-                  <div className="flex items-center gap-2 overflow-hidden">
-                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary-400 to-primary-600
-                                    flex items-center justify-center flex-shrink-0 text-white text-[9px] font-bold">
-                      {assignedTo.avatar ? (
-                        <img src={assignedTo.avatar} alt="" className="w-full h-full rounded-full object-cover" />
-                      ) : (
-                        assignedTo.name?.charAt(0).toUpperCase() || "A"
+                {!board?.allowMultipleAssignees ? (
+                  assignedTo ? (
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary-400 to-primary-600
+                                      flex items-center justify-center flex-shrink-0 text-white text-[9px] font-bold">
+                        {assignedTo.avatar ? (
+                          <img src={assignedTo.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                        ) : (
+                          assignedTo.name?.charAt(0).toUpperCase() || "A"
+                        )}
+                      </div>
+                      <span className="truncate font-medium">{assignedTo.name}</span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400">Unassigned</span>
+                  )
+                ) : (
+                  assignees.length > 0 ? (
+                    <div className="flex -space-x-1.5 overflow-hidden">
+                      {assignees.slice(0, 4).map((a, i) => (
+                        <div key={a._id || i} className="w-6 h-6 rounded-full border-2 border-white
+                                      bg-gradient-to-br from-primary-400 to-primary-600
+                                      flex items-center justify-center flex-shrink-0 text-white text-[10px] font-bold"
+                             title={a.name}>
+                          {a.avatar ? (
+                            <img src={a.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                          ) : (
+                            a.name?.charAt(0).toUpperCase() || "A"
+                          )}
+                        </div>
+                      ))}
+                      {assignees.length > 4 && (
+                        <div className="w-6 h-6 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-[10px] font-semibold text-gray-500">
+                          +{assignees.length - 4}
+                        </div>
                       )}
                     </div>
-                    <span className="truncate font-medium">{assignedTo.name}</span>
-                  </div>
-                ) : (
-                  <span className="text-gray-400">Unassigned</span>
+                  ) : (
+                    <span className="text-gray-400">Unassigned</span>
+                  )
                 )}
                 
-                <div className="flex items-center gap-1.5">
-                  {assignedTo && (
+                <div className="flex items-center gap-1.5 ml-2">
+                  {((!board?.allowMultipleAssignees && assignedTo) || (board?.allowMultipleAssignees && assignees.length > 0)) && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setAssignedTo(null);
+                        if (board?.allowMultipleAssignees) setAssignees([]);
+                        else setAssignedTo(null);
                       }}
                       className="text-gray-400 hover:text-red-500 text-xs w-4 h-4 
                                  flex items-center justify-center rounded-full hover:bg-gray-100"
-                      title="Unassign"
+                      title="Clear All"
                     >
                       ✕
                     </button>
@@ -230,13 +259,24 @@ function Modal({ card, listId, onClose }) {
                       <div className="text-center py-4 text-xs text-gray-400">No users found</div>
                     ) : (
                       (searchTerm ? searchResults : collaborators).map((user) => {
-                        const isSelected = assignedTo?._id === user._id;
+                        const isSelected = board?.allowMultipleAssignees 
+                          ? assignees.some(a => a._id === user._id)
+                          : assignedTo?._id === user._id;
+                          
                         return (
                           <div
                             key={user._id}
                             onClick={() => {
-                              setAssignedTo(user);
-                              setDropdownOpen(false);
+                              if (board?.allowMultipleAssignees) {
+                                if (isSelected) {
+                                  setAssignees(assignees.filter(a => a._id !== user._id));
+                                } else {
+                                  setAssignees([...assignees, user]);
+                                }
+                              } else {
+                                setAssignedTo(user);
+                                setDropdownOpen(false);
+                              }
                               setSearchTerm("");
                             }}
                             className={`flex items-center justify-between p-2 rounded-xl text-xs cursor-pointer

@@ -175,3 +175,40 @@ export const permanentDeleteBoard = async (req, res) => {
     res.status(500).json({ error: error.message })
   }
 }
+
+export const updateBoard = async (req, res) => {
+  try {
+    const board = await BoardModel.findById(req.params.id);
+    if (!board) return res.status(404).json({ message: "Board not found" });
+    if (board.owner.toString() !== req.userId) {
+      return res.status(403).json({ message: "Only the board owner can update settings" });
+    }
+    
+    const { title, allowMultipleAssignees } = req.body;
+    if (title !== undefined) board.title = title;
+    if (allowMultipleAssignees !== undefined) board.allowMultipleAssignees = allowMultipleAssignees;
+    
+    await board.save();
+    
+    const updated = await BoardModel.findById(board._id)
+      .populate("owner", "name email avatar")
+      .populate("members", "name email avatar");
+      
+    res.json({ message: "Board updated successfully", payload: updated });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export const getSharedBoards = async (req, res) => {
+  try {
+    const boards = await BoardModel.find({
+      owner: { $ne: req.userId },
+      members: req.userId,
+      isDeleted: { $ne: true }
+    }).populate("owner", "name email avatar");
+    res.status(200).json({ message: "Shared boards fetched", payload: boards });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}

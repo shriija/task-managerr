@@ -11,7 +11,7 @@ import * as socketService from "../socket/socketService"
 function BoardPage() {
 
   const { id } = useParams()
-  const { board, loading, error, fetchBoard, addList, reset, setupSocket } = useBoardStore()
+  const { board, loading, error, fetchBoard, addList, reset, setupSocket, updateBoardSettings } = useBoardStore()
   const currentUser = useAuthStore(s => s.currentUser)
   
 
@@ -229,6 +229,18 @@ function BoardPage() {
                 </svg>
                 Invite
               </button>
+            )}
+
+            {/* Multiple Assignees Toggle */}
+            {isOwner && (
+              <label className="flex items-center gap-2 cursor-pointer ml-3">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Multiple Assignees</span>
+                <div className="relative">
+                  <input type="checkbox" className="sr-only" checked={board?.allowMultipleAssignees || false} onChange={() => updateBoardSettings(id, { allowMultipleAssignees: !board?.allowMultipleAssignees })} />
+                  <div className={`block w-10 h-6 rounded-full transition-colors ${board?.allowMultipleAssignees ? 'bg-primary-500' : 'bg-gray-200'}`}></div>
+                  <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${board?.allowMultipleAssignees ? 'transform translate-x-4' : ''}`}></div>
+                </div>
+              </label>
             )}
           </div>
 
