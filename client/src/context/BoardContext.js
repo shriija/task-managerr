@@ -545,6 +545,21 @@ export const useBoardStore = create((set, get) => ({
     } catch (err) { console.error(err) }
   },
 
+  manageBoardMember: async (boardId, memberId, action) => {
+    try {
+      const res = await axios.put(
+        `${API}/board-api/manage-member/${boardId}`,
+        { memberId, action },
+        { withCredentials: true }
+      )
+      set({ board: res.data.payload })
+      return res.data
+    } catch (err) {
+      console.error(err)
+      throw err
+    }
+  },
+
   // Add a registered user to the board by their login email
   inviteByEmail: async (boardId, email) => {
     const res = await axios.post(

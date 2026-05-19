@@ -52,7 +52,8 @@ export const inviteByEmail = async (req, res) => {
     // Return updated board with populated members
     const updatedBoard = await BoardModel.findById(boardId)
       .populate("owner", "name email avatar")
-      .populate("members", "name email avatar");
+      .populate("members", "name email avatar")
+      .populate("admins", "name email avatar");
 
     res.status(200).json({
       message: `${invitee.name} has been added to the board`,

@@ -6,6 +6,7 @@ import Board from "../components/Board"
 import CalendarView from "../components/CalendarView"
 import TrashView from "../components/TrashView"
 import InviteModal from "../components/InviteModal"
+import MembersModal from "../components/MembersModal"
 import * as socketService from "../socket/socketService"
 
 function BoardPage() {
@@ -18,6 +19,7 @@ function BoardPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [currentView, setCurrentView] = useState("board")
   const [showInvite, setShowInvite] = useState(false)
+  const [showMembers, setShowMembers] = useState(false)
 
   const isOwner = board?.owner?._id === currentUser?._id || board?.owner === currentUser?._id
 
@@ -189,7 +191,11 @@ function BoardPage() {
             </h2>
 
             {/* Members */}
-            <div className="flex -space-x-2.5 ml-2">
+            <div 
+              onClick={() => setShowMembers(true)}
+              className="flex -space-x-2.5 ml-2 cursor-pointer hover:opacity-85 active:scale-95 transition-all"
+              title="View & Manage Members"
+            >
               {(board?.members || []).slice(0, 4).map((m, i) => (
                 <div
                   key={i}
@@ -282,6 +288,11 @@ function BoardPage() {
       <InviteModal
         boardId={id}
         onClose={() => setShowInvite(false)}
+      />
+    )}
+    {showMembers && (
+      <MembersModal
+        onClose={() => setShowMembers(false)}
       />
     )}
   </>

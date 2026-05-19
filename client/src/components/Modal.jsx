@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { useBoardStore } from "../context/BoardContext"
+import { useAuthStore } from "../context/AuthContext"
 import { API_URL } from "../services/api"
 import axios from "axios"
 
@@ -95,13 +96,22 @@ function Modal({ card, listId, onClose }) {
   // Get board owner and members for collaborated list
   const owner = board?.owner
   const members = board?.members || []
-  const collaborators = []
+  let collaborators = []
   if (owner) collaborators.push(owner)
   members.forEach(m => {
     if (m && m._id && !collaborators.some(c => c._id === m._id)) {
       collaborators.push(m)
     }
   })
+
+  const currentUser = useAuthStore(s => s.currentUser)
+  const isBoardOwner = currentUser?._id === (board?.owner?._id || board?.owner)
+  const isBoardAdmin = board?.admins?.some(a => (a._id || a) === currentUser?._id)
+  const canAssignOthers = isBoardOwner || isBoardAdmin
+
+  if (!canAssignOthers) {
+    collaborators = collaborators.filter(c => c._id === currentUser?._id)
+  }
 
   if (!card) return null
 
@@ -125,11 +135,12 @@ function Modal({ card, listId, onClose }) {
             ref={titleRef}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            disabled={!canAssignOthers}
             placeholder="Card title"
-            className="text-xl font-bold w-full outline-none border-none
+            className={`text-xl font-bold w-full outline-none border-none
                        text-gray-900 placeholder-gray-300
                        pb-3 border-b border-gray-100
-                       focus:border-primary-300 transition-colors"
+                       focus:border-primary-300 transition-colors ${!canAssignOthers ? "bg-transparent cursor-not-allowed" : ""}`}
           />
 
           <div className="border-t border-gray-100 my-4" />
@@ -163,10 +174,11 @@ function Modal({ card, listId, onClose }) {
               </label>
               
               <div 
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
+                onClick={() => canAssignOthers && setDropdownOpen(!dropdownOpen)}
+                className={`w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
                            text-gray-700 bg-white flex items-center justify-between
-                           hover:border-primary-300 transition-all cursor-pointer shadow-sm min-h-[46px]"
+                           hover:border-primary-300 transition-all shadow-sm min-h-[46px]
+                           ${canAssignOthers ? "cursor-pointer" : "cursor-not-allowed bg-gray-50/50"}`}
               >
                 {!board?.allowMultipleAssignees ? (
                   assignedTo ? (
@@ -211,7 +223,7 @@ function Modal({ card, listId, onClose }) {
                 )}
                 
                 <div className="flex items-center gap-1.5 ml-2">
-                  {((!board?.allowMultipleAssignees && assignedTo) || (board?.allowMultipleAssignees && assignees.length > 0)) && (
+                  {canAssignOthers && ((!board?.allowMultipleAssignees && assignedTo) || (board?.allowMultipleAssignees && assignees.length > 0)) && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -320,12 +332,13 @@ function Modal({ card, listId, onClose }) {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              disabled={!canAssignOthers}
               rows={4}
               placeholder="Add a detailed description..."
-              className="w-full border border-gray-200 rounded-xl p-3 text-sm
+              className={`w-full border border-gray-200 rounded-xl p-3 text-sm
                          text-gray-700 placeholder-gray-300
                          focus:outline-none focus:ring-2 focus:ring-primary-200
-                         focus:border-primary-300 transition-all resize-none"
+                         focus:border-primary-300 transition-all resize-none ${!canAssignOthers ? "bg-gray-50/50 cursor-not-allowed" : ""}`}
             />
           </div>
 
@@ -340,10 +353,11 @@ function Modal({ card, listId, onClose }) {
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
+                disabled={!canAssignOthers}
+                className={`w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
                            text-gray-700
                            focus:outline-none focus:ring-2 focus:ring-primary-200
-                           focus:border-primary-300 transition-all"
+                           focus:border-primary-300 transition-all ${!canAssignOthers ? "bg-gray-50/50 cursor-not-allowed" : ""}`}
               />
             </div>
 
@@ -354,10 +368,11 @@ function Modal({ card, listId, onClose }) {
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
+                disabled={!canAssignOthers}
+                className={`w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
                            text-gray-700 bg-white
                            focus:outline-none focus:ring-2 focus:ring-primary-200
-                           focus:border-primary-300 transition-all cursor-pointer"
+                           focus:border-primary-300 transition-all ${canAssignOthers ? "cursor-pointer" : "cursor-not-allowed bg-gray-50/50"}`}
               >
                 <option value="">None</option>
                 <option value="High">🔴 High</option>
@@ -371,14 +386,18 @@ function Modal({ card, listId, onClose }) {
           {/* Actions */}
           <div className="flex items-center justify-between pt-4 border-t border-gray-100">
 
-            <button
-              onClick={handleDelete}
-              className="text-sm font-medium text-red-500 hover:text-red-600
-                         hover:bg-red-50 px-4 py-2 rounded-lg
-                         transition-all duration-200 cursor-pointer"
-            >
-              Delete Card
-            </button>
+            {canAssignOthers ? (
+              <button
+                onClick={handleDelete}
+                className="text-sm font-medium text-red-500 hover:text-red-600
+                           hover:bg-red-50 px-4 py-2 rounded-lg
+                           transition-all duration-200 cursor-pointer"
+              >
+                Delete Card
+              </button>
+            ) : (
+              <div />
+            )}
 
             <div className="flex gap-2">
               <button

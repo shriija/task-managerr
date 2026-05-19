@@ -1,5 +1,5 @@
 import exp from 'express'
-import { addBoard, getBoard, deleteBoard, getMyBoards, getDeletedBoards, restoreBoard, permanentDeleteBoard, updateBoard, getSharedBoards } from '../controllers/boardController.js'
+import { addBoard, getBoard, deleteBoard, getMyBoards, getDeletedBoards, restoreBoard, permanentDeleteBoard, updateBoard, getSharedBoards, manageMember } from '../controllers/boardController.js'
 import { inviteByEmail, generateInviteLink, acceptInvite } from '../controllers/inviteController.js'
 import verifyToken from '../utils/verifyToken.js'
 
@@ -14,6 +14,8 @@ BoardApp.get('/shared/all', verifyToken, getSharedBoards)
 BoardApp.get('/trash/deleted', verifyToken, getDeletedBoards)
 
 BoardApp.put('/updateBoard/:id', verifyToken, updateBoard)
+
+BoardApp.put('/manage-member/:boardId', verifyToken, manageMember)
 
 // ── Invite routes ─────────────────────────────────────────────
 BoardApp.post('/invite/email/:boardId', verifyToken, inviteByEmail)
