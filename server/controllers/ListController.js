@@ -22,18 +22,13 @@ export const AddList = async(req,res) =>{
 export const deleteList = async(req,res) =>{
     try {
         const listId = req.params.id
-        const response = await ListModel.findByIdAndUpdate(
-            listId,
-            { isDeleted: true, deletedAt: new Date() },
-            { new: true }
-        )
-        
+        const response = await ListModel.findByIdAndDelete(listId)
         if(!response){
             return res.status(404).json({message:"list not found"})
         }
         
-        // Optional: Cascade soft delete to cards could be done here, 
-        // but hiding the list hides the cards.
+        // Cascade delete all cards in this list
+        await CardModel.deleteMany({ list: listId })
         
         res.status(200).json({message:"list deleted",payload:response})
     } catch (error) {
@@ -43,7 +38,7 @@ export const deleteList = async(req,res) =>{
 export const getList = async(req,res) =>{
     try {
         const listId = req.params.id;
-        const response = await ListModel.findOne({ _id: listId, isDeleted: { $ne: true } })
+        const response = await ListModel.findById(listId)
         if(!response){
             return res.status(404).json({message:"list not found"})
         }
@@ -56,8 +51,7 @@ export const getListsByBoard = async (req, res) => {
   try {
 
     const lists = await ListModel.find({
-      board: req.params.boardId,
-      isDeleted: { $ne: true }
+      board: req.params.boardId
     }).sort({ position: 1 })
 
     res.json({
@@ -80,76 +74,5 @@ export const updateList = async(req,res) =>{
     res.status(200).json({message:"List updated successfully",payload:updatedList})
   }catch(error){
     res.status(500).json({message:"Could not update list",error:error.message})
-  }
-}
-
-export const getDeletedLists = async (req, res) => {
-  try {
-    const lists = await ListModel.find({
-      board: req.params.boardId,
-      isDeleted: true
-    })
-
-    res.json({
-      message: "Deleted lists fetched",
-      payload: lists
-    })
-  } catch (error) {
-    res.status(500).json({
-      error: error.message
-    })
-  }
-}
-
-export const restoreList = async (req, res) => {
-  try {
-    const listId = req.params.id
-
-    const response = await ListModel.findByIdAndUpdate(
-      listId,
-      { isDeleted: false, deletedAt: null },
-      { new: true }
-    )
-
-    if (!response) {
-      return res.status(404).json({
-        message: "list not found"
-      })
-    }
-
-    res.status(200).json({
-      message: "list restored",
-      payload: response
-    })
-  } catch (error) {
-    res.status(500).json({
-      error: error.message
-    })
-  }
-}
-
-export const permanentDeleteList = async (req, res) => {
-  try {
-    const listId = req.params.id
-
-    const response = await ListModel.findByIdAndDelete(listId)
-
-    if (!response) {
-      return res.status(404).json({
-        message: "list not found"
-      })
-    }
-
-    // Delete all cards inside the list
-    await CardModel.deleteMany({ list: listId })
-
-    res.status(200).json({
-      message: "list permanently deleted",
-      payload: response
-    })
-  } catch (error) {
-    res.status(500).json({
-      error: error.message
-    })
   }
 }
