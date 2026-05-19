@@ -84,7 +84,7 @@ export const getCardById=async(req,res)=>{
 export const getCards=async(req,res)=>{
     const list=req.params.id
     try{
-        const cards=await CardModel.find({list:list, isDeleted: { $ne: true }})
+        const cards=await CardModel.find({list:list})
             .sort({ position: 1 })
             .populate("assignedTo", "name email avatar")
             .populate("createdBy", "name email avatar")
@@ -201,15 +201,11 @@ export const moveCard=async(req,res)=>{
     }
 }
 
-//Delete Cards (Soft Delete)
+//Delete Cards
 export const deleteCards=async(req,res)=>{
     const cardId=req.params.id
     try{
-        const deleteCard = await CardModel.findByIdAndUpdate(
-            cardId,
-            { isDeleted: true, deletedAt: new Date() },
-            { new: true }
-        )
+        const deleteCard=await CardModel.findByIdAndDelete(cardId)
         if(deleteCard){
             res.status(200).json({message:"Card deleted successfully",payload:deleteCard})
         }
@@ -218,78 +214,6 @@ export const deleteCards=async(req,res)=>{
         }
     }catch(error){
         res.status(500).json({message:"Could not delete card",error:error.message})
-    }
-}
-
-export const getDeletedCardsByBoard = async (req, res) => {
-    try {
-        const boardId = req.params.boardId;
-        
-        // Find all lists for this board (including deleted ones)
-        const lists = await ListModel.find({ board: boardId });
-        const listIds = lists.map(l => l._id);
-
-        const deletedCards = await CardModel.find({ 
-            list: { $in: listIds },
-            isDeleted: true
-        })
-        .populate("assignedTo", "name email avatar")
-        .populate("createdBy", "name email avatar")
-        
-        res.status(200).json({
-            message: "Deleted cards fetched",
-            payload: deletedCards
-        })
-    } catch (error) {
-        res.status(500).json({
-            message: "Could not fetch deleted cards",
-            error: error.message
-        })
-    }
-}
-
-export const restoreCard = async (req, res) => {
-    try {
-        const cardId = req.params.id;
-        const restoredCard = await CardModel.findByIdAndUpdate(
-            cardId,
-            { isDeleted: false, deletedAt: null },
-            { new: true }
-        )
-        .populate("assignedTo", "name email avatar")
-        .populate("createdBy", "name email avatar")
-
-        if (restoredCard) {
-            // Ensure the parent list is also restored if it was deleted
-            const parentList = await ListModel.findById(restoredCard.list);
-            if (parentList && parentList.isDeleted) {
-                await ListModel.findByIdAndUpdate(
-                    parentList._id, 
-                    { isDeleted: false, deletedAt: null }
-                );
-            }
-
-            res.status(200).json({ message: "Card restored successfully", payload: restoredCard })
-        } else {
-            res.status(404).json({ message: "Card not found" })
-        }
-    } catch (error) {
-        res.status(500).json({ message: "Could not restore card", error: error.message })
-    }
-}
-
-export const permanentDeleteCard = async (req, res) => {
-    try {
-        const cardId = req.params.id;
-        const deletedCard = await CardModel.findByIdAndDelete(cardId);
-        
-        if (deletedCard) {
-            res.status(200).json({ message: "Card permanently deleted", payload: deletedCard })
-        } else {
-            res.status(404).json({ message: "Card not found" })
-        }
-    } catch (error) {
-        res.status(500).json({ message: "Could not permanently delete card", error: error.message })
     }
 }
 

@@ -1,5 +1,5 @@
 import exp from 'express'
-import { AddList, deleteList, getListsByBoard, getList, updateList, getDeletedLists, restoreList, permanentDeleteList } from '../controllers/ListController.js';
+import { AddList, deleteList, getListsByBoard, getList, updateList } from '../controllers/ListController.js';
 import verifyToken from '../utils/verifyToken.js'
 const ListApp = exp.Router()
 
@@ -17,10 +17,4 @@ ListApp.get('/getListById/:id', verifyToken, getList )
 
 //update list
 ListApp.put('/updateList/:id', verifyToken, updateList)
-
-// Trash endpoints
-ListApp.get('/trash/deleted/:boardId', verifyToken, getDeletedLists)
-ListApp.put('/restore/:id', verifyToken, restoreList)
-ListApp.delete('/permanent/:id', verifyToken, permanentDeleteList)
-
 export default ListApp;
