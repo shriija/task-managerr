@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router"
+import { useNavigate, useParams } from "react-router"
 import axios from "axios"
 import { API_URL } from "../services/api"
 import { useBoardStore } from "../context/BoardContext"
@@ -7,16 +7,23 @@ import { useBoardStore } from "../context/BoardContext"
 function UserDashboard() {
 
   const navigate = useNavigate()
+  const { tab } = useParams()
+  const currentView = tab || "boards"
 
   const [boards, setBoards] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
-  const [currentView, setCurrentView] = useState("boards") // "boards" or "trash"
   const deletedBoards = useBoardStore(s => s.deletedBoards)
   const fetchDeletedBoards = useBoardStore(s => s.fetchDeletedBoards)
   const restoreBoard = useBoardStore(s => s.restoreBoard)
   const permanentDeleteBoard = useBoardStore(s => s.permanentDeleteBoard)
+
+  useEffect(() => {
+    if (!tab || !["boards", "shared", "trash"].includes(tab)) {
+      navigate("/dashboard/boards", { replace: true })
+    }
+  }, [tab, navigate])
 
   useEffect(() => {
     if (currentView === "boards") {
@@ -70,7 +77,7 @@ function UserDashboard() {
 
         <button
           onClick={() => navigate("/create-board")}
-          className="w-full bg-gradient-to-r from-primary-500 to-primary-600
+          className="w-full bg-linear-to-r from-primary-500 to-primary-600
                      hover:from-primary-600 hover:to-primary-700
                      text-white py-2.5 rounded-xl mb-6 font-semibold text-sm
                      shadow-sm hover:shadow transition-all duration-200 cursor-pointer"
@@ -80,7 +87,7 @@ function UserDashboard() {
 
         <div className="space-y-1">
           <button
-            onClick={() => setCurrentView("boards")}
+            onClick={() => navigate("/dashboard/boards")}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-sm font-medium
               ${currentView === "boards" ? "bg-primary-50 text-primary-600" : "text-gray-600 hover:bg-gray-50"}
             `}
@@ -91,7 +98,7 @@ function UserDashboard() {
             My Boards
           </button>
           <button
-            onClick={() => setCurrentView("shared")}
+            onClick={() => navigate("/dashboard/shared")}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-sm font-medium
               ${currentView === "shared" ? "bg-primary-50 text-primary-600" : "text-gray-600 hover:bg-gray-50"}
             `}
@@ -102,7 +109,7 @@ function UserDashboard() {
             Shared Boards
           </button>
           <button
-            onClick={() => setCurrentView("trash")}
+            onClick={() => navigate("/dashboard/trash")}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-sm font-medium
               ${currentView === "trash" ? "bg-red-50 text-red-600" : "text-gray-600 hover:bg-gray-50"}
             `}
@@ -163,7 +170,7 @@ function UserDashboard() {
                            cursor-pointer transition-all duration-200"
               >
                 <div className="w-10 h-10 rounded-xl mb-3
-                               bg-gradient-to-br from-primary-400 to-primary-600
+                               bg-linear-to-br from-primary-400 to-primary-600
                                flex items-center justify-center shadow-sm">
                   <span className="text-white font-bold text-sm">
                     {board.title?.charAt(0)?.toUpperCase() || "B"}

@@ -2,13 +2,26 @@ import { CardModel } from "../models/Card.js";
 import { ListModel } from "../models/List.js";
 import { BoardModel } from "../models/Board.js";
 
+// Helper to parse date string in local timezone to avoid timezone shifting
+const parseLocalDate = (dateStr) => {
+    if (!dateStr) return new Date();
+    const cleanStr = typeof dateStr === "string" ? dateStr.split("T")[0] : dateStr;
+    const parts = cleanStr.toString().split("-");
+    if (parts.length === 3) {
+        return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    }
+    return new Date(dateStr);
+};
+
 //Create Cards
 export const addCard=async(req,res)=>{
     const createCard = req.body;
     if(createCard.dueDate){
-        const date= new Date();
-        const dueDate=new Date(createCard.dueDate);
-        if(dueDate<date){
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const due = parseLocalDate(createCard.dueDate);
+        due.setHours(0, 0, 0, 0);
+        if(due < today){
             return res.status(400).json({message:"Due date cannot be in the past",payload: createCard.dueDate} )
         }
     }
@@ -126,9 +139,11 @@ export const updateCard=async(req,res)=>{
     const cardId=req.params.id
     const {title, description, dueDate, priority, status, assignedTo, assignees}=req.body
     if(dueDate){
-        const date= new Date();
-        const due=new Date(dueDate);
-        if(due<date){
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const due = parseLocalDate(dueDate);
+        due.setHours(0, 0, 0, 0);
+        if(due < today){
             return res.status(400).json({message:"Due date cannot be in the past",payload:dueDate})
         }
     }

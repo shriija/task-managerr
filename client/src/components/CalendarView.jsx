@@ -212,17 +212,80 @@ function CalendarView() {
             height="100%"
             // Hide event pills by not passing `events={...}` at all.
             dayCellClassNames={(arg) => {
-              const hasEvents = scheduledCards.some(({ card }) => {
+              const dayTasks = scheduledCards.filter(({ card }) => {
                 const d = new Date(card.dueDate)
                 return d.getDate() === arg.date.getDate() && 
                        d.getMonth() === arg.date.getMonth() && 
                        d.getFullYear() === arg.date.getFullYear()
               })
               
-              // If it has tasks, apply a distinct background color. Always show pointer for interactivity.
-              return hasEvents 
-                ? "bg-violet-300 cursor-pointer hover:bg-primary-100/50 transition-colors" 
-                : "cursor-pointer"
+              if (dayTasks.length === 0) return "cursor-pointer"
+              
+              const incompleteTasks = dayTasks.filter(({ card }) => card.status !== "completed")
+              
+              if (incompleteTasks.length === 0) {
+                return "bg-emerald-50/60 cursor-pointer hover:bg-emerald-100/60 transition-colors"
+              }
+              
+              const today = new Date()
+              today.setHours(0, 0, 0, 0)
+              
+              const hasPending = incompleteTasks.some(({ card }) => {
+                const due = new Date(card.dueDate)
+                due.setHours(0, 0, 0, 0)
+                return due < today
+              })
+              
+              return hasPending 
+                ? "bg-red-100 cursor-pointer hover:bg-red-200 transition-colors" 
+                : "bg-violet-300 cursor-pointer hover:bg-primary-100/50 transition-colors"
+            }}
+            dayCellContent={(arg) => {
+              const dayTasks = scheduledCards.filter(({ card }) => {
+                const d = new Date(card.dueDate)
+                return d.getDate() === arg.date.getDate() && 
+                       d.getMonth() === arg.date.getMonth() && 
+                       d.getFullYear() === arg.date.getFullYear()
+              })
+
+              if (dayTasks.length === 0) {
+                return <span>{arg.dayNumberText}</span>
+              }
+
+              const incompleteTasks = dayTasks.filter(({ card }) => card.status !== "completed")
+
+              if (incompleteTasks.length === 0) {
+                return (
+                  <div className="w-full flex items-center justify-between pr-2 gap-1 select-none">
+                    <span className="font-semibold">{arg.dayNumberText}</span>
+                    <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100">
+                      Done
+                    </span>
+                  </div>
+                )
+              }
+
+              const today = new Date()
+              today.setHours(0, 0, 0, 0)
+
+              const hasPending = incompleteTasks.some(({ card }) => {
+                const due = new Date(card.dueDate)
+                due.setHours(0, 0, 0, 0)
+                return due < today
+              })
+
+              return (
+                <div className="w-full flex items-center justify-between pr-2 gap-1 select-none">
+                  <span className="font-semibold">{arg.dayNumberText}</span>
+                  <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider ${
+                    hasPending 
+                      ? 'bg-red-200 text-red-700 border border-red-300 animate-pulse' 
+                      : 'bg-red-50 text-red-500 border border-red-100'
+                  }`}>
+                    {hasPending ? 'Pending' : 'Due'}
+                  </span>
+                </div>
+              )
             }}
             dateClick={(info) => {
               const clickedDate = info.date
@@ -266,33 +329,44 @@ function CalendarView() {
                   No tasks scheduled for this day.
                 </div>
               ) : (
-                selectedDateTasks.map(({ card, listId }) => (
-                  <div 
-                    key={card._id}
-                    onClick={() => {
-                      setIsDayModalOpen(false)
-                      handleOpenModal(card, listId)
-                    }}
-                    className={`flex items-start p-3 border rounded-xl cursor-pointer hover:shadow-sm transition-all group ${
-                      card.status === 'completed' ? 'bg-emerald-50 border-emerald-100/60 hover:border-emerald-300' :
-                      card.status === 'in progress' ? 'bg-amber-50 border-amber-100/60 hover:border-amber-300' :
-                      'bg-blue-50 border-blue-100/60 hover:border-blue-300'
-                    }`}
-                  >
-                     <div className="flex-1">
-                       <p className="text-sm font-semibold text-gray-800 group-hover:text-primary-600">{card.title}</p>
-                       {card.description && <p className="text-xs text-gray-500 line-clamp-1 mt-1">{card.description}</p>}
-                     </div>
-                     {card.priority && (
-                       <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ml-3 flex-shrink-0
-                        ${card.priority === 'High' ? 'bg-red-50 text-red-600' : 
-                          card.priority === 'Medium' ? 'bg-amber-50 text-amber-600' : 
-                          'bg-green-50 text-green-600'}`}>
-                         {card.priority}
-                       </span>
-                     )}
-                  </div>
-                ))
+                selectedDateTasks.map(({ card, listId }) => {
+                  const isOverdue = card.dueDate && card.status !== 'completed' && new Date(card.dueDate) < new Date();
+                  return (
+                    <div 
+                      key={card._id}
+                      onClick={() => {
+                        setIsDayModalOpen(false)
+                        handleOpenModal(card, listId)
+                      }}
+                      className={`flex items-start p-3 border rounded-xl cursor-pointer hover:shadow-sm transition-all group ${
+                        isOverdue ? 'bg-red-50 border-red-100 hover:border-red-300' :
+                        card.status === 'completed' ? 'bg-emerald-50 border-emerald-100/60 hover:border-emerald-300' :
+                        card.status === 'in progress' ? 'bg-amber-50 border-amber-100/60 hover:border-amber-300' :
+                        'bg-blue-50 border-blue-100/60 hover:border-blue-300'
+                      }`}
+                    >
+                       <div className="flex-1">
+                         <div className="flex items-center gap-2">
+                           <p className="text-sm font-semibold text-gray-800 group-hover:text-primary-600">{card.title}</p>
+                           {isOverdue && (
+                             <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-red-100 text-red-600 border border-red-200 animate-pulse uppercase tracking-wider">
+                               Overdue
+                             </span>
+                           )}
+                         </div>
+                         {card.description && <p className="text-xs text-gray-500 line-clamp-1 mt-1">{card.description}</p>}
+                       </div>
+                       {card.priority && (
+                         <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ml-3 flex-shrink-0
+                          ${card.priority === 'High' ? 'bg-red-50 text-red-600' : 
+                            card.priority === 'Medium' ? 'bg-amber-50 text-amber-600' : 
+                            'bg-green-50 text-green-600'}`}>
+                           {card.priority}
+                         </span>
+                       )}
+                    </div>
+                  )
+                })
               )}
             </div>
             
