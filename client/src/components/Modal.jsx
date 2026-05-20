@@ -352,6 +352,7 @@ function Modal({ card, listId, onClose }) {
               <input
                 type="date"
                 value={dueDate}
+                min={new Date().toISOString().split("T")[0]}
                 onChange={(e) => setDueDate(e.target.value)}
                 disabled={!canAssignOthers}
                 className={`w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
