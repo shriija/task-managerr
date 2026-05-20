@@ -19,6 +19,11 @@ const boardSchema = new Schema(
       ref: "User",
       default: [],
     },
+    admins: {
+      type: [Schema.Types.ObjectId],
+      ref: "User",
+      default: [],
+    },
     background: {
       type: String,
       default: "#0052cc",
@@ -30,6 +35,10 @@ const boardSchema = new Schema(
     deletedAt: {
       type: Date,
       default: null,
+    },
+    allowMultipleAssignees: {
+      type: Boolean,
+      default: false,
     },
   },
   {

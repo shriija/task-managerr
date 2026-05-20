@@ -5,17 +5,23 @@ import { useAuthStore } from "../context/AuthContext"
 import Board from "../components/Board"
 import CalendarView from "../components/CalendarView"
 import TrashView from "../components/TrashView"
+import InviteModal from "../components/InviteModal"
+import MembersModal from "../components/MembersModal"
 import * as socketService from "../socket/socketService"
 
 function BoardPage() {
 
   const { id } = useParams()
-  const { board, loading, error, fetchBoard, addList, reset, setupSocket } = useBoardStore()
+  const { board, loading, error, fetchBoard, addList, reset, setupSocket, updateBoardSettings } = useBoardStore()
   const currentUser = useAuthStore(s => s.currentUser)
   
 
   const [searchQuery, setSearchQuery] = useState("")
   const [currentView, setCurrentView] = useState("board")
+  const [showInvite, setShowInvite] = useState(false)
+  const [showMembers, setShowMembers] = useState(false)
+
+  const isOwner = board?.owner?._id === currentUser?._id || board?.owner === currentUser?._id
 
   // Fetch board data on mount
   useEffect(() => {
@@ -96,6 +102,7 @@ function BoardPage() {
 
   // ── Main Board Layout ────────────────────────────────
   return (
+    <>
     <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
 
       {/* ─── SIDEBAR ──────────────────────────────────── */}
@@ -184,16 +191,21 @@ function BoardPage() {
             </h2>
 
             {/* Members */}
-            <div className="flex -space-x-2.5 ml-2">
+            <div 
+              onClick={() => setShowMembers(true)}
+              className="flex -space-x-2.5 ml-2 cursor-pointer hover:opacity-85 active:scale-95 transition-all"
+              title="View & Manage Members"
+            >
               {(board?.members || []).slice(0, 4).map((m, i) => (
                 <div
                   key={i}
+                  title={m?.name || m}
                   className="w-8 h-8 rounded-full border-2 border-white
                              bg-gradient-to-br from-primary-300 to-primary-500
-                             flex items-center justify-center shadow-sm"
+                             flex items-center justify-center shadow-sm cursor-default"
                 >
                   <span className="text-[10px] font-bold text-white">
-                    {typeof m === "string" ? m.charAt(0).toUpperCase() : "U"}
+                    {m?.name ? m.name.charAt(0).toUpperCase() : (typeof m === "string" ? m.charAt(0).toUpperCase() : "U")}
                   </span>
                 </div>
               ))}
@@ -206,6 +218,36 @@ function BoardPage() {
                 </div>
               )}
             </div>
+
+            {/* Invite button — owner only */}
+            {isOwner && (
+              <button
+                onClick={() => setShowInvite(true)}
+                className="flex items-center gap-1.5 px-3.5 py-1.5
+                           bg-gradient-to-r from-primary-500 to-primary-600
+                           hover:from-primary-600 hover:to-primary-700
+                           text-white text-xs font-semibold rounded-lg
+                           shadow-sm hover:shadow-md transition-all duration-200 ml-1"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round"
+                    d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+                </svg>
+                Invite
+              </button>
+            )}
+
+            {/* Multiple Assignees Toggle */}
+            {isOwner && (
+              <label className="flex items-center gap-2 cursor-pointer ml-3">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Multiple Assignees</span>
+                <div className="relative">
+                  <input type="checkbox" className="sr-only" checked={board?.allowMultipleAssignees || false} onChange={() => updateBoardSettings(id, { allowMultipleAssignees: !board?.allowMultipleAssignees })} />
+                  <div className={`block w-10 h-6 rounded-full transition-colors ${board?.allowMultipleAssignees ? 'bg-primary-500' : 'bg-gray-200'}`}></div>
+                  <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${board?.allowMultipleAssignees ? 'transform translate-x-4' : ''}`}></div>
+                </div>
+              </label>
+            )}
           </div>
 
           {/* Search */}
@@ -240,6 +282,20 @@ function BoardPage() {
       </main>
 
     </div>
+
+    {/* ─── INVITE MODAL (portal-level overlay) ─────────────── */}
+    {showInvite && (
+      <InviteModal
+        boardId={id}
+        onClose={() => setShowInvite(false)}
+      />
+    )}
+    {showMembers && (
+      <MembersModal
+        onClose={() => setShowMembers(false)}
+      />
+    )}
+  </>
   )
 }
 
