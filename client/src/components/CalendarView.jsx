@@ -221,13 +221,71 @@ function CalendarView() {
               
               if (dayTasks.length === 0) return "cursor-pointer"
               
-              const hasOverdue = dayTasks.some(({ card }) => 
-                card.status !== "completed" && new Date(card.dueDate) < new Date()
-              )
+              const incompleteTasks = dayTasks.filter(({ card }) => card.status !== "completed")
               
-              return hasOverdue 
+              if (incompleteTasks.length === 0) {
+                return "bg-emerald-50/60 cursor-pointer hover:bg-emerald-100/60 transition-colors"
+              }
+              
+              const today = new Date()
+              today.setHours(0, 0, 0, 0)
+              
+              const hasPending = incompleteTasks.some(({ card }) => {
+                const due = new Date(card.dueDate)
+                due.setHours(0, 0, 0, 0)
+                return due < today
+              })
+              
+              return hasPending 
                 ? "bg-red-100 cursor-pointer hover:bg-red-200 transition-colors" 
                 : "bg-violet-300 cursor-pointer hover:bg-primary-100/50 transition-colors"
+            }}
+            dayCellContent={(arg) => {
+              const dayTasks = scheduledCards.filter(({ card }) => {
+                const d = new Date(card.dueDate)
+                return d.getDate() === arg.date.getDate() && 
+                       d.getMonth() === arg.date.getMonth() && 
+                       d.getFullYear() === arg.date.getFullYear()
+              })
+
+              if (dayTasks.length === 0) {
+                return <span>{arg.dayNumberText}</span>
+              }
+
+              const incompleteTasks = dayTasks.filter(({ card }) => card.status !== "completed")
+
+              if (incompleteTasks.length === 0) {
+                return (
+                  <div className="w-full flex items-center justify-between pr-2 gap-1 select-none">
+                    <span className="font-semibold">{arg.dayNumberText}</span>
+                    <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100">
+                      Done
+                    </span>
+                  </div>
+                )
+              }
+
+              const today = new Date()
+              today.setHours(0, 0, 0, 0)
+
+              const hasPending = incompleteTasks.some(({ card }) => {
+                const due = new Date(card.dueDate)
+                due.setHours(0, 0, 0, 0)
+                return due < today
+              })
+
+              return (
+                <div className="w-full flex items-center justify-between pr-2 gap-1 select-none">
+                  <span className="font-semibold">{arg.dayNumberText}</span>
+                  <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider ${
+                    hasPending 
+                      ? 'bg-red-200 text-red-700 border border-red-300 animate-pulse' 
+                      : 'bg-red-50 text-red-500 border border-red-100'
+                  }`}>
+                    {hasPending ? 'Pending' : 'Due'}
+                  </span>
+                </div>
+              )
             }}
             dateClick={(info) => {
               const clickedDate = info.date
