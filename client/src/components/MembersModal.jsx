@@ -112,7 +112,7 @@ function MembersModal({ onClose }) {
               >
                 <div className="flex items-center gap-3 overflow-hidden">
                   {/* Avatar */}
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-sm">
+                  <div className="w-9 h-9 rounded-full bg-linear-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
                     {member.avatar ? (
                       <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
                     ) : (
@@ -135,7 +135,7 @@ function MembersModal({ onClose }) {
                 </div>
 
                 {/* Role badge and controls */}
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   {/* Role Badge */}
                   <span
                     className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${

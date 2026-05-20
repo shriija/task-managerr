@@ -162,7 +162,7 @@ const accent = getAccentColor()
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`w-full flex-shrink-0 flex flex-col max-h-[82vh]
+      className={`w-full shrink-0 flex flex-col max-h-[82vh]
                     bg-white/85 backdrop-blur-xl border border-white/50
                     rounded-2xl shadow-lg overflow-hidden
                     transition-all duration-200
@@ -172,7 +172,7 @@ const accent = getAccentColor()
     >
 
       {/* Colored accent bar */}
-      <div className={`h-1 bg-gradient-to-r ${accent} ${isDragOver ? "h-1.5" : ""} transition-all`} />
+      <div className={`h-1 bg-linear-to-r ${accent} ${isDragOver ? "h-1.5" : ""} transition-all`} />
 
       {/* Header */}
       <div className="px-4 pt-4 pb-3 flex items-center justify-between">
@@ -198,7 +198,7 @@ const accent = getAccentColor()
 
         <div className="flex items-center gap-2 ml-3">
           <span className="text-[10px] font-semibold bg-gray-100 text-gray-500
-                           px-2 py-0.5 rounded-full min-w-[22px] text-center">
+                           px-2 py-0.5 rounded-full min-w-5.5 text-center">
             {list.cards?.length || 0}
           </span>
 
@@ -221,7 +221,7 @@ const accent = getAccentColor()
                       [&::-webkit-scrollbar-track]:bg-transparent
                       [&::-webkit-scrollbar-thumb]:bg-gray-300/40
                       [&::-webkit-scrollbar-thumb]:rounded-full
-                      ${isDragOver && (!list.cards || list.cards.length === 0) ? "min-h-[60px]" : ""}`}>
+                      ${isDragOver && (!list.cards || list.cards.length === 0) ? "min-h-15" : ""}`}>
 
         {/* Drop zone placeholder when empty and dragging over */}
         {isDragOver && (!list.cards || list.cards.length === 0) && (
@@ -289,7 +289,7 @@ const accent = getAccentColor()
               <button
                 onClick={handleAddCard}
                 className="flex-1 text-sm font-semibold text-white
-                           bg-gradient-to-r from-primary-500 to-primary-600
+                           bg-linear-to-r from-primary-500 to-primary-600
                            hover:from-primary-600 hover:to-primary-700
                            py-2 rounded-xl shadow-sm
                            hover:shadow transition-all duration-200 cursor-pointer"

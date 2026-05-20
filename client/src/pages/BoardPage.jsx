@@ -76,7 +76,7 @@ function BoardPage() {
           </header>
           <div className="flex-1 p-8 flex gap-6">
             {[1, 2, 3].map(i => (
-              <div key={i} className="w-80 flex-shrink-0">
+              <div key={i} className="w-80 shrink-0">
                 <div className="animate-pulse bg-gray-200 rounded-xl h-10 w-full mb-3" />
                 <div className="animate-pulse bg-gray-200 rounded-xl h-20 w-full mb-2" />
                 <div className="animate-pulse bg-gray-200 rounded-xl h-16 w-full mb-2" />
@@ -110,7 +110,7 @@ function BoardPage() {
   // ── Main Board Layout ────────────────────────────────
   return (
     <>
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+    <div className="flex h-screen bg-linear-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
 
       {/* ─── SIDEBAR ──────────────────────────────────── */}
       <aside className="w-64 bg-white/80 backdrop-blur-xl border-r border-gray-100
@@ -171,7 +171,7 @@ function BoardPage() {
         {/* Bottom: New Project */}
         <button
           onClick={() => addList(board?._id || "local", "New List")}
-          className="mt-3.5 bg-gradient-to-r from-primary-500 to-primary-600
+          className="mt-3.5 bg-linear-to-r from-primary-500 to-primary-600
                      hover:from-primary-600 hover:to-primary-700
                      text-white text-sm font-semibold py-3 rounded-xl
                      shadow-sm hover:shadow-md
@@ -189,7 +189,7 @@ function BoardPage() {
 
         {/* ─── HEADER ─────────────────────────────────── */}
         <header className="h-16 bg-white/80 backdrop-blur-xl border-b border-gray-100
-                           flex items-center justify-between px-8 flex-shrink-0">
+                           flex items-center justify-between px-8 shrink-0">
 
           <div className="flex items-center gap-4">
             {/* Board title */}
@@ -208,7 +208,7 @@ function BoardPage() {
                   key={i}
                   title={m?.name || m}
                   className="w-8 h-8 rounded-full border-2 border-white
-                             bg-gradient-to-br from-primary-300 to-primary-500
+                             bg-linear-to-br from-primary-300 to-primary-500
                              flex items-center justify-center shadow-sm cursor-default"
                 >
                   <span className="text-[10px] font-bold text-white">
@@ -231,7 +231,7 @@ function BoardPage() {
               <button
                 onClick={() => setShowInvite(true)}
                 className="flex items-center gap-1.5 px-3.5 py-1.5
-                           bg-gradient-to-r from-primary-500 to-primary-600
+                           bg-linear-to-r from-primary-500 to-primary-600
                            hover:from-primary-600 hover:to-primary-700
                            text-white text-xs font-semibold rounded-lg
                            shadow-sm hover:shadow-md transition-all duration-200 ml-1"
