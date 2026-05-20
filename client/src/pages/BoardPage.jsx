@@ -1,4 +1,4 @@
-import { useParams } from "react-router"
+import { useParams, useNavigate } from "react-router"
 import { useEffect, useState } from "react"
 import { useBoardStore } from "../context/BoardContext"
 import { useAuthStore } from "../context/AuthContext"
@@ -11,17 +11,24 @@ import * as socketService from "../socket/socketService"
 
 function BoardPage() {
 
-  const { id } = useParams()
+  const { id, view } = useParams()
+  const navigate = useNavigate()
+  const currentView = view || "board"
   const { board, loading, error, fetchBoard, addList, reset, setupSocket, updateBoardSettings } = useBoardStore()
   const currentUser = useAuthStore(s => s.currentUser)
   
 
   const [searchQuery, setSearchQuery] = useState("")
-  const [currentView, setCurrentView] = useState("board")
   const [showInvite, setShowInvite] = useState(false)
   const [showMembers, setShowMembers] = useState(false)
 
   const isOwner = board?.owner?._id === currentUser?._id || board?.owner === currentUser?._id
+
+  useEffect(() => {
+    if (!view || !["board", "my-tasks", "calendar", "trash"].includes(view)) {
+      navigate(`/board/${id}/board`, { replace: true })
+    }
+  }, [id, view, navigate])
 
   // Fetch board data on mount
   useEffect(() => {
@@ -112,7 +119,7 @@ function BoardPage() {
         {/* Nav items */}
         <nav className="space-y-1 text-sm">
           <button 
-            onClick={() => setCurrentView("board")}
+            onClick={() => navigate(`/board/${id}/board`)}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
               currentView === "board" 
                 ? "bg-primary-50 text-primary-600 font-semibold" 
@@ -124,7 +131,7 @@ function BoardPage() {
             Lists
           </button>
           <button 
-            onClick={() => setCurrentView("my-tasks")}
+            onClick={() => navigate(`/board/${id}/my-tasks`)}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
               currentView === "my-tasks"
                 ? "bg-primary-50 text-primary-600 font-semibold"
@@ -136,7 +143,7 @@ function BoardPage() {
             My Tasks
           </button>
           <button 
-            onClick={() => setCurrentView("calendar")}
+            onClick={() => navigate(`/board/${id}/calendar`)}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
               currentView === "calendar"
                 ? "bg-primary-50 text-primary-600 font-semibold"
@@ -148,7 +155,7 @@ function BoardPage() {
             Calendar
           </button>
           <button 
-            onClick={() => setCurrentView("trash")}
+            onClick={() => navigate(`/board/${id}/trash`)}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
               currentView === "trash"
                 ? "bg-red-50 text-red-600 font-semibold"

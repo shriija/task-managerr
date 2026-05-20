@@ -37,6 +37,14 @@ function App() {
           )
         },
         {
+          path:"/dashboard/:tab",
+          element:(
+            <ProtectedRoute>
+              <UserDashboard />
+            </ProtectedRoute>
+          )
+        },
+        {
           path:"create-board",
           element:(
             <ProtectedRoute>
@@ -46,6 +54,14 @@ function App() {
         },
         {
           path:"board/:id",
+          element:(
+            <ProtectedRoute>
+              <BoardPage/>
+            </ProtectedRoute>
+          )
+        },
+        {
+          path:"board/:id/:view",
           element:(
             <ProtectedRoute>
               <BoardPage/>
