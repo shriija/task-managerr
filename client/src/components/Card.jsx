@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useBoardStore } from "../context/BoardContext";
 
-function Card({ card, listId, listTitle, showSourceLabel, onOpenModal, onDragStart, onDragEnd }) {
+function Card({ card, listId, onOpenModal, onDragStart, onDragEnd }) {
   const board = useBoardStore(s => s.board);
   const [isHovered, setIsHovered] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -95,13 +95,6 @@ function Card({ card, listId, listTitle, showSourceLabel, onOpenModal, onDragSta
 
       {/* Meta row */}
       <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-        {/* Source List Label (Only in My Tasks view) */}
-        {showSourceLabel && listTitle && (
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-wider flex items-center gap-1">
-            📁 {listTitle}
-          </span>
-        )}
-
         {/* Due status tag in red */}
         {isOverdue && (
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100 flex items-center gap-1 animate-pulse uppercase tracking-wider">

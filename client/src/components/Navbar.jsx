@@ -1,19 +1,11 @@
 import { NavLink } from "react-router"
 import { useAuthStore } from "../context/AuthContext"
-import { useState } from "react"
 
 function Navbar() {
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const logout = useAuthStore((state) => state.logout)
   const currentUser = useAuthStore((state)=>state.currentUser)
-  const [showDropdown, setShowDropdown] = useState(false)
-  console.log(currentUser)
-
-  const handleLogout = async () => {
-    await logout()
-    setShowDropdown(false)
-  }
 
   return (
     <nav className=" top-0 w-full bg-white border-b z-50">
@@ -22,7 +14,7 @@ function Navbar() {
 
           {/* Logo */}
           <div className="flex items-center gap-2.5 my-8">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600
+          <div className="w-8 h-8 bg-linear-to-br from-primary-500 to-primary-600
                           rounded-xl flex items-center justify-center shadow-sm">
             <svg className="w-4.5 h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
@@ -50,36 +42,12 @@ function Navbar() {
                   Dashboard
                 </NavLink>
 
-                {/* Profile Dropdown */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowDropdown(!showDropdown)}
-                    className="text-sm font-medium text-gray-700 hover:bg-gray-100 px-4 py-2 rounded transition-colors duration-200 cursor-pointer flex items-center gap-2"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                    </svg>
-                    Profile
-                  </button>
-
-                  {showDropdown && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-50">
-                      <NavLink
-                        to="/account"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                        onClick={() => setShowDropdown(false)}
-                      >
-                        Account Settings
-                      </NavLink>
-                      <button
-                        onClick={handleLogout}
-                        className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left border-t"
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <button
+                  onClick={logout}
+                  className="text-sm font-medium text-red-600 hover:text-white hover:bg-red-600 px-4 py-2 rounded transition-colors duration-200 cursor-pointer"
+                >
+                  Logout
+                </button>
               </>
             ) : (
               <>
