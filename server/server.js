@@ -16,7 +16,7 @@ config();
 
 // Middlewares
 app.set("trust proxy", 1);
-app.use(exp.json({ limit: '1mb' }));
+app.use(exp.json());
 app.use(CookieParser());
 
 app.use(
