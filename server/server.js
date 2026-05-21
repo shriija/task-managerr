@@ -15,12 +15,12 @@ export const app = exp();
 config();
 
 // Middlewares
-app.use(exp.json());
+app.use(exp.json({ limit: '1mb' }));
 app.use(CookieParser());
 
 app.use(
   cors({
-    origin: true,
+    origin: [process.env.CLIENT_URL],
     credentials: true
   })
 );
@@ -40,7 +40,7 @@ const server = http.createServer(app);
 // 🔹 Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: true, // change later to frontend URL
+    origin: [process.env.CLIENT_URL], // change later to frontend URL
     credentials: true
   },
 });
