@@ -78,42 +78,34 @@ function CreateBoardPage() {
   }
 
   return (
-
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
-
-        <h1 className="text-3xl font-black text-gray-900 mb-2">
-          Workspace Access
-        </h1>
-
-        <p className="text-sm text-gray-500 mb-8">
-          Create a new board or join using an invite link
-        </p>
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-slate-50 px-4 font-body">
+      <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-xl shadow-slate-100 w-full max-w-md">
+        
+        <div className="text-center mb-8">
+          <h1 className="font-display text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
+            Workspace Access
+          </h1>
+          <p className="text-sm text-slate-500">
+            Create a new board or join using an invite link
+          </p>
+        </div>
 
         {/* SELECT MODE */}
         {!mode && (
-
           <div className="space-y-4">
-
             <button
               onClick={() => {
                 setMode("create")
                 setError("")
               }}
-              className="w-full p-5 border-2 border-gray-200 rounded-2xl
-                         hover:border-primary-500 hover:bg-primary-50
-                         transition-all duration-200 text-left cursor-pointer"
+              className="w-full p-5 border border-slate-200 rounded-2xl hover:border-primary-500 hover:bg-slate-50/50 transition-all duration-200 text-left cursor-pointer"
             >
-
-              <h2 className="font-bold text-lg text-gray-900">
+              <h2 className="font-bold text-lg text-slate-900">
                 Create New Board
               </h2>
-
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-slate-500 mt-1">
                 Start a fresh workspace for your tasks
               </p>
-
             </button>
 
             <button
@@ -121,52 +113,49 @@ function CreateBoardPage() {
                 setMode("join")
                 setError("")
               }}
-              className="w-full p-5 border-2 border-gray-200 rounded-2xl
-                         hover:border-emerald-500 hover:bg-emerald-50
-                         transition-all duration-200 text-left cursor-pointer"
+              className="w-full p-5 border border-slate-200 rounded-2xl hover:border-emerald-500 hover:bg-slate-50/50 transition-all duration-200 text-left cursor-pointer"
             >
-
-              <h2 className="font-bold text-lg text-gray-900">
+              <h2 className="font-bold text-lg text-slate-900">
                 Join Through Link
               </h2>
-
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-slate-500 mt-1">
                 Join an existing workspace using an invite link
               </p>
-
             </button>
 
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="w-full text-center mt-6 text-sm font-semibold text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
+            >
+              Cancel & Go Back
+            </button>
           </div>
         )}
 
         {/* CREATE BOARD */}
         {mode === "create" && (
-
           <div>
-
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Board Title</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Board title"
-              className="w-full border border-gray-200 rounded-xl p-3 mb-4
-                         focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="e.g. Project Apollo"
+              className="w-full bg-slate-50/50 border border-slate-200 focus:border-primary-500 focus:bg-white rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-all mb-4"
             />
 
             {error && (
-              <p className="text-red-500 text-sm mb-3">
-                {error}
-              </p>
+              <div className="mb-4 p-3 bg-red-50 border border-red-200/50 rounded-xl text-center">
+                <p className="text-red-600 text-xs font-semibold">{error}</p>
+              </div>
             )}
 
             <div className="flex gap-3">
-
               <button
                 onClick={() => {
                   setMode("")
                   setError("")
                 }}
-                className="flex-1 py-3 rounded-xl border border-gray-200
-                           hover:bg-gray-100 transition-all"
+                className="flex-1 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold transition-all cursor-pointer"
               >
                 Back
               </button>
@@ -174,66 +163,53 @@ function CreateBoardPage() {
               <button
                 disabled={loading}
                 onClick={createBoard}
-                className="flex-1 py-3 rounded-xl bg-primary-600
-                           hover:bg-primary-700 text-white font-semibold
-                           transition-all"
+                className="flex-1 py-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold transition-all cursor-pointer disabled:opacity-50"
               >
                 {loading ? "Creating..." : "Create"}
               </button>
-
             </div>
-
           </div>
         )}
 
         {/* JOIN BOARD */}
         {mode === "join" && (
-
           <div>
-
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Invite Link</label>
             <input
               value={inviteLink}
               onChange={(e) => setInviteLink(e.target.value)}
-              placeholder="Paste invite link"
-              className="w-full border border-gray-200 rounded-xl p-3 mb-4
-                         focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="Paste link here..."
+              className="w-full bg-slate-50/50 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-all mb-4"
             />
 
             {error && (
-              <p className="text-red-500 text-sm mb-3">
-                {error}
-              </p>
+              <div className="mb-4 p-3 bg-red-50 border border-red-200/50 rounded-xl text-center">
+                <p className="text-red-600 text-xs font-semibold">{error}</p>
+              </div>
             )}
 
             <div className="flex gap-3">
-
               <button
                 onClick={() => {
                   setMode("")
                   setError("")
                 }}
-                className="flex-1 py-3 rounded-xl border border-gray-200
-                           hover:bg-gray-100 transition-all"
+                className="flex-1 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold transition-all cursor-pointer"
               >
                 Back
               </button>
 
               <button
                 onClick={joinBoard}
-                className="flex-1 py-3 rounded-xl bg-emerald-600
-                           hover:bg-emerald-700 text-white font-semibold
-                           transition-all"
+                className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-all cursor-pointer"
               >
                 Join Board
               </button>
-
             </div>
-
           </div>
         )}
 
       </div>
-
     </div>
   )
 }

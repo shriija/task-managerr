@@ -28,9 +28,9 @@ app.use(
 
 // Routes
 app.use("/user-api", UserApi);
-app.use("/board-api",BoardApp);
-app.use("/list-api",ListApp)
-app.use("/card-api",CardApp)
+app.use("/board-api", BoardApp);
+app.use("/list-api", ListApp)
+app.use("/card-api", CardApp)
 // Connect DB
 await connectDB();
 
