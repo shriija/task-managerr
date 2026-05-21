@@ -15,6 +15,7 @@ export const app = exp();
 config();
 
 // Middlewares
+app.set("trust proxy", 1);
 app.use(exp.json({ limit: '1mb' }));
 app.use(CookieParser());
 
