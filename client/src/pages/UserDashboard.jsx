@@ -185,7 +185,7 @@ function UserDashboard() {
                 {currentView === "shared" && board.owner && (
                   <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-md border border-gray-100 shadow-sm">
                     <span className="text-[10px] font-medium text-gray-500">Owner:</span>
-                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-[8px] font-bold text-white">
+                    <div className="w-4 h-4 rounded-full bg-linear-to-br from-primary-400 to-primary-600 flex items-center justify-center text-[8px] font-bold text-white">
                       {board.owner.avatar ? (
                         <img src={board.owner.avatar} alt="" className="w-full h-full rounded-full object-cover" />
                       ) : (

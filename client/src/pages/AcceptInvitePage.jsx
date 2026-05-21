@@ -33,7 +33,7 @@ function AcceptInvitePage() {
   }, [token, navigate])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-8 text-center">
 
         {/* Loading */}
@@ -72,7 +72,7 @@ function AcceptInvitePage() {
             {boardId && (
               <button
                 onClick={() => navigate(`/board/${boardId}`)}
-                className="mt-4 w-full bg-gradient-to-r from-primary-500 to-primary-600
+                className="mt-4 w-full bg-linear-to-r from-primary-500 to-primary-600
                            hover:from-primary-600 hover:to-primary-700
                            text-white text-sm font-semibold py-2.5 rounded-xl
                            transition-all shadow-sm hover:shadow-md"
@@ -98,7 +98,7 @@ function AcceptInvitePage() {
             <p className="text-sm text-gray-500 mb-5">{message}</p>
             <button
               onClick={() => navigate("/dashboard")}
-              className="w-full bg-gradient-to-r from-gray-700 to-gray-900
+              className="w-full bg-linear-to-r from-gray-700 to-gray-900
                          hover:from-gray-800 hover:to-black
                          text-white text-sm font-semibold py-2.5 rounded-xl
                          transition-all shadow-sm hover:shadow-md"
