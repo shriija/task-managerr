@@ -243,14 +243,25 @@ const accent = getAccentColor()
               match = match && (titleMatch || descMatch);
             }
             if (filterByMe && currentUser) {
-              // Assumes assignee might have _id or email matching the current user
-              const assignedId = card.assignedTo?._id || card.assignedTo?.id;
-              const assignedEmail = card.assignedTo?.email;
-              match = match && (
-                assignedId === currentUser._id || 
-                (assignedEmail && assignedEmail === currentUser.email) ||
-                (card.assignedTo?.name && card.assignedTo.name === currentUser.name)
-              );
+              const assignedId = card.assignedTo && (typeof card.assignedTo === 'object' ? (card.assignedTo._id || card.assignedTo.id) : card.assignedTo);
+              const assignedEmail = card.assignedTo && (typeof card.assignedTo === 'object' ? card.assignedTo.email : null);
+              const assignedName = card.assignedTo && (typeof card.assignedTo === 'object' ? card.assignedTo.name : null);
+
+              const isAssignedToMeDirectly = (assignedId && assignedId.toString() === currentUser._id?.toString()) ||
+                (assignedEmail && assignedEmail.toLowerCase() === currentUser.email?.toLowerCase()) ||
+                (assignedName && assignedName === currentUser.name);
+
+              const isParticipant = card.assignees && Array.isArray(card.assignees) && card.assignees.some(a => {
+                const aId = a && (typeof a === 'object' ? (a._id || a.id) : a);
+                const aEmail = a && (typeof a === 'object' ? a.email : null);
+                const aName = a && (typeof a === 'object' ? a.name : null);
+
+                return (aId && aId.toString() === currentUser._id?.toString()) ||
+                  (aEmail && aEmail.toLowerCase() === currentUser.email?.toLowerCase()) ||
+                  (aName && aName === currentUser.name);
+              });
+
+              match = match && (isAssignedToMeDirectly || isParticipant);
             }
             return match;
           })
@@ -259,6 +270,8 @@ const accent = getAccentColor()
             <Card
               card={card}
               listId={list._id}
+              listTitle={list.title}
+              showSourceLabel={filterByMe}
               onOpenModal={onOpenModal}
             />
           </div>

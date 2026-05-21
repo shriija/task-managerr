@@ -2,7 +2,7 @@ import { create } from "zustand"
 import axios from "axios"
 import { API_URL as API } from "../services/api"
 
-export const useAuthStore = create((set) => ({
+export const useAuthStore = create((set, get) => ({
   currentUser: null,
   loading: false,
   isAuthenticated: false,
@@ -100,5 +100,62 @@ export const useAuthStore = create((set) => ({
       currentUser: null,
       error: null
     })
+  },
+
+  // Update user profile (name and username)
+  updateProfile: async (profileData) => {
+    try {
+      set({ loading: true, error: null })
+
+      const res = await axios.put(
+        `${API}/user-api/update-profile`,
+        profileData,
+        { withCredentials: true }
+      )
+
+      set({
+        loading: false,
+        currentUser: res.data.payload,
+        error: null
+      })
+
+      return { success: true, message: res.data.message }
+
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || "Profile update failed"
+      set({
+        loading: false,
+        error: errorMsg
+      })
+      return { success: false, message: errorMsg }
+    }
+  },
+
+  // Update user password
+  updatePassword: async (passwordData) => {
+    try {
+      set({ loading: true, error: null })
+
+      const res = await axios.put(
+        `${API}/user-api/update-password`,
+        passwordData,
+        { withCredentials: true }
+      )
+
+      set({
+        loading: false,
+        error: null
+      })
+
+      return { success: true, message: res.data.message }
+
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || "Password update failed"
+      set({
+        loading: false,
+        error: errorMsg
+      })
+      return { success: false, message: errorMsg }
+    }
   }
 }))
