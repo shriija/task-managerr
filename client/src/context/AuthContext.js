@@ -47,7 +47,7 @@ export const useAuthStore = create((set, get) => ({
         { withCredentials: true }
       )
 
-      const data = res.data
+      const { data } = res
 
       set({
         loading: false,
