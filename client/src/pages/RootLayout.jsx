@@ -1,10 +1,13 @@
-import { Outlet } from 'react-router'
+import { Outlet, useLocation } from 'react-router'
 import Navbar from '../components/Navbar'
 
 function RootLayout() {
+  const location = useLocation()
+  const isLandingPage = location.pathname === "/"
+
   return (
     <div>
-        <Navbar />
+        {!isLandingPage && <Navbar />}
         <div className=''>
             <Outlet />
         </div>

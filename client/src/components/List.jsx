@@ -243,14 +243,23 @@ const accent = getAccentColor()
               match = match && (titleMatch || descMatch);
             }
             if (filterByMe && currentUser) {
-              // Assumes assignee might have _id or email matching the current user
-              const assignedId = card.assignedTo?._id || card.assignedTo?.id;
-              const assignedEmail = card.assignedTo?.email;
+              // Normalize and compare canonical identifiers only; include multi-assignee arrays.
+              const userId = String(currentUser._id || currentUser.id || "")
+
+              // assignedTo may be an object or a raw id
+              const assignedIdRaw = card.assignedTo?._id || card.assignedTo?.id || card.assignedTo
+              const assignedId = assignedIdRaw ? String(assignedIdRaw) : ""
+
+              const assignedEmail = card.assignedTo?.email
+
+              // support populated assignees (objects) or array of ids
+              const assigneeIds = (card.assignees || []).map(a => String(a?._id || a))
+
               match = match && (
-                assignedId === currentUser._id || 
-                (assignedEmail && assignedEmail === currentUser.email) ||
-                (card.assignedTo?.name && card.assignedTo.name === currentUser.name)
-              );
+                (assignedId && assignedId === userId) ||
+                (assignedEmail && currentUser.email && assignedEmail === currentUser.email) ||
+                assigneeIds.includes(userId)
+              )
             }
             return match;
           })

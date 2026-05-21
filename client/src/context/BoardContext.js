@@ -31,7 +31,7 @@ export const useBoardStore = create((set, get) => ({
     socket.off("list-deleted")
     socket.off("online-users")
 
-    socket.on("card-moved", (data) => {
+    socket.on("card-moved", async (data) => {
 
   const { cardId, fromListId, toListId, newPosition } = data
 
@@ -45,28 +45,11 @@ export const useBoardStore = create((set, get) => ({
 
   if (!movedCard) return
 
-  const updatedLists = lists.map(l => {
+  let updatedLists = [...lists]
 
-    // Same list reorder
-    if (fromListId === toListId && l._id === fromListId) {
+  // Remove from source list
+  updatedLists = updatedLists.map(l => {
 
-      const cards = [...l.cards]
-
-      const oldIdx = cards.findIndex(c => c._id === cardId)
-
-      if (oldIdx === -1) return l
-
-      const [moved] = cards.splice(oldIdx, 1)
-
-      cards.splice(newPosition, 0, moved)
-
-      return {
-        ...l,
-        cards
-      }
-    }
-
-    // Remove from source
     if (l._id === fromListId) {
 
       return {
@@ -75,7 +58,12 @@ export const useBoardStore = create((set, get) => ({
       }
     }
 
-    // Add to destination
+    return l
+  })
+
+  // Add to destination list
+  updatedLists = updatedLists.map(l => {
+
     if (l._id === toListId) {
 
       const cards = [...l.cards]
