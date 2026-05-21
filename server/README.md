@@ -1,6 +1,6 @@
 # ⚙️ Server — Node.js + Express Backend Documentation
 
-A **Node.js + Express v5** REST API server with **Mongoose v9** ODM, **Socket.IO v4** real-time layer, **JWT HttpOnly cookie** authentication, **bcryptjs** password hashing, and full soft-delete trash management.
+A **Node.js + Express v5** REST API with **Mongoose v9**, **Socket.IO v4**, **JWT HttpOnly cookies**, **bcryptjs** hashing, and a full soft-delete trash system.
 
 ---
 
@@ -18,7 +18,7 @@ A **Node.js + Express v5** REST API server with **Mongoose v9** ODM, **Socket.IO
 | `cors` | ^2.8.6 | Cross-Origin Resource Sharing middleware |
 | `dotenv` | ^16.6.1 | Load environment variables from `.env` |
 | `socket.io` | ^4.8.3 | WebSocket server (real-time events) |
-| `socket.io-client` | ^4.8.3 | Socket client for server-side testing |
+| `socket.io-client` | ^4.8.3 | Socket client (server-side testing) |
 | `date-and-time` | ^4.3.1 | Date formatting and manipulation |
 
 ### Dev Dependencies
@@ -38,9 +38,7 @@ mkdir server && cd server
 npm init -y
 ```
 
-### Step 2 — Configure ES Modules
-
-Add `"type": "module"` to `package.json` to use `import/export` syntax:
+### Step 2 — Add `"type": "module"` to `package.json`
 
 ```json
 {
@@ -58,77 +56,54 @@ Add `"type": "module"` to `package.json` to use `import/export` syntax:
 ### Step 3 — Install all packages
 
 ```bash
-# Production dependencies
 npm install express mongoose bcryptjs jsonwebtoken cookie-parser cors dotenv socket.io socket.io-client date-and-time
-
-# Dev dependency
 npm install -D nodemon
 ```
 
-### Step 4 — Create the environment file
-
-Create `.env` in the `server/` root:
+### Step 4 — Create `.env` in `server/` root
 
 ```env
 PORT=4001
-MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/<dbname>?retryWrites=true&w=majority
-JWT_SECRET_KEY=your_super_secret_jwt_key_here
+MONGO_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/<db>?retryWrites=true&w=majority
+JWT_SECRET_KEY=your_super_secret_key
 CLIENT_URL=http://localhost:5173
 ```
 
-> ⚠️ **Never commit `.env` to version control.** Add it to `.gitignore`.
-
-### Step 5 — Create the directory structure
+### Step 5 — Create directory structure
 
 ```bash
 mkdir config controllers models Apis sockets utils
 touch server.js config/db.js utils/generateToken.js utils/verifyToken.js
 ```
 
-### Step 6 — Set up MongoDB connection (config/db.js)
+### Step 6 — MongoDB connection (`config/db.js`)
 
 ```js
 import mongoose from "mongoose";
-
 const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("✅ MongoDB connected");
-  } catch (error) {
-    console.error("❌ MongoDB connection failed:", error.message);
-    process.exit(1);
-  }
+  await mongoose.connect(process.env.MONGO_URI);
+  console.log("✅ MongoDB connected");
 };
-
 export default connectDB;
 ```
 
-### Step 7 — Create the JWT utility (utils/generateToken.js)
+### Step 7 — JWT generator (`utils/generateToken.js`)
 
 ```js
 import jwt from "jsonwebtoken";
 import { config } from "dotenv";
 config();
-
-export const generateToken = (user) => {
-  return jwt.sign(
-    { id: user._id },
-    process.env.JWT_SECRET_KEY,
-    { expiresIn: "1d" }
-  );
-};
+export const generateToken = (user) =>
+  jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: "1d" });
 ```
 
-### Step 8 — Create the auth middleware (utils/verifyToken.js)
+### Step 8 — Auth middleware (`utils/verifyToken.js`)
 
 ```js
 import jwt from "jsonwebtoken";
-
 const verifyToken = (req, res, next) => {
   const token = req.cookies?.token;
-  if (!token) {
-    return res.status(401).json({ message: "Unauthorized — no token" });
-  }
+  if (!token) return res.status(401).json({ message: "Unauthorized — no token" });
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
     req.userId = decoded.id;
@@ -137,49 +112,41 @@ const verifyToken = (req, res, next) => {
     return res.status(401).json({ message: "Invalid or expired token" });
   }
 };
-
 export default verifyToken;
 ```
 
-### Step 9 — Build the Express app entry point (server.js)
+### Step 9 — Entry point (`server.js`)
 
 ```js
 import exp from "express";
 import { config } from "dotenv";
 import connectDB from "./config/db.js";
-import UserApi from "./Apis/UserApi.js";
 import CookieParser from "cookie-parser";
 import http from "http";
 import { Server } from "socket.io";
+import cors from 'cors';
+import UserApi from "./Apis/UserApi.js";
 import BoardApp from './Apis/BoardApi.js';
 import ListApp from "./Apis/ListApi.js";
 import CardApp from "./Apis/CardApi.js";
 import boardSocket from "./sockets/boardSocket.js";
-import cors from 'cors';
 
 export const app = exp();
 config();
 
-// Middlewares
 app.use(exp.json());
 app.use(CookieParser());
 app.use(cors({ origin: true, credentials: true }));
 
-// Routes
 app.use("/user-api", UserApi);
 app.use("/board-api", BoardApp);
 app.use("/list-api", ListApp);
 app.use("/card-api", CardApp);
 
-// Connect DB
 await connectDB();
 
-// Create HTTP server + Socket.IO
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: true, credentials: true }
-});
-
+const io = new Server(server, { cors: { origin: true, credentials: true } });
 boardSocket(io);
 
 server.listen(process.env.PORT || 4001, () =>
@@ -187,56 +154,50 @@ server.listen(process.env.PORT || 4001, () =>
 );
 ```
 
-### Step 10 — Start the development server
+### Step 10 — Start the dev server
 
 ```bash
-npm run dev
-# Server restarts automatically on file change via Nodemon
-# Runs at http://localhost:4001
+npm run dev   # Nodemon watches and auto-restarts
 ```
 
 ---
 
-## 🗄️ Express Pipeline & Global Middleware
+## 🗄️ Express Pipeline & Middleware
 
-### Middleware Stack (in order of application)
+### Request Flow Diagram
 
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant MW as Middleware Stack
+    participant VT as verifyToken
+    participant RT as Router
+    participant CT as Controller
+    participant DB as MongoDB
+
+    C->>MW: HTTP Request + Cookie header
+    MW->>MW: express.json() — parse body
+    MW->>MW: CookieParser() — populate req.cookies
+    MW->>MW: cors() — set CORS headers
+    MW->>RT: Route match (/board-api, /card-api, etc.)
+    RT->>VT: verifyToken(req, res, next)
+    VT->>VT: jwt.verify(req.cookies.token, JWT_SECRET)
+    alt Token valid
+        VT->>CT: req.userId set → next()
+        CT->>DB: Mongoose query
+        DB-->>CT: Result
+        CT-->>C: JSON response
+    else Token missing / invalid
+        VT-->>C: 401 Unauthorized
+    end
 ```
-Request
-  │
-  ├─ express.json()        → Parse application/json request bodies
-  ├─ CookieParser()        → Parse Cookie header → populate req.cookies
-  ├─ cors()                → Set CORS headers (origin: true, credentials: true)
-  │
-  ├─ Route: /user-api      → UserApi router
-  ├─ Route: /board-api     → BoardApp router
-  ├─ Route: /list-api      → ListApp router
-  └─ Route: /card-api      → CardApp router
-```
 
-### `verifyToken` Middleware
-
-Applied to every protected route. Reads the `token` cookie, verifies the JWT signature against `JWT_SECRET_KEY`, and attaches `req.userId` for downstream use.
-
-```
-Protected Request
-  → verifyToken
-      → jwt.verify(token, JWT_SECRET_KEY)
-      → req.userId = decoded.id
-      → next()   ← passes to controller
-```
-
-### Global Error Handling
-
-Express v5 automatically catches async errors. To add a centralized error handler, append after all routes:
+### Global Error Handler (recommended addition)
 
 ```js
-// Recommended: add to server.js
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(err.status || 500).json({
-    message: err.message || "Internal Server Error"
-  });
+  res.status(err.status || 500).json({ message: err.message || "Internal Server Error" });
 });
 ```
 
@@ -244,319 +205,331 @@ app.use((err, req, res, next) => {
 
 ## 🔐 Authentication — Bcrypt, JWT & HttpOnly Cookies
 
-### Password Hashing (Bcrypt)
+### Signup → Login → Protected Request Flow
 
-On signup, the user's plain-text password is hashed with bcrypt:
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant S as Express Server
+    participant DB as MongoDB
 
-```js
-// authController.js
-const hashedPass = await bcrypt.hash(user.password, 8)
-// salt rounds = 8 → ~240ms on modern hardware (safe from brute-force)
+    Note over U,DB: ── Signup ──
+    U->>S: POST /user-api/signup { name, email, password }
+    S->>DB: UserModel.findOne({ email }) → check duplicate
+    S->>S: bcrypt.hash(password, 8) — salt rounds = 8
+    S->>DB: new UserModel({ name, email, hashedPassword }).save()
+    S-->>U: 201 { message: "user created successfully" }
+
+    Note over U,DB: ── Login ──
+    U->>S: POST /user-api/signin { email, password }
+    S->>DB: UserModel.findOne({ email })
+    S->>S: bcrypt.compare(password, user.password)
+    S->>S: jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1d" })
+    S-->>U: 200 { payload: user } + Set-Cookie: token=<JWT>; HttpOnly; SameSite=Lax; Max-Age=7d
+
+    Note over U,DB: ── Protected Request ──
+    U->>S: GET /board-api/ (Cookie: token=<JWT> auto-sent)
+    S->>S: verifyToken → jwt.verify → req.userId
+    S->>DB: BoardModel.find({ owner: req.userId })
+    S-->>U: 200 { payload: boards }
 ```
 
-On login, the submitted password is compared against the stored hash:
+### Cookie Flags Explained
 
-```js
-const isMatch = await bcrypt.compare(password, user.password)
-```
-
-### JWT Generation
-
-After successful login:
-
-```js
-const token = generateToken(user)
-// Signs: { id: user._id }
-// Expires: 1 day
-// Secret: process.env.JWT_SECRET_KEY
-```
-
-### HttpOnly Cookie
-
-The JWT is sent as a secure, HttpOnly cookie (inaccessible to JavaScript):
-
-```js
-res.cookie('token', token, {
-  httpOnly: true,           // Blocks JS access (XSS protection)
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
-  secure: false,            // Set true in production (HTTPS only)
-  sameSite: "lax"           // CSRF protection
-})
-```
-
-> In **production** (Render), set `secure: true` and update `sameSite` as needed.
-
-### Logout
-
-```js
-res.clearCookie('token', { httpOnly: true, secure: false, sameSite: "lax" })
-```
+| Flag | Value | Reason |
+|------|-------|--------|
+| `httpOnly` | `true` | Blocks JS access — XSS protection |
+| `maxAge` | 7 days in ms | Session persistence |
+| `secure` | `false` (dev) / `true` (prod) | HTTPS-only in production |
+| `sameSite` | `"lax"` (dev) / `"none"` (prod) | CSRF protection |
 
 ---
 
 ## 🗃️ Mongoose Models
 
-All models live in `server/models/`.
+### Schema Relationships
 
-### User Model (`User.js`)
+```mermaid
+erDiagram
+    User {
+        ObjectId _id
+        String name
+        String email
+        String password
+        String avatar
+    }
+    Board {
+        ObjectId _id
+        String title
+        ObjectId owner
+        ObjectId[] members
+        ObjectId[] admins
+        String background
+        Boolean allowMultipleAssignees
+        Boolean isDeleted
+        Date deletedAt
+    }
+    List {
+        ObjectId _id
+        String title
+        ObjectId board
+        Number position
+        Boolean isDeleted
+        Date deletedAt
+    }
+    Card {
+        ObjectId _id
+        String title
+        String description
+        ObjectId list
+        ObjectId[] assignees
+        ObjectId assignedTo
+        ObjectId createdBy
+        String status
+        Date dueDate
+        Number position
+        String priority
+        Boolean isDeleted
+        Date deletedAt
+    }
+    InviteToken {
+        ObjectId _id
+        ObjectId boardId
+        String token
+        ObjectId createdBy
+        Date expiresAt
+    }
+
+    User ||--o{ Board : "owns"
+    User }o--o{ Board : "member of"
+    Board ||--|{ List : "has"
+    List ||--|{ Card : "has"
+    Board ||--o{ InviteToken : "has"
+```
+
+### Field Tables
+
+#### Board (`Board.js`)
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
-| `name` | String | ✅ | User's display name |
-| `email` | String | ✅ | Unique, used for login |
-| `password` | String | ✅ | bcrypt hash, never returned in responses |
-| `avatar` | String | ❌ | Profile image URL |
-| `createdAt` | Date | auto | Mongoose timestamps |
-| `updatedAt` | Date | auto | Mongoose timestamps |
+| `title` | String | ✅ | trim, maxLength: 100 |
+| `owner` | ObjectId → User | ✅ | set from JWT |
+| `members` | [ObjectId] | ❌ | default: [] |
+| `admins` | [ObjectId] | ❌ | default: [] |
+| `background` | String | ❌ | default: `#0052cc` |
+| `allowMultipleAssignees` | Boolean | ❌ | default: false |
+| `isDeleted` | Boolean | ❌ | soft-delete flag |
+| `deletedAt` | Date | ❌ | soft-delete timestamp |
 
-### Board Model (`Board.js`)
-
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `title` | String | ✅ | trim: true, maxLength: 100 |
-| `owner` | ObjectId → User | ✅ | Set from JWT on create |
-| `members` | [ObjectId → User] | ❌ | Default: [] |
-| `admins` | [ObjectId → User] | ❌ | Default: [] |
-| `background` | String | ❌ | Hex color, default: `#0052cc` |
-| `allowMultipleAssignees` | Boolean | ❌ | Default: false |
-| `isDeleted` | Boolean | ❌ | Default: false (soft delete flag) |
-| `deletedAt` | Date | ❌ | Timestamp of soft deletion |
-| `createdAt` | Date | auto | Mongoose timestamps |
-| `updatedAt` | Date | auto | Mongoose timestamps |
-
-### List Model (`List.js`)
+#### Card (`Card.js`)
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
-| `title` | String | ✅ | List column title |
-| `board` | ObjectId → Board | ✅ | Parent board reference |
-| `position` | Number | ✅ | Ordering index |
-| `isDeleted` | Boolean | ❌ | Default: false |
-| `deletedAt` | Date | ❌ | Soft delete timestamp |
-| `createdAt` | Date | auto | Mongoose timestamps |
-| `updatedAt` | Date | auto | Mongoose timestamps |
-
-### Card Model (`Card.js`)
-
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `title` | String | ✅ | trim: true, maxLength: 200 |
-| `description` | String | ❌ | Default: `""` |
-| `list` | ObjectId → List | ✅ | Parent list reference, indexed |
-| `assignees` | [ObjectId → User] | ❌ | Multiple assignees |
-| `assignedTo` | ObjectId → User | ❌ | Single primary assignee |
-| `createdBy` | ObjectId → User | ❌ | User who created the card |
+| `title` | String | ✅ | trim, maxLength: 200 |
+| `description` | String | ❌ | default: `""` |
+| `list` | ObjectId → List | ✅ | indexed |
+| `assignees` | [ObjectId] | ❌ | multiple assignees |
+| `assignedTo` | ObjectId → User | ❌ | primary assignee |
+| `createdBy` | ObjectId → User | ❌ | creator ref |
 | `status` | String (enum) | ❌ | `"to do"` / `"in progress"` / `"completed"` |
-| `attachments` | [Mixed] | ❌ | File attachment objects |
-| `dueDate` | Date | ❌ | Default: null |
-| `position` | Number | ✅ | Ordering index within list |
-| `labels` | [String] | ❌ | Tag labels |
+| `dueDate` | Date | ❌ | default: null |
+| `position` | Number | ✅ | ordering index |
 | `priority` | String (enum) | ❌ | `"High"` / `"Medium"` / `"Low"` / `""` |
-| `isDeleted` | Boolean | ❌ | Default: false |
-| `deletedAt` | Date | ❌ | Soft delete timestamp |
-| `createdAt` | Date | auto | Mongoose timestamps |
-
-### InviteToken Model (`InviteToken.js`)
-
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `board` | ObjectId → Board | ✅ | Associated board |
-| `token` | String | ✅ | Unique JWT-based invite token |
-| `expiresAt` | Date | ✅ | Token expiry (TTL index) |
-| `createdAt` | Date | auto | Mongoose timestamps |
-
-### Activity Model (`Activity.js`)
-
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `board` | ObjectId → Board | ✅ | Associated board |
-| `user` | ObjectId → User | ✅ | User who performed the action |
-| `action` | String | ✅ | Action description |
-| `createdAt` | Date | auto | Mongoose timestamps |
+| `isDeleted` | Boolean | ❌ | default: false |
+| `deletedAt` | Date | ❌ | soft-delete timestamp |
 
 ---
 
 ## 🌐 REST API Endpoints
 
-All routes require `verifyToken` middleware unless marked as **public**.
-
 ### User API — `/user-api`
 
-| Method | Endpoint | Auth | Payload | Response | Description |
-|--------|----------|------|---------|----------|-------------|
-| `POST` | `/signup` | ❌ Public | `{ name, email, password }` | `201 { message }` | Register new user |
-| `POST` | `/signin` | ❌ Public | `{ email, password }` | `200 { message, payload: user }` + sets cookie | Login |
-| `POST` | `/logout` | ❌ Public | — | `200 { message }` + clears cookie | Logout |
-| `GET` | `/verify` | ✅ | — | `200 { message, payload: user }` | Validate session |
-| `GET` | `/search?q=` | ✅ | Query param `q` | `200 { payload: [users] }` | Search users |
+| Method | Endpoint | Auth | Payload | Description |
+|--------|----------|------|---------|-------------|
+| `POST` | `/signup` | ❌ | `{ name, email, password }` | Register |
+| `POST` | `/signin` | ❌ | `{ email, password }` | Login + set cookie |
+| `POST` | `/logout` | ❌ | — | Clear cookie |
+| `GET` | `/verify` | ✅ | — | Validate session |
+| `GET` | `/search?q=` | ✅ | `q` query param | Search users |
 
 ### Board API — `/board-api`
 
-| Method | Endpoint | Roles | Payload | Description |
-|--------|----------|-------|---------|-------------|
-| `POST` | `/addBoard` | Any authenticated | `{ title, background }` | Create a board |
-| `GET` | `/` | Any | — | Get own boards |
-| `GET` | `/shared/all` | Any | — | Get shared boards |
-| `GET` | `/:id` | Member+ | — | Get single board |
-| `PUT` | `/updateBoard/:id` | Owner/Admin | `{ title, allowMultipleAssignees, background }` | Update board settings |
-| `DELETE` | `/deleteBoard/:id` | Owner | — | Soft-delete board |
-| `GET` | `/trash/deleted` | Any | — | Fetch soft-deleted boards |
-| `PUT` | `/restore/:id` | Owner | — | Restore soft-deleted board |
-| `DELETE` | `/permanent/:id` | Owner | — | Permanently delete board |
-| `PUT` | `/manage-member/:boardId` | Owner | `{ memberId, action }` | `action`: `"promote"` / `"demote"` / `"remove"` |
-| `POST` | `/invite/email/:boardId` | Owner/Admin | `{ email }` | Add registered user by email |
-| `POST` | `/invite/link/:boardId` | Owner/Admin | — | Generate invite link token |
-| `GET` | `/invite/accept/:token` | Authenticated | — | Accept invite & join board |
+| Method | Endpoint | Role | Payload | Description |
+|--------|----------|------|---------|-------------|
+| `POST` | `/addBoard` | Any | `{ title, background }` | Create board + 3 default lists |
+| `GET` | `/` | Any | — | Own boards |
+| `GET` | `/shared/all` | Any | — | Shared boards |
+| `GET` | `/:id` | Member+ | — | Single board (populated) |
+| `PUT` | `/updateBoard/:id` | Owner | `{ title, allowMultipleAssignees }` | Update settings |
+| `DELETE` | `/deleteBoard/:id` | Owner | — | Soft delete |
+| `GET` | `/trash/deleted` | Owner | — | Deleted boards |
+| `PUT` | `/restore/:id` | Owner | — | Restore |
+| `DELETE` | `/permanent/:id` | Owner | — | Hard delete (cascade) |
+| `PUT` | `/manage-member/:boardId` | Owner/Admin | `{ memberId, action }` | promote / demote / remove |
+| `POST` | `/invite/email/:boardId` | Owner | `{ email }` | Add user directly |
+| `POST` | `/invite/link/:boardId` | Owner | — | Generate invite link |
+| `GET` | `/invite/accept/:token` | Authenticated | — | Accept invite |
 
 ### List API — `/list-api`
 
-| Method | Endpoint | Roles | Payload | Description |
-|--------|----------|-------|---------|-------------|
-| `POST` | `/addList` | Owner/Admin | `{ title, board, position }` | Create a list |
-| `GET` | `/getLists/:boardId` | Member+ | — | Get all lists for board |
-| `GET` | `/getListById/:id` | Member+ | — | Get single list |
-| `PUT` | `/updateList/:id` | Owner/Admin | `{ title }` | Rename a list |
-| `DELETE` | `/deleteList/:id` | Owner/Admin | — | Soft-delete a list |
-| `GET` | `/trash/deleted/:boardId` | Member+ | — | Get deleted lists |
-| `PUT` | `/restore/:id` | Owner/Admin | — | Restore a list |
-| `DELETE` | `/permanent/:id` | Owner | — | Permanently delete a list |
+| Method | Endpoint | Role | Payload | Description |
+|--------|----------|------|---------|-------------|
+| `POST` | `/addList` | Owner/Admin | `{ title, board, position }` | Create list |
+| `GET` | `/getLists/:boardId` | Member+ | — | Get all lists |
+| `GET` | `/getListById/:id` | Member+ | — | Single list |
+| `PUT` | `/updateList/:id` | Owner/Admin | `{ title }` | Rename |
+| `DELETE` | `/deleteList/:id` | Owner/Admin | — | Soft delete |
+| `GET` | `/trash/deleted/:boardId` | Member+ | — | Deleted lists |
+| `PUT` | `/restore/:id` | Owner/Admin | — | Restore |
+| `DELETE` | `/permanent/:id` | Owner | — | Hard delete |
 
 ### Card API — `/card-api`
 
-| Method | Endpoint | Roles | Payload | Description |
-|--------|----------|-------|---------|-------------|
-| `POST` | `/addCard` | Member+ | `{ title, list, position }` | Create a card |
-| `GET` | `/getCards/:listId` | Member+ | — | Get cards for a list |
-| `GET` | `/getCardById/:id` | Member+ | — | Get single card |
-| `PUT` | `/updateCard/:id` | See note | `{ title, description, dueDate, priority, status, assignedTo, assignees }` | Update card |
+| Method | Endpoint | Role | Payload | Description |
+|--------|----------|------|---------|-------------|
+| `POST` | `/addCard` | Member+ | `{ title, list, position }` | Create card |
+| `GET` | `/getCards/:listId` | Member+ | — | Cards for list |
+| `GET` | `/getCardById/:id` | Member+ | — | Single card |
+| `PUT` | `/updateCard/:id` | See note | `{ title, description, dueDate, priority, status, assignedTo, assignees }` | Update |
 | `PUT` | `/moveCard/:id` | Member+ | `{ toListId, newPosition }` | Move card |
-| `DELETE` | `/deleteCards/:id` | Owner/Admin | — | Soft-delete a card |
-| `GET` | `/trash/deleted/:boardId` | Member+ | — | Get deleted cards |
-| `PUT` | `/restore/:id` | Owner/Admin | — | Restore a card |
-| `DELETE` | `/permanent/:id` | Owner | — | Permanently delete a card |
+| `DELETE` | `/deleteCards/:id` | Owner/Admin | — | Soft delete |
+| `GET` | `/trash/deleted/:boardId` | Member+ | — | Deleted cards |
+| `PUT` | `/restore/:id` | Owner/Admin | — | Restore |
+| `DELETE` | `/permanent/:id` | Owner | — | Hard delete |
 
-> **Card Update Role Filter**: Members can only update `status`. Title, description, dueDate, priority, assignedTo, and assignees require Owner or Admin role. Returns `403 Forbidden` on violation.
+> **Card Update:** Members may only change `status`. Changing title, description, dueDate, priority, or assignees requires Owner or Admin → returns `403`.
 
 ---
 
-## 👥 Role-Based Access — Allowed Role Filters
+## 👥 Role-Based Access
 
-Role is determined by inspecting the board document fetched from MongoDB:
+### Role Resolution
 
-```js
-const isOwner  = board.owner.toString() === req.userId
-const isAdmin  = board.admins.some(a => a.toString() === req.userId)
-const isMember = board.members.some(m => m.toString() === req.userId)
+```mermaid
+flowchart TD
+    A[Request arrives] --> B[verifyToken → req.userId]
+    B --> C[Fetch BoardModel by boardId]
+    C --> D{board.owner === req.userId?}
+    D -- Yes --> E[Role: OWNER]
+    D -- No --> F{board.admins.includes req.userId?}
+    F -- Yes --> G[Role: ADMIN]
+    F -- No --> H{board.members.includes req.userId?}
+    H -- Yes --> I[Role: MEMBER]
+    H -- No --> J[403 Forbidden]
 ```
+
+### Permission Matrix
 
 | Operation | Owner | Admin | Member |
 |-----------|-------|-------|--------|
 | View board | ✅ | ✅ | ✅ |
 | Add cards | ✅ | ✅ | ✅ |
 | Update card status | ✅ | ✅ | ✅ |
-| Update card details (title, desc, etc.) | ✅ | ✅ | ❌ |
+| Update card details | ✅ | ✅ | ❌ |
 | Add / rename lists | ✅ | ✅ | ❌ |
-| Delete lists/cards (soft) | ✅ | ✅ | ❌ |
+| Soft-delete lists/cards | ✅ | ✅ | ❌ |
 | Invite members | ✅ | ✅ | ❌ |
-| Manage members (promote/demote/remove) | ✅ | ❌ | ❌ |
+| Manage members | ✅ | ❌ | ❌ |
 | Update board settings | ✅ | ✅ | ❌ |
-| Delete board / permanent delete | ✅ | ❌ | ❌ |
+| Delete board / hard delete | ✅ | ❌ | ❌ |
 
 ---
 
 ## 🗑️ Soft Delete System
 
-All entities use a **soft delete** pattern with `isDeleted` and `deletedAt` fields:
+### Delete → Trash → Restore / Permanent Delete
 
-### Soft Delete Flow
+```mermaid
+sequenceDiagram
+    actor U as Owner
+    participant S as Express Server
+    participant DB as MongoDB
 
-```
-DELETE /board-api/deleteBoard/:id
-  → board.isDeleted = true
-  → board.deletedAt = new Date()
-  → board.save()
-  → 200 OK
+    Note over U,DB: ── Soft Delete ──
+    U->>S: DELETE /board-api/deleteBoard/:id
+    S->>DB: findByIdAndUpdate(id, { isDeleted: true, deletedAt: now })
+    DB-->>S: Updated doc
+    S-->>U: 200 "board deleted (soft delete)"
 
-GET /board-api/trash/deleted
-  → BoardModel.find({ owner: req.userId, isDeleted: true })
-  → Returns deleted boards
+    Note over U,DB: ── View Trash ──
+    U->>S: GET /board-api/trash/deleted
+    S->>DB: find({ owner: userId, isDeleted: true })
+    DB-->>S: Deleted boards array
+    S-->>U: 200 { payload: deletedBoards }
 
-PUT /board-api/restore/:id
-  → board.isDeleted = false
-  → board.deletedAt = null
-  → board.save()
+    Note over U,DB: ── Restore ──
+    U->>S: PUT /board-api/restore/:id
+    S->>DB: findByIdAndUpdate(id, { isDeleted: false, deletedAt: null })
+    S-->>U: 200 "Board restored"
 
-DELETE /board-api/permanent/:id
-  → BoardModel.findByIdAndDelete(id)
-  → Cascades: deletes all child Lists and Cards
-```
-
-### Active Record Filter
-
-All normal queries exclude soft-deleted records:
-
-```js
-// Example from ListController
-ListModel.find({ board: boardId, isDeleted: false })
-
-// Example from CardController
-CardModel.find({ list: listId, isDeleted: false })
+    Note over U,DB: ── Permanent Delete (cascade) ──
+    U->>S: DELETE /board-api/permanent/:id
+    S->>DB: BoardModel.findByIdAndDelete(id)
+    S->>DB: ListModel.find({ board: id }) → get listIds
+    S->>DB: CardModel.deleteMany({ list: { $in: listIds } })
+    S->>DB: ListModel.deleteMany({ board: id })
+    S-->>U: 200 "Board permanently deleted"
 ```
 
 ---
 
 ## 🔌 Socket.IO — Real-Time Events
 
-### Server Setup (`sockets/boardSocket.js`)
+### boardSocket.js Flow
 
-```js
-export default function boardSocket(io) {
-  io.on("connection", (socket) => {
+```mermaid
+sequenceDiagram
+    participant A as Client A
+    participant B as Client B
+    participant SIO as Socket.IO Server
 
-    socket.on("join-board", (boardId) => {
-      socket.join(boardId)
-      // Emit updated online users list to all room members
-      const users = [...io.sockets.adapter.rooms.get(boardId) || []]
-      io.to(boardId).emit("online-users", users)
-    })
+    A->>SIO: connect()
+    SIO-->>A: connection established
 
-    socket.on("leave-board", (boardId) => {
-      socket.leave(boardId)
-    })
+    A->>SIO: emit("join-board", boardId)
+    SIO->>SIO: socket.join(boardId)
+    SIO-->>A: emit("online-users", [...users in room])
+    SIO-->>B: emit("online-users", [...users in room])
 
-    // Card events — broadcast to all other room members
-    socket.on("card-added",   (data) => socket.to(data.boardId).emit("card-added",   data))
-    socket.on("card-updated", (data) => socket.to(data.boardId).emit("card-updated", data))
-    socket.on("card-deleted", (data) => socket.to(data.boardId).emit("card-deleted", data))
-    socket.on("card-moved",   (data) => socket.to(data.boardId).emit("card-moved",   data))
+    A->>SIO: emit("card-added", { boardId, card, listId })
+    SIO->>SIO: socket.to(boardId).emit("card-added", data)
+    SIO-->>B: emit("card-added", { card, listId })
 
-    // List events
-    socket.on("list-added",   (data) => socket.to(data.boardId).emit("list-added",   data))
-    socket.on("list-updated", (data) => socket.to(data.boardId).emit("list-updated", data))
-    socket.on("list-deleted", (data) => socket.to(data.boardId).emit("list-deleted", data))
+    A->>SIO: emit("card-moved", { boardId, cardId, fromListId, toListId, newPosition })
+    SIO-->>B: emit("card-moved", data)
 
-    socket.on("disconnect", () => {
-      // Online users are recalculated per room on disconnect
-    })
-  })
-}
+    A->>SIO: emit("leave-board", boardId)
+    SIO->>SIO: socket.leave(boardId)
+    SIO-->>B: emit("online-users", [updated list])
 ```
+
+### Event Reference
+
+| Event | Direction | Payload |
+|-------|-----------|---------|
+| `join-board` | Client → Server | `boardId` |
+| `leave-board` | Client → Server | `boardId` |
+| `online-users` | Server → Client | `[socketIds]` |
+| `card-added` | Broadcast | `{ boardId, card, listId }` |
+| `card-updated` | Broadcast | `{ boardId, cardId, listId, updates, targetListId }` |
+| `card-deleted` | Broadcast | `{ boardId, cardId, listId }` |
+| `card-moved` | Broadcast | `{ boardId, cardId, fromListId, toListId, newPosition }` |
+| `list-added` | Broadcast | `{ boardId, list }` |
+| `list-updated` | Broadcast | `{ boardId, listId, title }` |
+| `list-deleted` | Broadcast | `{ boardId, listId }` |
 
 ---
 
 ## 🌐 Multer & Cloudinary (File Uploads)
 
-> Currently configured for future integration. Card `attachments` field is `Schema.Types.Mixed` ready to accept file metadata objects.
+Card `attachments` is `Schema.Types.Mixed[]` — ready for file metadata objects.
 
-To add Multer + Cloudinary upload support:
-
-### Install packages
+### Integration Steps
 
 ```bash
 npm install multer cloudinary multer-storage-cloudinary
 ```
-
-### Cloudinary config
 
 ```js
 // config/cloudinary.js
@@ -578,27 +551,27 @@ const storage = new CloudinaryStorage({
 export const upload = multer({ storage })
 ```
 
-### DB Rollback Strategy on Upload Failure
+### Upload + DB Rollback Sequence
 
-```js
-// In card controller — attach file metadata only after successful Cloudinary upload
-try {
-  const result = await cloudinary.uploader.upload(file.path)
-  card.attachments.push({ url: result.secure_url, public_id: result.public_id })
-  await card.save()
-} catch (err) {
-  // Rollback: delete from Cloudinary if DB save fails
-  if (result?.public_id) await cloudinary.uploader.destroy(result.public_id)
-  res.status(500).json({ message: "Upload failed — rolled back" })
-}
-```
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant S as Express Server
+    participant CL as Cloudinary
+    participant DB as MongoDB
 
-### Required `.env` additions for Cloudinary
-
-```env
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
+    C->>S: POST /card-api/attach/:id (multipart/form-data)
+    S->>CL: cloudinary.uploader.upload(file.path)
+    CL-->>S: { secure_url, public_id }
+    S->>DB: card.attachments.push({ url, public_id }) → card.save()
+    alt DB save succeeds
+        DB-->>S: Updated card
+        S-->>C: 200 { payload: card }
+    else DB save fails
+        DB-->>S: Error
+        S->>CL: cloudinary.uploader.destroy(public_id)
+        S-->>C: 500 "Upload failed — rolled back"
+    end
 ```
 
 ---
@@ -609,92 +582,75 @@ CLOUDINARY_API_SECRET=your_api_secret
 |----------|----------|-------------|
 | `PORT` | ❌ | Server port (default: `4001`) |
 | `MONGO_URI` | ✅ | MongoDB Atlas connection string |
-| `JWT_SECRET_KEY` | ✅ | Secret used to sign/verify JWTs |
-| `CLIENT_URL` | ❌ | Frontend URL for CORS (default: `true` = all origins) |
-| `CLOUDINARY_CLOUD_NAME` | ❌ | Cloudinary cloud name (file uploads) |
-| `CLOUDINARY_API_KEY` | ❌ | Cloudinary API key (file uploads) |
-| `CLOUDINARY_API_SECRET` | ❌ | Cloudinary API secret (file uploads) |
-
----
-
-## 🛠️ Nodemon Dev Server
-
-Nodemon watches all `.js` files and restarts the server on save:
-
-```bash
-npm run dev
-# Equivalent to: nodemon server.js
-```
-
-Nodemon configuration can be added to `package.json` or `nodemon.json`:
-
-```json
-// nodemon.json (optional)
-{
-  "watch": ["server.js", "controllers", "models", "Apis", "sockets", "utils", "config"],
-  "ext": "js",
-  "ignore": ["node_modules"]
-}
-```
+| `JWT_SECRET_KEY` | ✅ | Secret for signing/verifying JWTs |
+| `CLIENT_URL` | ❌ | Frontend URL for CORS |
+| `CLOUDINARY_CLOUD_NAME` | ❌ | For file uploads |
+| `CLOUDINARY_API_KEY` | ❌ | For file uploads |
+| `CLOUDINARY_API_SECRET` | ❌ | For file uploads |
 
 ---
 
 ## 🚀 Render Deployment
 
-### Step 1 — Push to GitHub
+### Deployment Flow
 
-```bash
-git add .
-git commit -m "ready for deployment"
-git push origin main
+```mermaid
+sequenceDiagram
+    participant D as Developer
+    participant GH as GitHub
+    participant RN as Render
+    participant DB as MongoDB Atlas
+
+    D->>GH: git push origin main
+    GH->>RN: Webhook trigger (auto-deploy)
+    RN->>RN: npm install (Build Command)
+    RN->>RN: node server.js (Start Command)
+    RN->>DB: mongoose.connect(MONGO_URI env var)
+    DB-->>RN: Connected
+    RN-->>D: Service live at https://your-app.onrender.com
 ```
 
-### Step 2 — Create a new Web Service on Render
+### Render Setup Checklist
 
-1. Go to [render.com](https://render.com) → **New → Web Service**
-2. Connect your GitHub repository
-3. Set the **Root Directory** to `server`
-4. Set **Build Command**: `npm install`
-5. Set **Start Command**: `npm start` (runs `node server.js`)
+1. **New Web Service** → connect GitHub repo
+2. **Root Directory** → `server`
+3. **Build Command** → `npm install`
+4. **Start Command** → `npm start`
+5. **Environment Variables** → add all from table above
 
-### Step 3 — Add Environment Variables on Render
-
-In the Render dashboard → **Environment** tab, add:
-
-| Key | Value |
-|-----|-------|
-| `PORT` | `4001` (Render overrides this automatically) |
-| `MONGO_URI` | Your MongoDB Atlas connection string |
-| `JWT_SECRET_KEY` | Your production JWT secret |
-| `CLIENT_URL` | Your deployed frontend URL |
-
-### Step 4 — Update CORS for production
+### Production Cookie & CORS Update
 
 ```js
-// server.js — production CORS config
+// Production cookies
+res.cookie('token', token, {
+  httpOnly: true,
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  secure: true,       // ← HTTPS only
+  sameSite: "none"    // ← Required for cross-site
+})
+
+// Production CORS
 app.use(cors({
-  origin: process.env.CLIENT_URL,  // specific frontend URL
+  origin: process.env.CLIENT_URL,
   credentials: true
 }))
 ```
 
-### Step 5 — Update cookie settings for production
-
-```js
-// authController.js — production cookie flags
-res.cookie('token', token, {
-  httpOnly: true,
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-  secure: true,        // ← HTTPS only in production
-  sameSite: "none"     // ← Required for cross-site cookies
-})
-```
-
 ---
 
-## 📜 Available Scripts
+## 🛠️ Nodemon Dev Server
 
 ```bash
-npm run dev     # Start with Nodemon (auto-restart) — development
-npm start       # Start with Node — production
+npm run dev     # nodemon server.js — auto-restarts on save
+npm start       # node server.js — production start
+```
+
+Optional `nodemon.json`:
+
+```json
+{
+  "watch": ["server.js", "controllers", "models", "Apis", "sockets", "utils", "config"],
+  "ext": "js",
+  "ignore": ["node_modules"]
+}
 ```

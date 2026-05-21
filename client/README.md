@@ -115,8 +115,6 @@ npm run dev -- --host
 
 ### Color Palette
 
-The app uses Tailwind CSS v4 with utility classes. Core design tokens used throughout:
-
 | Token | Usage |
 |-------|-------|
 | `bg-gray-900` / `bg-gray-800` | Primary dark backgrounds |
@@ -150,175 +148,344 @@ RootLayout
         └── AccountManagementPage
 ```
 
-### Responsive Breakpoints
+### Routing & Navigation Flow
 
-| Breakpoint | Usage |
-|-----------|-------|
-| `sm:` (640px) | Mobile → tablet transitions |
-| `md:` (768px) | Single → multi-column layouts |
-| `lg:` (1024px) | Full desktop board view |
+```mermaid
+flowchart TD
+    A[App Loads] --> B{GET /user-api/verify}
+    B -- Valid Session --> C["/dashboard"]
+    B -- No Session --> D["/login or /register"]
 
-### Security Matrix (Route Protection)
+    D --> E[Login Form Submit]
+    E --> F{Credentials OK?}
+    F -- Yes --> C
+    F -- No --> D
+
+    C --> G[UserDashboard]
+    G --> H["Click Board → /board/:id"]
+    G --> I["Create Board → /create-board"]
+    G --> J["Trash icon → TrashView overlay"]
+
+    H --> K[BoardPage]
+    K --> L[List Components]
+    K --> M[InviteModal]
+    K --> N[MembersModal]
+    K --> O[CalendarView]
+    K --> P[TrashView]
+
+    Q["Visit /invite/:token"] --> R{Logged in?}
+    R -- Yes --> S[AcceptInvitePage]
+    R -- No --> D
+    S --> K
+```
+
+### Security / Route Protection Matrix
 
 | Route | Guard | Redirect |
 |-------|-------|---------|
 | `/dashboard` | `ProtectedRoute` — requires valid JWT session | `/login` |
 | `/board/:id` | `ProtectedRoute` + board membership check | `/dashboard` |
 | `/create-board` | `ProtectedRoute` | `/login` |
-| `/login`, `/register` | Redirect if already authenticated | `/dashboard` |
 | `/invite/accept/:token` | `ProtectedRoute` — JWT + invite token validation | `/login` |
 
 ---
 
 ## ⚛️ React UI Components
 
-All components live in `src/components/`.
+### Component Interaction Map
 
-### `Navbar.jsx`
+```mermaid
+graph TD
+    subgraph Pages
+        BD[BoardPage]
+        UD[UserDashboard]
+    end
+
+    subgraph Components
+        NB[Navbar]
+        PR[ProtectedRoute]
+        BO[Board.jsx]
+        LI[List.jsx]
+        CA[Card.jsx]
+        MO[Modal.jsx]
+        IV[InviteModal.jsx]
+        MM[MembersModal.jsx]
+        TV[TrashView.jsx]
+        CV[CalendarView.jsx]
+    end
+
+    subgraph State
+        ZS[Zustand BoardStore]
+        AC[AuthContext]
+    end
+
+    PR --> BD
+    PR --> UD
+    NB --> AC
+    UD --> BO
+    UD --> TV
+    BD --> LI
+    BD --> IV
+    BD --> MM
+    BD --> TV
+    BD --> CV
+    LI --> CA
+    CA --> MO
+    MO --> ZS
+    LI --> ZS
+    IV --> ZS
+    MM --> ZS
+    TV --> ZS
+    CV --> ZS
+```
+
+### All Components
+
+#### `Navbar.jsx`
 - Persistent top navigation bar
 - Displays app logo, user avatar, logout button
 - Reads user from `AuthContext`
-- Shows online status indicators
 
-### `ProtectedRoute.jsx`
+#### `ProtectedRoute.jsx`
 - Wraps sensitive routes
 - Calls `GET /user-api/verify` on mount to validate session
 - Renders `<Navigate to="/login" />` if unauthenticated
 
-### `Board.jsx`
-- Board thumbnail card displayed on the UserDashboard
-- Shows board title, background color, owner info
+#### `Board.jsx`
+- Board thumbnail card displayed on UserDashboard
+- Shows title, background color, owner info
 - Navigates to `/board/:id` on click
 
-### `List.jsx`
+#### `List.jsx`
 - Kanban list column component
 - Contains a vertical stack of `Card` components
 - Inline title editing (double-click to activate)
-- Add Card form (inline input at the bottom)
+- Add Card form at the bottom
 - Drag target for card drop events
-- Soft-delete list action (trash icon)
 
 **State managed:**
 - `isEditingTitle` — inline title edit mode
 - `showAddCard` — toggles inline card creation form
 - `newCardTitle` — controlled input for new card
 
-### `Card.jsx`
+#### `Card.jsx`
 - Individual task card in a list column
 - Displays: title, priority badge, due date, assignee avatar, status chip
 - Drag source for drag-and-drop movement
-- Click to open `Modal.jsx` (full card detail view)
+- Click to open `Modal.jsx`
 - Priority color codes: `High` → red, `Medium` → yellow, `Low` → green
 
-### `Modal.jsx`
+#### `Modal.jsx`
 - Full-screen card detail editor
-- Inline editable fields: title, description (textarea), due date (date picker), priority (select), status (select)
+- Inline editable fields: title, description, due date, priority, status
 - Assignee search with debounced `GET /user-api/search?q=` calls
 - Multiple-assignee support (board setting: `allowMultipleAssignees`)
 - Role-based field locking: Members can only edit `status`
 
-**State managed:**
-- `editTitle`, `editDesc`, `editDueDate`, `editPriority`, `editStatus`
-- `searchQuery`, `searchResults`, `showSearch`
-- `isSaving` — optimistic save state
+**State managed:** `editTitle`, `editDesc`, `editDueDate`, `editPriority`, `editStatus`, `searchQuery`, `searchResults`, `showSearch`, `isSaving`
 
-### `CalendarView.jsx`
-- Full calendar view powered by FullCalendar
+#### `CalendarView.jsx`
+- Full calendar powered by FullCalendar
 - Renders cards with `dueDate` as calendar events
 - Day-grid and time-grid view switching
 - Click event to open card Modal
-- Drag event on calendar to update `dueDate`
+- Drag event to update `dueDate`
 
-### `InviteModal.jsx`
+#### `InviteModal.jsx`
 - Tabbed interface: **Email Invite** | **Link Invite**
-- Email tab: search registered users by name/email, send invite
-- Link tab: generates a shareable `/invite/accept/:token` URL with copy button
-- Role selection (future-ready field)
+- Email tab: search registered users, send invite
+- Link tab: generates shareable `/invite/:token` URL with copy button
 
-### `MembersModal.jsx`
+#### `MembersModal.jsx`
 - Lists all board members with role badges (Owner / Admin / Member)
-- Owner can promote members to Admin, demote Admins, or remove members
+- Owner can promote, demote, or remove members
 - Calls `PUT /board-api/manage-member/:boardId`
 
-### `TrashView.jsx`
+#### `TrashView.jsx`
 - Slide-in panel accessible from Dashboard and BoardPage
 - Three tabs: **Boards** | **Lists** | **Cards**
 - Each item shows name, deletion date, restore and permanent delete buttons
-- Calls Zustand trash actions: `fetchDeletedBoards`, `restoreBoard`, `permanentDeleteBoard`, etc.
 
 ---
 
 ## 📄 Pages
 
-All pages live in `src/pages/`.
+### Page Lifecycle Diagrams
 
-### `Home.jsx` — `/`
-- Landing page for unauthenticated users
-- CTA buttons linking to Login and Register
+#### BoardPage Mount & Teardown
 
-### `LoginPage.jsx` — `/login`
-- `react-hook-form` controlled form
-- **Fields**: `email` (required, email format), `password` (required, min 6 chars)
-- **Validation**: inline error messages below inputs
-- On success: stores user in `AuthContext`, redirects to `/dashboard`
+```mermaid
+sequenceDiagram
+    participant R as React Router
+    participant BP as BoardPage
+    participant ZS as Zustand Store
+    participant SVC as socketService
+    participant S as Express Server
+    participant SIO as Socket.IO Server
 
-### `RegisterPage.jsx` — `/register`
-- **Fields**: `name` (required), `email` (required, email), `password` (required, min 6), `confirmPassword` (must match)
-- On success: auto-login and redirect to `/dashboard`
+    R->>BP: Route match /board/:id → mount
 
-### `UserDashboard.jsx` — `/dashboard`
-- Fetches and displays user's owned boards and shared boards (two separate tabs)
-- Board grid with `Board.jsx` cards
-- "Create Board" button → `CreateBoardPage`
-- Trash icon in header opens `TrashView`
+    Note over BP,S: ── Fetch board data ──
+    BP->>ZS: fetchBoard(boardId)
+    ZS->>S: GET /board-api/:id
+    S-->>ZS: { payload: board }
+    ZS->>S: GET /list-api/getLists/:boardId
+    S-->>ZS: { payload: lists }
+    ZS->>S: GET /card-api/getCards/:listId (parallel for each list)
+    S-->>ZS: { payload: cards[] }
+    ZS->>ZS: set({ board, lists: listsWithCards })
+    ZS-->>BP: Re-render with board data
 
-### `CreateBoardPage.jsx` — `/create-board`
-- Form to create a new board
-- **Fields**: `title` (required), `background` (color picker)
-- Calls `POST /board-api/addBoard`
+    Note over BP,SIO: ── Socket setup ──
+    BP->>SVC: connectSocket()
+    SVC-->>BP: socket instance
+    BP->>SIO: emit("join-board", boardId)
+    SIO-->>BP: emit("online-users", [userIds])
+    BP->>ZS: setupSocket(socket)
+    ZS->>ZS: Register all socket event listeners
 
-### `BoardPage.jsx` — `/board/:id`
-- Main Kanban board view
-- Fetches board + lists + cards via `useBoardStore.fetchBoard(id)`
-- Horizontal scrollable list layout
-- Drag-and-drop via native HTML5 drag events → `useBoardStore.moveCard()`
-- Board settings panel (owner/admin only): edit title, toggle `allowMultipleAssignees`
-- Member avatar row with online presence indicators
-- Header action buttons: Invite, Members, Calendar, Trash
+    Note over BP,SIO: ── Teardown on unmount ──
+    R->>BP: Navigate away → unmount
+    BP->>SIO: emit("leave-board", boardId)
+    BP->>ZS: reset()
+    ZS->>ZS: set({ board: null, lists: [], onlineUsers: [] })
+```
 
-### `AcceptInvitePage.jsx` — `/invite/accept/:token`
-- Reads `:token` from URL params
-- Calls `GET /board-api/invite/accept/:token`
-- On success: redirects user to the accepted board
-- On error: shows rejection message
+#### UserDashboard Load
 
-### `RootLayout.jsx`
-- Wraps all pages with `<Navbar />` and `<Outlet />`
+```mermaid
+sequenceDiagram
+    participant UD as UserDashboard
+    participant S as Express Server
+    participant DB as MongoDB
+
+    UD->>UD: useEffect on mount
+    par Fetch own boards
+        UD->>S: GET /board-api/
+        S->>DB: BoardModel.find({ owner: userId, isDeleted: { $ne: true } })
+        DB-->>S: Own boards array
+        S-->>UD: 200 { payload: ownBoards }
+    and Fetch shared boards
+        UD->>S: GET /board-api/shared/all
+        S->>DB: BoardModel.find({ owner: { $ne: userId }, members: userId, isDeleted: false })
+        DB-->>S: Shared boards array
+        S-->>UD: 200 { payload: sharedBoards }
+    end
+    UD->>UD: setState({ ownBoards, sharedBoards })
+    UD-->>UD: Render Board grid cards
+```
+
+### All Pages
+
+| Page | Route | Description |
+|------|-------|-------------|
+| `Home.jsx` | `/` | Landing page with CTA to Login/Register |
+| `LoginPage.jsx` | `/login` | React Hook Form login with email + password validation |
+| `RegisterPage.jsx` | `/register` | Register with name, email, password, confirmPassword |
+| `UserDashboard.jsx` | `/dashboard` | Own boards + shared boards tabs, TrashView |
+| `CreateBoardPage.jsx` | `/create-board` | Form: title + background color picker |
+| `BoardPage.jsx` | `/board/:id` | Full Kanban board with drag-and-drop |
+| `AcceptInvitePage.jsx` | `/invite/accept/:token` | Accept link invite → join board |
+| `RootLayout.jsx` | wrapper | Navbar + `<Outlet />` |
 
 ---
 
-## 🗃️ Zustand Store — Actions, Lifecycle, and Data Flows
-
-The store is defined in `src/context/BoardContext.js` using `zustand`'s `create()`.
+## 🗃️ Zustand Store — Actions, Lifecycle & Data Flows
 
 ### State Shape
 
 ```js
 {
-  board: null,           // Current board object (populated by fetchBoard)
+  board: null,           // Current board object
   lists: [],             // Lists with embedded cards array
-  loading: false,        // Global loading flag
-  error: null,           // Error message string
-  onlineUsers: [],       // Socket-provided online user IDs
+  loading: false,
+  error: null,
+  onlineUsers: [],
 
-  // Trash state
+  // Trash
   deletedBoards: [],
   deletedLists: [],
   deletedCards: [],
 }
 ```
 
-### Actions Reference
+### Optimistic Update Flow (Add Card Example)
+
+```mermaid
+sequenceDiagram
+    participant UI as React UI
+    participant ZS as Zustand Store
+    participant S as Express Server
+    participant SIO as Socket.IO
+
+    UI->>ZS: addCard(listId, title)
+    ZS->>ZS: Create tempCard { _id: "temp-123", title }
+    ZS->>ZS: Optimistic set: append tempCard to list.cards
+    UI-->>UI: Card appears instantly (temp)
+
+    ZS->>S: POST /card-api/addCard { title, list, position }
+
+    alt API success
+        S-->>ZS: 201 { payload: savedCard } (real _id)
+        ZS->>ZS: Replace temp-123 with savedCard in lists
+        ZS->>SIO: emitCardAdded(boardId, { card: savedCard, listId })
+        UI-->>UI: Re-render with real card data
+    else API failure
+        S-->>ZS: Error response
+        ZS->>ZS: Rollback: remove temp-123 from lists
+        UI-->>UI: Card disappears (rollback)
+    end
+```
+
+### Card Move Data Flow (Drag & Drop)
+
+```mermaid
+sequenceDiagram
+    participant UI as BoardPage
+    participant ZS as Zustand Store
+    participant S as Express Server
+    participant SIO as Socket.IO
+
+    UI->>ZS: moveCard(cardId, fromListId, toListId, newPosition)
+    ZS->>ZS: Compute updatedLists (splice card from source, insert at destination)
+    ZS->>ZS: set({ lists: updatedLists }) — instant UI update
+    ZS->>S: PUT /card-api/moveCard/:id { toListId, newPosition }
+    S-->>ZS: 200 OK (fire and forget)
+    ZS->>SIO: emitCardMoved(boardId, { cardId, fromListId, toListId, newPosition })
+    SIO-->>SIO: Broadcast to other users in board room
+```
+
+### Trash Data Flow
+
+```mermaid
+sequenceDiagram
+    participant TV as TrashView Component
+    participant ZS as Zustand Store
+    participant S as Express Server
+
+    TV->>ZS: fetchDeletedBoards()
+    ZS->>S: GET /board-api/trash/deleted
+    S-->>ZS: { payload: [deletedBoards] }
+    ZS->>ZS: set({ deletedBoards })
+    TV-->>TV: Render deleted boards list
+
+    TV->>ZS: fetchDeletedListsAndCards(boardId)
+    ZS->>S: GET /list-api/trash/deleted/:boardId
+    ZS->>S: GET /card-api/trash/deleted/:boardId (parallel)
+    S-->>ZS: { payload: deletedLists }
+    S-->>ZS: { payload: deletedCards }
+    ZS->>ZS: set({ deletedLists, deletedCards })
+    TV-->>TV: Render lists + cards tabs
+
+    TV->>ZS: restoreCard(cardId, boardId)
+    ZS->>S: PUT /card-api/restore/:id
+    S-->>ZS: 200 OK
+    ZS->>ZS: fetchDeletedListsAndCards(boardId)
+    ZS->>ZS: fetchBoard(boardId)
+    TV-->>TV: Card removed from trash, appears on board
+```
+
+### Full Store Actions Reference
 
 #### Board Actions
 
@@ -327,8 +494,8 @@ The store is defined in `src/context/BoardContext.js` using `zustand`'s `create(
 | `fetchBoard` | `(boardId)` | BoardPage `useEffect` on mount |
 | `reset` | `()` | BoardPage `useEffect` cleanup on unmount |
 | `updateBoardSettings` | `(boardId, updates)` | Board settings panel save |
-| `manageBoardMember` | `(boardId, memberId, action)` | MembersModal promote/demote/remove |
-| `inviteByEmail` | `(boardId, email)` | InviteModal email tab submit |
+| `manageBoardMember` | `(boardId, memberId, action)` | MembersModal |
+| `inviteByEmail` | `(boardId, email)` | InviteModal email tab |
 | `generateInviteLink` | `(boardId)` | InviteModal link tab |
 
 #### List Actions
@@ -344,9 +511,9 @@ The store is defined in `src/context/BoardContext.js` using `zustand`'s `create(
 | Action | Signature | Trigger |
 |--------|-----------|---------|
 | `addCard` | `(listId, title, additionalFields)` | List card form submit |
-| `updateCard` | `(cardId, listId, updates)` | Modal save button |
+| `updateCard` | `(cardId, listId, updates)` | Modal save |
 | `deleteCard` | `(cardId, listId)` | Card trash icon / Modal delete |
-| `moveCard` | `(cardId, fromListId, toListId, newPosition)` | Card drag-and-drop drop event |
+| `moveCard` | `(cardId, fromListId, toListId, newPosition)` | Drag-and-drop drop event |
 
 #### Trash Actions
 
@@ -354,143 +521,164 @@ The store is defined in `src/context/BoardContext.js` using `zustand`'s `create(
 |--------|-----------|---------|
 | `fetchDeletedBoards` | `()` | TrashView mount |
 | `restoreBoard` | `(boardId)` | TrashView restore button |
-| `permanentDeleteBoard` | `(boardId)` | TrashView permanent delete button |
-| `fetchDeletedListsAndCards` | `(boardId)` | TrashView mount (BoardPage context) |
+| `permanentDeleteBoard` | `(boardId)` | TrashView permanent delete |
+| `fetchDeletedListsAndCards` | `(boardId)` | TrashView mount (BoardPage) |
 | `restoreList` | `(listId, boardId)` | TrashView restore list |
 | `permanentDeleteList` | `(listId)` | TrashView permanent delete list |
 | `restoreCard` | `(cardId, boardId)` | TrashView restore card |
 | `permanentDeleteCard` | `(cardId)` | TrashView permanent delete card |
 
-### Lifecycle Flow
-
-```
-BoardPage mounts
-  → useEffect → fetchBoard(boardId)
-      → GET /board-api/:id          → set({ board })
-      → GET /list-api/getLists/:id  → set({ lists })
-      → GET /card-api/getCards/:listId (parallel) → set({ lists: listsWithCards })
-  → setupSocket(socket)
-      → Registers all socket event listeners
-BoardPage unmounts
-  → reset() → leaveBoard socket event → clear state
-```
-
-### Optimistic Updates Pattern
-
-List and Card mutations use **optimistic UI**:
-1. Immediately update local Zustand state
-2. Fire async API call in background
-3. On success: replace temp ID with real server ID
-4. On failure: rollback the optimistic state change
-
 ---
 
 ## 🌐 Axios Setup, Interceptors & Endpoints
 
-### Base Configuration
+### Axios Request Lifecycle
 
-`src/services/api.js` exports the API base URL:
+```mermaid
+sequenceDiagram
+    participant ZS as Zustand Action
+    participant AX as Axios
+    participant MW as Express Middleware
+    participant VT as verifyToken
+    participant CT as Controller
+    participant DB as MongoDB
 
-```js
-export const API_URL = "http://localhost:4001";
+    ZS->>AX: axios.get(url, { withCredentials: true })
+    Note over AX: withCredentials sends HttpOnly cookie automatically
+    AX->>MW: HTTP Request + Cookie: token=<JWT>
+    MW->>MW: express.json() — parse body
+    MW->>MW: CookieParser() — parse cookies
+    MW->>MW: cors() — set CORS headers
+    MW->>VT: verifyToken(req, res, next)
+    VT->>VT: jwt.verify(req.cookies.token, JWT_SECRET)
+    alt Valid token
+        VT->>VT: req.userId = decoded.id
+        VT->>CT: next() → controller
+        CT->>DB: Mongoose query
+        DB-->>CT: Result
+        CT-->>AX: JSON response
+        AX-->>ZS: res.data
+    else Invalid token
+        VT-->>AX: 401 { message: "Unauthorized" }
+        AX-->>ZS: Error thrown → catch block
+    end
 ```
 
-All Axios calls across the store use:
+### Base Configuration
 
 ```js
+// src/services/api.js
+export const API_URL = "http://localhost:4001";
+
+// All calls use:
 axios.get(`${API}/endpoint`, { withCredentials: true })
 ```
 
-> `withCredentials: true` is **required** on every request — this sends the HttpOnly `token` cookie with each request for authentication.
-
-### Global Response Interceptors
-
-Currently interceptors are not defined globally — all error handling is done inline in each Zustand action's `catch` block. To add a global interceptor:
+### Recommended Global Interceptor
 
 ```js
-// Recommended addition to src/services/api.js
-import axios from 'axios'
-
-const api = axios.create({
-  baseURL: API_URL,
-  withCredentials: true,
-})
+const api = axios.create({ baseURL: API_URL, withCredentials: true })
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear auth state and redirect to login
       window.location.href = '/login'
     }
     return Promise.reject(error)
   }
 )
-
-export default api
 ```
 
-### Endpoints Used by the Client
+### Endpoints Reference
 
-#### Auth Endpoints
-
-| Method | Endpoint | Payload | Description |
-|--------|----------|---------|-------------|
-| `POST` | `/user-api/signup` | `{ name, email, password }` | Register new user |
-| `POST` | `/user-api/signin` | `{ email, password }` | Login — sets JWT cookie |
-| `POST` | `/user-api/logout` | — | Clears JWT cookie |
-| `GET` | `/user-api/verify` | — | Validate session on app load |
-| `GET` | `/user-api/search?q=` | — | Search users for invite/assign |
-
-#### Board Endpoints
+#### Auth
 
 | Method | Endpoint | Payload | Description |
 |--------|----------|---------|-------------|
-| `POST` | `/board-api/addBoard` | `{ title, background }` | Create a board |
-| `GET` | `/board-api/` | — | Get user's own boards |
-| `GET` | `/board-api/shared/all` | — | Get boards user is member of |
-| `GET` | `/board-api/:id` | — | Get single board |
-| `PUT` | `/board-api/updateBoard/:id` | `{ title, allowMultipleAssignees, ... }` | Update board settings |
-| `DELETE` | `/board-api/deleteBoard/:id` | — | Soft-delete a board |
-| `GET` | `/board-api/trash/deleted` | — | Fetch soft-deleted boards |
-| `PUT` | `/board-api/restore/:id` | — | Restore a soft-deleted board |
-| `DELETE` | `/board-api/permanent/:id` | — | Permanently delete a board |
-| `PUT` | `/board-api/manage-member/:boardId` | `{ memberId, action }` | Promote/demote/remove member |
-| `POST` | `/board-api/invite/email/:boardId` | `{ email }` | Email invite to registered user |
-| `POST` | `/board-api/invite/link/:boardId` | — | Generate invite link |
-| `GET` | `/board-api/invite/accept/:token` | — | Accept invite via token |
+| `POST` | `/user-api/signup` | `{ name, email, password }` | Register |
+| `POST` | `/user-api/signin` | `{ email, password }` | Login |
+| `POST` | `/user-api/logout` | — | Logout |
+| `GET` | `/user-api/verify` | — | Session check |
+| `GET` | `/user-api/search?q=` | — | User search |
 
-#### List Endpoints
+#### Boards
 
 | Method | Endpoint | Payload | Description |
 |--------|----------|---------|-------------|
-| `POST` | `/list-api/addList` | `{ title, board, position }` | Create a list |
-| `GET` | `/list-api/getLists/:boardId` | — | Get all lists for a board |
-| `PUT` | `/list-api/updateList/:id` | `{ title }` | Rename a list |
-| `DELETE` | `/list-api/deleteList/:id` | — | Soft-delete a list |
-| `GET` | `/list-api/trash/deleted/:boardId` | — | Get deleted lists for a board |
-| `PUT` | `/list-api/restore/:id` | — | Restore a list |
-| `DELETE` | `/list-api/permanent/:id` | — | Permanently delete a list |
+| `POST` | `/board-api/addBoard` | `{ title, background }` | Create board |
+| `GET` | `/board-api/` | — | Own boards |
+| `GET` | `/board-api/shared/all` | — | Shared boards |
+| `GET` | `/board-api/:id` | — | Single board |
+| `PUT` | `/board-api/updateBoard/:id` | `{ title, allowMultipleAssignees }` | Update settings |
+| `DELETE` | `/board-api/deleteBoard/:id` | — | Soft delete |
+| `GET` | `/board-api/trash/deleted` | — | Trash list |
+| `PUT` | `/board-api/restore/:id` | — | Restore |
+| `DELETE` | `/board-api/permanent/:id` | — | Hard delete |
+| `PUT` | `/board-api/manage-member/:boardId` | `{ memberId, action }` | Member management |
+| `POST` | `/board-api/invite/email/:boardId` | `{ email }` | Email invite |
+| `POST` | `/board-api/invite/link/:boardId` | — | Generate link |
+| `GET` | `/board-api/invite/accept/:token` | — | Accept invite |
 
-#### Card Endpoints
+#### Lists
 
 | Method | Endpoint | Payload | Description |
 |--------|----------|---------|-------------|
-| `POST` | `/card-api/addCard` | `{ title, list, position }` | Create a card |
-| `GET` | `/card-api/getCards/:listId` | — | Get cards for a list |
-| `GET` | `/card-api/getCardById/:id` | — | Get a single card |
-| `PUT` | `/card-api/updateCard/:id` | `{ title, description, dueDate, priority, status, assignedTo, assignees }` | Update card fields |
-| `PUT` | `/card-api/moveCard/:id` | `{ toListId, newPosition }` | Move card to different list/position |
-| `DELETE` | `/card-api/deleteCards/:id` | — | Soft-delete a card |
-| `GET` | `/card-api/trash/deleted/:boardId` | — | Get deleted cards for a board |
-| `PUT` | `/card-api/restore/:id` | — | Restore a card |
-| `DELETE` | `/card-api/permanent/:id` | — | Permanently delete a card |
+| `POST` | `/list-api/addList` | `{ title, board, position }` | Create list |
+| `GET` | `/list-api/getLists/:boardId` | — | Get lists |
+| `PUT` | `/list-api/updateList/:id` | `{ title }` | Rename |
+| `DELETE` | `/list-api/deleteList/:id` | — | Soft delete |
+| `GET` | `/list-api/trash/deleted/:boardId` | — | Deleted lists |
+| `PUT` | `/list-api/restore/:id` | — | Restore |
+| `DELETE` | `/list-api/permanent/:id` | — | Hard delete |
+
+#### Cards
+
+| Method | Endpoint | Payload | Description |
+|--------|----------|---------|-------------|
+| `POST` | `/card-api/addCard` | `{ title, list, position }` | Create card |
+| `GET` | `/card-api/getCards/:listId` | — | Get cards |
+| `GET` | `/card-api/getCardById/:id` | — | Single card |
+| `PUT` | `/card-api/updateCard/:id` | `{ title, description, dueDate, priority, status, assignedTo, assignees }` | Update |
+| `PUT` | `/card-api/moveCard/:id` | `{ toListId, newPosition }` | Move |
+| `DELETE` | `/card-api/deleteCards/:id` | — | Soft delete |
+| `GET` | `/card-api/trash/deleted/:boardId` | — | Deleted cards |
+| `PUT` | `/card-api/restore/:id` | — | Restore |
+| `DELETE` | `/card-api/permanent/:id` | — | Hard delete |
 
 ---
 
 ## 🔌 Socket.IO Client
 
-Socket service lives in `src/socket/socketService.js`.
+### Socket Connection Lifecycle
+
+```mermaid
+sequenceDiagram
+    participant BP as BoardPage
+    participant SS as socketService
+    participant SIO as Socket.IO Server
+
+    BP->>SS: connectSocket()
+    SS->>SIO: WebSocket handshake (ws://localhost:4001)
+    SIO-->>SS: Connection established
+    SS-->>BP: socket instance
+
+    BP->>SIO: emit("join-board", boardId)
+    SIO->>SIO: socket.join(boardId)
+    SIO-->>BP: emit("online-users", [socketId1, socketId2, ...])
+    BP->>BP: useBoardStore.setupSocket(socket)
+    BP->>BP: Register all on() listeners
+
+    Note over BP,SIO: ── Board activity ──
+    BP->>SIO: emit("card-added", { boardId, card, listId })
+    SIO-->>SIO: socket.to(boardId).emit("card-added", data)
+    Note over SIO: Broadcasts to all OTHER users in room
+
+    Note over BP,SIO: ── Unmount ──
+    BP->>SIO: emit("leave-board", boardId)
+    SIO->>SIO: socket.leave(boardId)
+    SIO-->>SIO: Recalculate online-users for room
+```
 
 ### Emit Helpers
 
@@ -505,47 +693,47 @@ emitListDeleted(boardId, { listId })
 leaveBoard(boardId)
 ```
 
-### Setup in BoardPage
-
-```js
-// BoardPage.jsx
-useEffect(() => {
-  const socket = connectSocket()
-  socket.emit('join-board', boardId)
-  useBoardStore.getState().setupSocket(socket)
-  return () => {
-    socket.emit('leave-board', boardId)
-    useBoardStore.getState().reset()
-  }
-}, [boardId])
-```
-
 ---
 
 ## 🔒 Forms & Validation (React Hook Form)
 
-### Login Form Pattern
+### Form Validation Flow
 
-```jsx
-const { register, handleSubmit, formState: { errors } } = useForm()
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant F as React Hook Form
+    participant C as Component
+    participant S as Express Server
 
-<input
-  {...register("email", {
-    required: "Email is required",
-    pattern: { value: /^\S+@\S+$/, message: "Invalid email format" }
-  })}
-/>
-{errors.email && <p className="text-red-400 text-sm">{errors.email.message}</p>}
+    U->>C: Fill form fields
+    U->>C: Click Submit
+
+    C->>F: handleSubmit(onSubmit)
+    F->>F: Validate all registered fields
+
+    alt All validations pass
+        F->>C: onSubmit(data) called
+        C->>S: POST /user-api/signin { email, password }
+        S-->>C: 200 { payload: user }
+        C-->>U: Redirect to dashboard
+    else Validation errors
+        F->>F: formState.errors populated
+        F-->>C: Re-render with error messages
+        C-->>U: Show inline errors below each field
+    end
 ```
 
-### Registration Form Validation Rules
+### Validation Rules
 
-| Field | Rules |
-|-------|-------|
-| `name` | Required |
-| `email` | Required, valid email pattern |
-| `password` | Required, min length 6 |
-| `confirmPassword` | Must match `password` field using `watch()` |
+| Form | Field | Rules |
+|------|-------|-------|
+| Login | `email` | required, valid email pattern |
+| Login | `password` | required, min length 6 |
+| Register | `name` | required |
+| Register | `email` | required, valid email |
+| Register | `password` | required, min 6 |
+| Register | `confirmPassword` | required, must match `password` via `watch()` |
 
 ---
 
@@ -560,9 +748,9 @@ const { register, handleSubmit, formState: { errors } } = useForm()
 ## 📜 Available Scripts
 
 ```bash
-npm run dev          # Start Vite dev server (http://localhost:5173)
+npm run dev            # Start Vite dev server (http://localhost:5173)
 npm run dev -- --host  # Expose on local network
-npm run build        # Build production bundle → /dist
-npm run preview      # Serve the production build locally
-npm run lint         # Run ESLint checks
+npm run build          # Build production bundle → /dist
+npm run preview        # Serve the production build locally
+npm run lint           # Run ESLint checks
 ```
