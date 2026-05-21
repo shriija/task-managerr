@@ -45,7 +45,8 @@ export const signin = async(req,res)=>{
             httpOnly: true,
             maxAge: 7 * 24 * 60 * 60 * 1000,
             secure:true,
-            sameSite:"none"
+            sameSite:"none",
+            partitioned: true 
         });
         res.status(200).json({message:"signin sucessfull",payload:userObj})
 
@@ -58,7 +59,8 @@ export const logout = async(req,res)=>{
         res.clearCookie('token',{
             httpOnly:true,
             secure:true,
-            sameSite:"none"
+            sameSite:"none",
+            partitioned: true
         })
         res.status(200).json({message:"logout success"})
         
