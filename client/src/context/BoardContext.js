@@ -261,21 +261,21 @@ export const useBoardStore = create((set, get) => ({
   },
 
   // ── Card Actions ───────────────────────────────────────
-  addCard: async (listId, title) => {
+  addCard: async (listId, title, additionalFields = {}) => {
     const boardId = get().board?._id
     const { lists } = get()
     const targetList = lists.find(l => l._id === listId)
     if (!targetList) return
 
     const position = targetList.cards?.length || 0
-    const tempCard = { _id: `temp-${Date.now()}`, title, description: "", list: listId, position, labels: [], dueDate: null, priority: "" }
+    const tempCard = { _id: `temp-${Date.now()}`, title, description: "", list: listId, position, labels: [], dueDate: null, priority: "", ...additionalFields }
 
     set({
       lists: lists.map(l => l._id === listId ? { ...l, cards: [...(l.cards || []), tempCard] } : l)
     })
 
     try {
-      const res = await axios.post(`${API}/card-api/addCard`, { title, list: listId, position }, { withCredentials: true })
+      const res = await axios.post(`${API}/card-api/addCard`, { title, list: listId, position, ...additionalFields }, { withCredentials: true })
       const saved = res.data.payload
       set({
         lists: get().lists.map(l =>

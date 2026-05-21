@@ -279,7 +279,7 @@ function BoardPage() {
 
         {/* ─── BOARD CANVAS / VIEWS ───────────────────────────── */}
         {currentView === "calendar" ? (
-          <CalendarView />
+          <CalendarView searchQuery={searchQuery} />
         ) : currentView === "trash" ? (
           <TrashView boardId={id} />
         ) : (
