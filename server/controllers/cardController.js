@@ -138,19 +138,23 @@ export const getCards=async(req,res)=>{
 export const updateCard=async(req,res)=>{
     const cardId=req.params.id
     const {title, description, dueDate, priority, status, assignedTo, assignees}=req.body
-    if(dueDate){
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const due = parseLocalDate(dueDate);
-        due.setHours(0, 0, 0, 0);
-        if(due < today){
-            return res.status(400).json({message:"Due date cannot be in the past",payload:dueDate})
-        }
-    }
     try{
         const card = await CardModel.findById(cardId);
         if (!card) {
             return res.status(404).json({message:"Card not found"})
+        }
+
+        if(dueDate){
+            const currentDueTime = card.dueDate ? parseLocalDate(card.dueDate).setHours(0, 0, 0, 0) : null;
+            const newDueTime = parseLocalDate(dueDate).setHours(0, 0, 0, 0);
+            
+            if (newDueTime !== currentDueTime) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if(newDueTime < today.getTime()){
+                    return res.status(400).json({message:"Due date cannot be in the past",payload:dueDate})
+                }
+            }
         }
 
         // Check task assignment permissions

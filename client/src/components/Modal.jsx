@@ -126,7 +126,7 @@ function Modal({ card, listId, onClose }) {
                       overflow-hidden">
 
         {/* Header accent */}
-        <div className="h-1.5 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
+        <div className="h-1.5 bg-linear-to-r from-primary-400 via-primary-500 to-primary-600" />
 
         <div className="p-6">
 
@@ -177,14 +177,14 @@ function Modal({ card, listId, onClose }) {
                 onClick={() => canAssignOthers && setDropdownOpen(!dropdownOpen)}
                 className={`w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
                            text-gray-700 bg-white flex items-center justify-between
-                           hover:border-primary-300 transition-all shadow-sm min-h-[46px]
+                           hover:border-primary-300 transition-all shadow-sm min-h-11.5
                            ${canAssignOthers ? "cursor-pointer" : "cursor-not-allowed bg-gray-50/50"}`}
               >
                 {!board?.allowMultipleAssignees ? (
                   assignedTo ? (
                     <div className="flex items-center gap-2 overflow-hidden">
-                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary-400 to-primary-600
-                                      flex items-center justify-center flex-shrink-0 text-white text-[9px] font-bold">
+                      <div className="w-5 h-5 rounded-full bg-linear-to-br from-primary-400 to-primary-600
+                                      flex items-center justify-center shrink-0 text-white text-[9px] font-bold">
                         {assignedTo.avatar ? (
                           <img src={assignedTo.avatar} alt="" className="w-full h-full rounded-full object-cover" />
                         ) : (
@@ -201,8 +201,8 @@ function Modal({ card, listId, onClose }) {
                     <div className="flex -space-x-1.5 overflow-hidden">
                       {assignees.slice(0, 4).map((a, i) => (
                         <div key={a._id || i} className="w-6 h-6 rounded-full border-2 border-white
-                                      bg-gradient-to-br from-primary-400 to-primary-600
-                                      flex items-center justify-center flex-shrink-0 text-white text-[10px] font-bold"
+                                      bg-linear-to-br from-primary-400 to-primary-600
+                                      flex items-center justify-center shrink-0 text-white text-[10px] font-bold"
                              title={a.name}>
                           {a.avatar ? (
                             <img src={a.avatar} alt="" className="w-full h-full rounded-full object-cover" />
@@ -295,8 +295,8 @@ function Modal({ card, listId, onClose }) {
                                         transition-colors ${isSelected ? "bg-primary-50 text-primary-600 font-semibold" : "hover:bg-gray-50 text-gray-700"}`}
                           >
                             <div className="flex items-center gap-2 overflow-hidden">
-                              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary-300 to-primary-500
-                                              flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                              <div className="w-6 h-6 rounded-full bg-linear-to-br from-primary-300 to-primary-500
+                                              flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                                 {user.avatar ? (
                                   <img src={user.avatar} alt="" className="w-full h-full rounded-full object-cover" />
                                 ) : (
@@ -309,7 +309,7 @@ function Modal({ card, listId, onClose }) {
                               </div>
                             </div>
                             {isSelected && (
-                              <svg className="w-4 h-4 text-primary-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <svg className="w-4 h-4 text-primary-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                               </svg>
                             )}
@@ -412,7 +412,7 @@ function Modal({ card, listId, onClose }) {
               <button
                 onClick={handleSave}
                 className="text-sm font-semibold text-white
-                           bg-gradient-to-r from-primary-500 to-primary-600
+                           bg-linear-to-r from-primary-500 to-primary-600
                            hover:from-primary-600 hover:to-primary-700
                            px-5 py-2.5 rounded-xl shadow-sm
                            hover:shadow-md transition-all duration-200 cursor-pointer"
