@@ -109,7 +109,7 @@ function Home() {
       </div>
 
       <div className="flex-1">
-        <img
+        <img 
           src="../assets/react.svg"
           alt="Kanvas Final Screenshot"
           className="rounded-lg shadow-lg"
