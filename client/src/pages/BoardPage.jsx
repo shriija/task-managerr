@@ -21,8 +21,37 @@ function BoardPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showInvite, setShowInvite] = useState(false)
   const [showMembers, setShowMembers] = useState(false)
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleValue, setTitleValue] = useState("")
 
   const isOwner = board?.owner?._id === currentUser?._id || board?.owner === currentUser?._id
+
+  useEffect(() => {
+    if (board) {
+      setTitleValue(board.title)
+    }
+  }, [board])
+
+  const handleTitleSave = () => {
+    const trimmed = titleValue.trim()
+    if (!trimmed) {
+      setTitleValue(board?.title || "")
+      setEditingTitle(false)
+      return
+    }
+    if (trimmed !== board?.title) {
+      updateBoardSettings(id, { title: trimmed })
+    }
+    setEditingTitle(false)
+  }
+
+  const handleTitleKeyDown = (e) => {
+    if (e.key === "Enter") handleTitleSave()
+    if (e.key === "Escape") {
+      setTitleValue(board?.title || "")
+      setEditingTitle(false)
+    }
+  }
 
   useEffect(() => {
     if (!view || !["board", "my-tasks", "calendar", "trash"].includes(view)) {
@@ -193,9 +222,31 @@ function BoardPage() {
 
           <div className="flex items-center gap-4">
             {/* Board title */}
-            <h2 className="font-bold text-lg text-gray-900">
-              {board?.title || "Board"}
-            </h2>
+            {isOwner ? (
+              editingTitle ? (
+                <input
+                  value={titleValue}
+                  onChange={(e) => setTitleValue(e.target.value)}
+                  onBlur={handleTitleSave}
+                  onKeyDown={handleTitleKeyDown}
+                  className="font-bold text-lg text-gray-900 outline-none border-b-2 border-primary-500 bg-transparent py-0.5"
+                  autoFocus
+                />
+              ) : (
+                <div className="flex items-center gap-1.5 group cursor-pointer" onClick={() => setEditingTitle(true)}>
+                  <h2 className="font-bold text-lg text-gray-900 group-hover:text-primary-600 transition-colors">
+                    {board?.title || "Board"}
+                  </h2>
+                  <svg className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                  </svg>
+                </div>
+              )
+            ) : (
+              <h2 className="font-bold text-lg text-gray-900">
+                {board?.title || "Board"}
+              </h2>
+            )}
 
             {/* Members */}
             <div 
