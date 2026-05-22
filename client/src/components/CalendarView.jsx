@@ -267,7 +267,7 @@ function CalendarView({ searchQuery }) {
               right: "dayGridMonth,timeGridWeek"
             }}
             droppable={true}
-            drop={handleEventReceive}
+            eventReceive={handleEventReceive}
             height="100%"
             // Hide event pills by not passing `events={...}` at all.
             dayCellClassNames={(arg) => {
