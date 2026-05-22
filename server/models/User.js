@@ -20,6 +20,8 @@ const userSchema = new Schema(
     
     // Optional URL to the user's avatar image (typically hosted on Cloudinary).
     avatar: { type: String, default: "" },
+    isGoogleUser: { type: Boolean, default: false },
+    hasPasswordSet: { type: Boolean, default: true },
   },
   { 
     strict: true,        // Reject fields not defined in the schema

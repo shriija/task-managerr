@@ -2,6 +2,7 @@ import { useForm } from "react-hook-form";
 import { NavLink, useNavigate } from "react-router";
 import { useAuthStore } from "../context/AuthContext";
 import { useState } from "react";
+import { GoogleLogin } from "@react-oauth/google";
 
 /**
  * Loginpage Component
@@ -19,6 +20,7 @@ function Loginpage() {
 
   // Selectors from the global AuthStore Zustand context
   const login = useAuthStore((state) => state.login);
+  const googleLogin = useAuthStore((state) => state.googleLogin);
   const loading = useAuthStore((state) => state.loading);
   const error = useAuthStore((state) => state.error);
 
@@ -113,7 +115,40 @@ function Loginpage() {
             {loading ? "Signing in..." : "Sign In"}
           </button>
 
+<<<<<<< Updated upstream
           {/* Redirect to Registration */}
+=======
+          {/* OR Divider */}
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-slate-500 font-semibold tracking-wider">Or continue with</span>
+            </div>
+          </div>
+
+          {/* Google Login Button */}
+          <div className="flex justify-center w-full">
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                await googleLogin(credentialResponse.credential);
+                if (useAuthStore.getState().isAuthenticated) {
+                  navigate("/dashboard");
+                }
+              }}
+              onError={() => {
+                console.error("Google Login Failed");
+              }}
+              useOneTap
+              theme="outline"
+              size="large"
+              width="100%"
+            />
+          </div>
+
+          {/* Redirect */}
+>>>>>>> Stashed changes
           <p className="text-center text-sm text-slate-500 mt-6">
             Don't have an account?{' '}
             <NavLink to="/register" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">

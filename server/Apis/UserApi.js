@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import exp from 'express';
 import { signup, signin, logout, verifySession, searchUsers, uploadAvatar } from '../controllers/authController.js';
 import verifyToken from '../utils/verifyToken.js';
@@ -28,4 +29,23 @@ UserApi.get('/search', verifyToken, searchUsers);       // Search for other user
  */
 UserApi.post('/upload-avatar', uploadAvatarMiddleware, uploadAvatar);
 
-export default UserApi;
+export default UserApi;
+=======
+import exp from 'express'
+import {signup,signin,logout,verifySession,searchUsers,uploadAvatar,googleSignin,updateProfile,changePassword} from '../controllers/authController.js'
+import verifyToken from '../utils/verifyToken.js'
+import { uploadAvatar as uploadAvatarMiddleware } from '../utils/upload.js'
+const UserApi = exp.Router()
+
+UserApi.post('/signup',signup)
+UserApi.post('/signin',signin)
+UserApi.post('/google-signin',googleSignin)
+UserApi.post('/logout',logout)
+UserApi.get('/verify', verifyToken, verifySession)
+UserApi.get('/search', verifyToken, searchUsers)
+UserApi.post('/upload-avatar', uploadAvatarMiddleware, uploadAvatar)
+UserApi.put('/profile', verifyToken, updateProfile)
+UserApi.put('/change-password', verifyToken, changePassword)
+
+export default UserApi;
+>>>>>>> Stashed changes
