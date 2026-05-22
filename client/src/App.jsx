@@ -8,6 +8,7 @@ import UserDashboard from './pages/UserDashboard'
 import CreateBoardPage from './pages/CreateBoardPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import BoardPage from './pages/BoardPage'
+import AcceptInvitePage from './pages/AcceptInvitePage'
 
 function App() {
   const routerObj=createBrowserRouter([
@@ -36,6 +37,14 @@ function App() {
           )
         },
         {
+          path:"/dashboard/:tab",
+          element:(
+            <ProtectedRoute>
+              <UserDashboard />
+            </ProtectedRoute>
+          )
+        },
+        {
           path:"create-board",
           element:(
             <ProtectedRoute>
@@ -48,6 +57,22 @@ function App() {
           element:(
             <ProtectedRoute>
               <BoardPage/>
+            </ProtectedRoute>
+          )
+        },
+        {
+          path:"board/:id/:view",
+          element:(
+            <ProtectedRoute>
+              <BoardPage/>
+            </ProtectedRoute>
+          )
+        },
+        {
+          path:"invite/:token",
+          element:(
+            <ProtectedRoute>
+              <AcceptInvitePage/>
             </ProtectedRoute>
           )
         },

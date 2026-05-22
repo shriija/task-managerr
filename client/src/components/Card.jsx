@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useBoardStore } from "../context/BoardContext";
 
 function Card({ card, listId, onOpenModal, onDragStart, onDragEnd }) {
+  const board = useBoardStore(s => s.board);
   const [isHovered, setIsHovered] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -138,24 +140,48 @@ function Card({ card, listId, onOpenModal, onDragStart, onDragEnd }) {
           </span>
         )}
 
-        {/* Assignee Avatar */}
-        {card.assignedTo && (
-          <div 
-            className="w-5 h-5 rounded-full bg-gradient-to-br from-primary-400 to-primary-600
-                       flex items-center justify-center text-white text-[9px] font-bold shadow-sm ml-auto flex-shrink-0"
-            title={`Assigned to ${card.assignedTo.name}`}
-          >
-            {card.assignedTo.avatar ? (
-              <img src={card.assignedTo.avatar} alt="" className="w-full h-full rounded-full object-cover" />
-            ) : (
-              card.assignedTo.name?.charAt(0).toUpperCase() || "A"
-            )}
-          </div>
+        {/* Assignee Avatar(s) */}
+        {!board?.allowMultipleAssignees ? (
+          card.assignedTo && (
+            <div 
+              className="w-5 h-5 rounded-full bg-linear-to-br from-primary-400 to-primary-600
+                         flex items-center justify-center text-white text-[9px] font-bold shadow-sm ml-auto shrink-0"
+              title={`Assigned to ${card.assignedTo.name}`}
+            >
+              {card.assignedTo.avatar ? (
+                <img src={card.assignedTo.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+              ) : (
+                card.assignedTo.name?.charAt(0).toUpperCase() || "A"
+              )}
+            </div>
+          )
+        ) : (
+          card.assignees && card.assignees.length > 0 && (
+            <div className="flex -space-x-1.5 overflow-hidden ml-auto">
+              {card.assignees.slice(0, 3).map((a, i) => (
+                <div key={a._id || i} className="w-5 h-5 rounded-full border border-white
+                              bg-linear-to-br from-primary-400 to-primary-600
+                              flex items-center justify-center shrink-0 text-white text-[9px] font-bold shadow-sm"
+                     title={`Assigned to ${a.name}`}>
+                  {a.avatar ? (
+                    <img src={a.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                  ) : (
+                    a.name?.charAt(0).toUpperCase() || "A"
+                  )}
+                </div>
+              ))}
+              {card.assignees.length > 3 && (
+                <div className="w-5 h-5 rounded-full border border-white bg-gray-100 flex items-center justify-center text-[9px] font-semibold text-gray-500 shadow-sm z-10">
+                  +{card.assignees.length - 3}
+                </div>
+              )}
+            </div>
+          )
         )}
 
         {/* Drag handle indicator */}
         <svg
-          className={`w-3.5 h-3.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ${!card.assignedTo ? 'ml-auto' : 'ml-1.5'}`}
+          className={`w-3.5 h-3.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ${(!board?.allowMultipleAssignees && !card.assignedTo) || (board?.allowMultipleAssignees && (!card.assignees || card.assignees.length === 0)) ? 'ml-auto' : 'ml-1.5'}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"

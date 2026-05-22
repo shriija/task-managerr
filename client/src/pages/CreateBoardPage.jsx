@@ -5,18 +5,24 @@ import { API_URL } from "../services/api"
 
 function CreateBoardPage() {
 
+  const [mode, setMode] = useState("")
   const [title, setTitle] = useState("")
+  const [inviteLink, setInviteLink] = useState("")
   const [loading, setLoading] = useState(false)
-  const [error,setError] = useState("")
+  const [error, setError] = useState("")
 
   const navigate = useNavigate()
 
+  // Create Board
   const createBoard = async () => {
-    if (!title.trim()){ 
-        setError("Board title is required") 
-        return }
+
+    if (!title.trim()) {
+      setError("Board title is required")
+      return
+    }
 
     try {
+
       setError("")
       setLoading(true)
 
@@ -24,53 +30,186 @@ function CreateBoardPage() {
         `${API_URL}/board-api/addBoard`,
         {
           title: title.trim(),
-          background:"#0052cc"
+          background: "#0052cc"
         },
         {
-          withCredentials:true
+          withCredentials: true
         }
       )
 
       const board = res.data.payload
 
-      // ⭐ navigate to board page
       navigate(`/board/${board._id}`)
 
     } catch (err) {
-      setError(err?.response?.message || "Something went wrong while creating board")
+
+      setError(
+        err?.response?.data?.message ||
+        "Something went wrong while creating board"
+      )
+
     } finally {
+
       setLoading(false)
     }
   }
 
+  // Join Through Link
+  const joinBoard = () => {
+
+    if (!inviteLink.trim()) {
+
+      setError("Invite link required")
+      return
+    }
+
+    try {
+
+      const url = new URL(inviteLink)
+
+      const token = url.pathname.split("/").pop()
+
+      navigate(`/invite/${token}`)
+
+    } catch {
+
+      setError("Invalid invite link")
+    }
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-slate-50 px-4 font-body">
+      <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-xl shadow-slate-100 w-full max-w-md">
+        
+        <div className="text-center mb-8">
+          <h1 className="font-display text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
+            Workspace Access
+          </h1>
+          <p className="text-sm text-slate-500">
+            Create a new board or join using an invite link
+          </p>
+        </div>
 
-      <div className="bg-white p-8 rounded-xl shadow w-96">
+        {/* SELECT MODE */}
+        {!mode && (
+          <div className="space-y-4">
+            <button
+              onClick={() => {
+                setMode("create")
+                setError("")
+              }}
+              className="w-full p-5 border border-slate-200 rounded-2xl hover:border-primary-500 hover:bg-slate-50/50 transition-all duration-200 text-left cursor-pointer"
+            >
+              <h2 className="font-bold text-lg text-slate-900">
+                Create New Board
+              </h2>
+              <p className="text-sm text-slate-500 mt-1">
+                Start a fresh workspace for your tasks
+              </p>
+            </button>
 
-        <h1 className="text-2xl font-bold mb-6">Create New Board</h1>
+            <button
+              onClick={() => {
+                setMode("join")
+                setError("")
+              }}
+              className="w-full p-5 border border-slate-200 rounded-2xl hover:border-emerald-500 hover:bg-slate-50/50 transition-all duration-200 text-left cursor-pointer"
+            >
+              <h2 className="font-bold text-lg text-slate-900">
+                Join Through Link
+              </h2>
+              <p className="text-sm text-slate-500 mt-1">
+                Join an existing workspace using an invite link
+              </p>
+            </button>
 
-        <input
-          value={title}
-          onChange={(e)=>setTitle(e.target.value)}
-          placeholder="Board title"
-          className="w-full border p-2 rounded mb-4"
-        />
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="w-full text-center mt-6 text-sm font-semibold text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
+            >
+              Cancel & Go Back
+            </button>
+          </div>
+        )}
 
-        {error && (<p className="text-red-500 text-sm mb-2">{error}</p>)}
+        {/* CREATE BOARD */}
+        {mode === "create" && (
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Board Title</label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Project Apollo"
+              className="w-full bg-slate-50/50 border border-slate-200 focus:border-primary-500 focus:bg-white rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-all mb-4"
+            />
 
-        <button
-          disabled={loading}
-          onClick={createBoard}
-          className="p-2.5 rounded-xl hover:bg-primary-50 hover:text-primary-600
-                       cursor-pointer text-sm text-gray-700 font-medium
-                       transition-colors duration-150"
-        >
-          {loading ? "Creating..." : "Create Board"}
-        </button>
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200/50 rounded-xl text-center">
+                <p className="text-red-600 text-xs font-semibold">{error}</p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setMode("")
+                  setError("")
+                }}
+                className="flex-1 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold transition-all cursor-pointer"
+              >
+                Back
+              </button>
+
+              <button
+                disabled={loading}
+                onClick={createBoard}
+                className="flex-1 py-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold transition-all cursor-pointer disabled:opacity-50"
+              >
+                {loading ? "Creating..." : "Create"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* JOIN BOARD */}
+        {mode === "join" && (
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Invite Link</label>
+            <input
+              value={inviteLink}
+              onChange={(e) => setInviteLink(e.target.value)}
+              placeholder="Paste link here..."
+              className="w-full bg-slate-50/50 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-all mb-4"
+            />
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200/50 rounded-xl text-center">
+                <p className="text-red-600 text-xs font-semibold">{error}</p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setMode("")
+                  setError("")
+                }}
+                className="flex-1 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold transition-all cursor-pointer"
+              >
+                Back
+              </button>
+
+              <button
+                onClick={joinBoard}
+                className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-all cursor-pointer"
+              >
+                Join Board
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
-
     </div>
   )
 }

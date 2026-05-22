@@ -56,7 +56,7 @@ function TrashView({ boardId }) {
                     {card.description && <p className="text-xs text-gray-400 mt-0.5 truncate">{card.description}</p>}
                     <p className="text-xs text-gray-400 mt-1">Deleted {formatDate(card.deletedAt)}</p>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
+                  <div className="flex gap-2 shrink-0">
                     <button
                       onClick={() => restoreCard(card._id, boardId)}
                       className="text-xs font-semibold px-3 py-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
@@ -87,7 +87,7 @@ function TrashView({ boardId }) {
                     <p className="font-semibold text-gray-700 line-through decoration-red-300 truncate">{list.title}</p>
                     <p className="text-xs text-gray-400 mt-1">Deleted {formatDate(list.deletedAt)}</p>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
+                  <div className="flex gap-2 shrink-0">
                     <button
                       onClick={() => restoreList(list._id, boardId)}
                       className="text-xs font-semibold px-3 py-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"

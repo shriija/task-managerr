@@ -2,13 +2,26 @@ import { CardModel } from "../models/Card.js";
 import { ListModel } from "../models/List.js";
 import { BoardModel } from "../models/Board.js";
 
+// Helper to parse date string in local timezone to avoid timezone shifting
+const parseLocalDate = (dateStr) => {
+    if (!dateStr) return new Date();
+    const cleanStr = typeof dateStr === "string" ? dateStr.split("T")[0] : dateStr;
+    const parts = cleanStr.toString().split("-");
+    if (parts.length === 3) {
+        return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    }
+    return new Date(dateStr);
+};
+
 //Create Cards
 export const addCard=async(req,res)=>{
     const createCard = req.body;
     if(createCard.dueDate){
-        const date= new Date();
-        const dueDate=new Date(createCard.dueDate);
-        if(dueDate<date){
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const due = parseLocalDate(createCard.dueDate);
+        due.setHours(0, 0, 0, 0);
+        if(due < today){
             return res.status(400).json({message:"Due date cannot be in the past",payload: createCard.dueDate} )
         }
     }
@@ -16,6 +29,22 @@ export const addCard=async(req,res)=>{
         let initialStatus = "to do";
         const list = await ListModel.findById(createCard.list);
         if (list) {
+            const board = await BoardModel.findById(list.board);
+            if (board) {
+                const isOwner = board.owner.toString() === req.userId;
+                const isAdmin = board.admins?.some(a => a.toString() === req.userId);
+                if (!isOwner && !isAdmin) {
+                    if (createCard.assignedTo && createCard.assignedTo.toString() !== req.userId) {
+                        return res.status(403).json({ message: "Only board owners or admins can assign tasks to other users" });
+                    }
+                    if (createCard.assignees && Array.isArray(createCard.assignees)) {
+                        const assigningOthers = createCard.assignees.some(a => a.toString() !== req.userId);
+                        if (assigningOthers) {
+                            return res.status(403).json({ message: "Only board owners or admins can assign tasks to other users" });
+                        }
+                    }
+                }
+            }
             const title = list.title.toLowerCase();
             if (title === "to do") {
                 initialStatus = "to do";
@@ -31,6 +60,7 @@ export const addCard=async(req,res)=>{
             ...createCard,
             createdBy: req.userId,
             assignedTo: assignedUserId,
+            assignees: createCard.assignees || [],
             status: createCard.status || initialStatus
         })
         let saveCard = await newCard.save();
@@ -52,11 +82,19 @@ export const addCard=async(req,res)=>{
                 if (assignedUserId && assignedUserId.toString() !== req.userId.toString()) {
                     await checkAndAdd(assignedUserId);
                 }
+                if (createCard.assignees && Array.isArray(createCard.assignees)) {
+                    for (const assignee of createCard.assignees) {
+                        if (assignee.toString() !== req.userId.toString()) {
+                            await checkAndAdd(assignee);
+                        }
+                    }
+                }
             }
         }
 
         saveCard = await CardModel.findById(saveCard._id)
             .populate("assignedTo", "name email avatar")
+            .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar");
 
         res.status(201).json({message:"New card added successfully", payload:saveCard})
@@ -72,6 +110,7 @@ export const getCardById=async(req,res)=>{
     try{
         const card=await CardModel.findById(getCard)
             .populate("assignedTo", "name email avatar")
+            .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar")
         if(card){res.status(200).json({message:"Card fetched successfully",payload:card})}
         else{res.status(404).json({message:"Card not found"})}
@@ -87,6 +126,7 @@ export const getCards=async(req,res)=>{
         const cards=await CardModel.find({list:list, isDeleted: { $ne: true }})
             .sort({ position: 1 })
             .populate("assignedTo", "name email avatar")
+            .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar")
         res.status(200).json({message:"Cards fetched",payload:cards})
     }catch(error){
@@ -97,18 +137,67 @@ export const getCards=async(req,res)=>{
 //Update card
 export const updateCard=async(req,res)=>{
     const cardId=req.params.id
-    const {title, description, dueDate, priority, status, assignedTo}=req.body
-    if(dueDate){
-        const date= new Date();
-        const due=new Date(dueDate);
-        if(due<date){
-            return res.status(400).json({message:"Due date cannot be in the past",payload:dueDate})
-        }
-    }
+    const {title, description, dueDate, priority, status, assignedTo, assignees}=req.body
     try{
         const card = await CardModel.findById(cardId);
         if (!card) {
             return res.status(404).json({message:"Card not found"})
+        }
+
+        if(dueDate){
+            const currentDueTime = card.dueDate ? parseLocalDate(card.dueDate).setHours(0, 0, 0, 0) : null;
+            const newDueTime = parseLocalDate(dueDate).setHours(0, 0, 0, 0);
+            
+            if (newDueTime !== currentDueTime) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if(newDueTime < today.getTime()){
+                    return res.status(400).json({message:"Due date cannot be in the past",payload:dueDate})
+                }
+            }
+        }
+
+        // Check task assignment permissions
+        const list = await ListModel.findById(card.list);
+        if (list) {
+            const board = await BoardModel.findById(list.board);
+            if (board) {
+                const isOwner = board.owner.toString() === req.userId;
+                const isAdmin = board.admins?.some(a => a.toString() === req.userId);
+
+                if (!isOwner && !isAdmin) {
+                    const isTitleChanged = title !== undefined && title !== card.title;
+                    const isDescriptionChanged = description !== undefined && description !== card.description;
+                    const isDueDateChanged = dueDate !== undefined && (
+                        (dueDate && !card.dueDate) ||
+                        (!dueDate && card.dueDate) ||
+                        (dueDate && card.dueDate && new Date(dueDate).getTime() !== new Date(card.dueDate).getTime())
+                    );
+                    const isPriorityChanged = priority !== undefined && priority !== card.priority;
+                    
+                    let isAssignedToChanged = false;
+                    if (assignedTo !== undefined) {
+                        const currentAssignedTo = card.assignedTo ? card.assignedTo.toString() : null;
+                        const newAssignedTo = assignedTo ? assignedTo.toString() : null;
+                        if (currentAssignedTo !== newAssignedTo) {
+                            isAssignedToChanged = true;
+                        }
+                    }
+
+                    let isAssigneesChanged = false;
+                    if (assignees !== undefined) {
+                        const currentAssignees = (card.assignees || []).map(a => a.toString()).sort();
+                        const newAssignees = (assignees || []).map(a => a.toString()).sort();
+                        if (JSON.stringify(currentAssignees) !== JSON.stringify(newAssignees)) {
+                            isAssigneesChanged = true;
+                        }
+                    }
+
+                    if (isTitleChanged || isDescriptionChanged || isDueDateChanged || isPriorityChanged || isAssignedToChanged || isAssigneesChanged) {
+                        return res.status(403).json({ message: "Only board owners or admins can modify card details; regular members can only change the status" });
+                    }
+                }
+            }
         }
 
         const updateFields = { title, description }
@@ -116,6 +205,25 @@ export const updateCard=async(req,res)=>{
         if (priority !== undefined) updateFields.priority = priority
         if (status !== undefined) {
             updateFields.status = status
+        }
+        if (assignees !== undefined) {
+            updateFields.assignees = assignees;
+            if (assignees && Array.isArray(assignees)) {
+                const list = await ListModel.findById(card.list);
+                if (list) {
+                    const board = await BoardModel.findById(list.board);
+                    if (board) {
+                        for (const assignee of assignees) {
+                            const isOwner = board.owner.toString() === assignee.toString();
+                            const isMember = board.members.some(m => m.toString() === assignee.toString());
+                            if (!isOwner && !isMember) {
+                                board.members.push(assignee);
+                            }
+                        }
+                        await board.save();
+                    }
+                }
+            }
         }
         if (assignedTo !== undefined) {
             updateFields.assignedTo = assignedTo
@@ -136,6 +244,7 @@ export const updateCard=async(req,res)=>{
         }
         const updatedCard=await CardModel.findByIdAndUpdate(cardId, updateFields, {new:true})
             .populate("assignedTo", "name email avatar")
+            .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar")
         res.status(200).json({message:"Card updated successfully",payload:updatedCard})
     }catch(error){
@@ -194,6 +303,7 @@ export const moveCard=async(req,res)=>{
 
         const updatedCard = await CardModel.findById(cardId)
             .populate("assignedTo", "name email avatar")
+            .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar");
         res.status(200).json({ message: "Card moved successfully", payload: updatedCard });
     }catch(error){
@@ -205,6 +315,21 @@ export const moveCard=async(req,res)=>{
 export const deleteCards=async(req,res)=>{
     const cardId=req.params.id
     try{
+        const card = await CardModel.findById(cardId);
+        if (!card) {
+            return res.status(404).json({ message: "Card not found" });
+        }
+        const list = await ListModel.findById(card.list);
+        if (list) {
+            const board = await BoardModel.findById(list.board);
+            if (board) {
+                const isOwner = board.owner.toString() === req.userId;
+                const isAdmin = board.admins?.some(a => a.toString() === req.userId);
+                if (!isOwner && !isAdmin) {
+                    return res.status(403).json({ message: "Only board owners or admins can delete tasks" });
+                }
+            }
+        }
         const deleteCard = await CardModel.findByIdAndUpdate(
             cardId,
             { isDeleted: true, deletedAt: new Date() },
@@ -231,6 +356,7 @@ export const getDeletedCardsByBoard = async (req, res) => {
             isDeleted: true
         })
         .populate("assignedTo", "name email avatar")
+        .populate("assignees", "name email avatar")
         .populate("createdBy", "name email avatar")
         res.status(200).json({ message: "Deleted cards fetched", payload: deletedCards })
     } catch (error) {
@@ -241,12 +367,28 @@ export const getDeletedCardsByBoard = async (req, res) => {
 export const restoreCard = async (req, res) => {
     try {
         const cardId = req.params.id;
+        const card = await CardModel.findById(cardId);
+        if (!card) {
+            return res.status(404).json({ message: "Card not found" });
+        }
+        const list = await ListModel.findById(card.list);
+        if (list) {
+            const board = await BoardModel.findById(list.board);
+            if (board) {
+                const isOwner = board.owner.toString() === req.userId;
+                const isAdmin = board.admins?.some(a => a.toString() === req.userId);
+                if (!isOwner && !isAdmin) {
+                    return res.status(403).json({ message: "Only board owners or admins can restore tasks" });
+                }
+            }
+        }
         const restoredCard = await CardModel.findByIdAndUpdate(
             cardId,
             { isDeleted: false, deletedAt: null },
             { new: true }
         )
         .populate("assignedTo", "name email avatar")
+        .populate("assignees", "name email avatar")
         .populate("createdBy", "name email avatar")
 
         if (restoredCard) {
@@ -267,6 +409,21 @@ export const restoreCard = async (req, res) => {
 export const permanentDeleteCard = async (req, res) => {
     try {
         const cardId = req.params.id;
+        const card = await CardModel.findById(cardId);
+        if (!card) {
+            return res.status(404).json({ message: "Card not found" });
+        }
+        const list = await ListModel.findById(card.list);
+        if (list) {
+            const board = await BoardModel.findById(list.board);
+            if (board) {
+                const isOwner = board.owner.toString() === req.userId;
+                const isAdmin = board.admins?.some(a => a.toString() === req.userId);
+                if (!isOwner && !isAdmin) {
+                    return res.status(403).json({ message: "Only board owners or admins can permanently delete tasks" });
+                }
+            }
+        }
         const deletedCard = await CardModel.findByIdAndDelete(cardId);
         if (deletedCard) {
             res.status(200).json({ message: "Card permanently deleted", payload: deletedCard })

@@ -31,7 +31,7 @@ export const useBoardStore = create((set, get) => ({
     socket.off("list-deleted")
     socket.off("online-users")
 
-    socket.on("card-moved", (data) => {
+    socket.on("card-moved", async (data) => {
 
   const { cardId, fromListId, toListId, newPosition } = data
 
@@ -45,28 +45,11 @@ export const useBoardStore = create((set, get) => ({
 
   if (!movedCard) return
 
-  const updatedLists = lists.map(l => {
+  let updatedLists = [...lists]
 
-    // Same list reorder
-    if (fromListId === toListId && l._id === fromListId) {
+  // Remove from source list
+  updatedLists = updatedLists.map(l => {
 
-      const cards = [...l.cards]
-
-      const oldIdx = cards.findIndex(c => c._id === cardId)
-
-      if (oldIdx === -1) return l
-
-      const [moved] = cards.splice(oldIdx, 1)
-
-      cards.splice(newPosition, 0, moved)
-
-      return {
-        ...l,
-        cards
-      }
-    }
-
-    // Remove from source
     if (l._id === fromListId) {
 
       return {
@@ -75,7 +58,12 @@ export const useBoardStore = create((set, get) => ({
       }
     }
 
-    // Add to destination
+    return l
+  })
+
+  // Add to destination list
+  updatedLists = updatedLists.map(l => {
+
     if (l._id === toListId) {
 
       const cards = [...l.cards]
@@ -261,21 +249,21 @@ export const useBoardStore = create((set, get) => ({
   },
 
   // ── Card Actions ───────────────────────────────────────
-  addCard: async (listId, title) => {
+  addCard: async (listId, title, additionalFields = {}) => {
     const boardId = get().board?._id
     const { lists } = get()
     const targetList = lists.find(l => l._id === listId)
     if (!targetList) return
 
     const position = targetList.cards?.length || 0
-    const tempCard = { _id: `temp-${Date.now()}`, title, description: "", list: listId, position, labels: [], dueDate: null, priority: "" }
+    const tempCard = { _id: `temp-${Date.now()}`, title, description: "", list: listId, position, labels: [], dueDate: null, priority: "", ...additionalFields }
 
     set({
       lists: lists.map(l => l._id === listId ? { ...l, cards: [...(l.cards || []), tempCard] } : l)
     })
 
     try {
-      const res = await axios.post(`${API}/card-api/addCard`, { title, list: listId, position }, { withCredentials: true })
+      const res = await axios.post(`${API}/card-api/addCard`, { title, list: listId, position, ...additionalFields }, { withCredentials: true })
       const saved = res.data.payload
       set({
         lists: get().lists.map(l =>
@@ -323,7 +311,8 @@ export const useBoardStore = create((set, get) => ({
         dueDate: updates.dueDate,
         priority: updates.priority,
         status: updates.status,
-        assignedTo: updates.assignedTo && typeof updates.assignedTo === 'object' ? updates.assignedTo._id : updates.assignedTo
+        assignedTo: updates.assignedTo && typeof updates.assignedTo === 'object' ? updates.assignedTo._id : updates.assignedTo,
+        assignees: updates.assignees ? updates.assignees.map(a => typeof a === 'object' ? a._id : a) : undefined
       }, { withCredentials: true })
 
       const savedCard = res.data.payload
@@ -529,6 +518,56 @@ export const useBoardStore = create((set, get) => ({
       await axios.delete(`${API}/card-api/permanent/${cardId}`, { withCredentials: true })
       set(state => ({ deletedCards: state.deletedCards.filter(c => c._id !== cardId) }))
     } catch (err) { console.error(err) }
+  },
+
+  // ── Collaboration Actions ─────────────────────────────────────
+
+  updateBoardSettings: async (boardId, updates) => {
+    try {
+      const res = await axios.put(
+        `${API}/board-api/updateBoard/${boardId}`,
+        updates,
+        { withCredentials: true }
+      )
+      set({ board: res.data.payload })
+    } catch (err) { console.error(err) }
+  },
+
+  manageBoardMember: async (boardId, memberId, action) => {
+    try {
+      const res = await axios.put(
+        `${API}/board-api/manage-member/${boardId}`,
+        { memberId, action },
+        { withCredentials: true }
+      )
+      set({ board: res.data.payload })
+      return res.data
+    } catch (err) {
+      console.error(err)
+      throw err
+    }
+  },
+
+  // Add a registered user to the board by their login email
+  inviteByEmail: async (boardId, email) => {
+    const res = await axios.post(
+      `${API}/board-api/invite/email/${boardId}`,
+      { email },
+      { withCredentials: true }
+    )
+    // Update local board state with the new member list
+    set({ board: res.data.payload })
+    return res.data
+  },
+
+  // Generate (or retrieve) a shareable invite link for the board
+  generateInviteLink: async (boardId) => {
+    const res = await axios.post(
+      `${API}/board-api/invite/link/${boardId}`,
+      {},
+      { withCredentials: true }
+    )
+    return res.data.payload // { link, token }
   },
 
 }))

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { useBoardStore } from "../context/BoardContext"
+import { useAuthStore } from "../context/AuthContext"
 import { API_URL } from "../services/api"
 import axios from "axios"
 
@@ -17,6 +18,7 @@ function Modal({ card, listId, onClose }) {
   const [priority, setPriority] = useState(card?.priority || "")
   const [status, setStatus] = useState(card?.status || "to do")
   const [assignedTo, setAssignedTo] = useState(card?.assignedTo || null)
+  const [assignees, setAssignees] = useState(card?.assignees || [])
 
   const [searchTerm, setSearchTerm] = useState("")
   const [searchResults, setSearchResults] = useState([])
@@ -80,7 +82,8 @@ function Modal({ card, listId, onClose }) {
       dueDate: dueDate || null,
       priority: priority || "",
       status: status || "to do",
-      assignedTo: assignedTo || null
+      assignedTo: assignedTo || null,
+      assignees: assignees || []
     })
     onClose()
   }
@@ -93,13 +96,22 @@ function Modal({ card, listId, onClose }) {
   // Get board owner and members for collaborated list
   const owner = board?.owner
   const members = board?.members || []
-  const collaborators = []
+  let collaborators = []
   if (owner) collaborators.push(owner)
   members.forEach(m => {
     if (m && m._id && !collaborators.some(c => c._id === m._id)) {
       collaborators.push(m)
     }
   })
+
+  const currentUser = useAuthStore(s => s.currentUser)
+  const isBoardOwner = currentUser?._id === (board?.owner?._id || board?.owner)
+  const isBoardAdmin = board?.admins?.some(a => (a._id || a) === currentUser?._id)
+  const canAssignOthers = isBoardOwner || isBoardAdmin
+
+  if (!canAssignOthers) {
+    collaborators = collaborators.filter(c => c._id === currentUser?._id)
+  }
 
   if (!card) return null
 
@@ -114,7 +126,7 @@ function Modal({ card, listId, onClose }) {
                       overflow-hidden">
 
         {/* Header accent */}
-        <div className="h-1.5 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
+        <div className="h-1.5 bg-linear-to-r from-primary-400 via-primary-500 to-primary-600" />
 
         <div className="p-6">
 
@@ -123,11 +135,12 @@ function Modal({ card, listId, onClose }) {
             ref={titleRef}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            disabled={!canAssignOthers}
             placeholder="Card title"
-            className="text-xl font-bold w-full outline-none border-none
+            className={`text-xl font-bold w-full outline-none border-none
                        text-gray-900 placeholder-gray-300
                        pb-3 border-b border-gray-100
-                       focus:border-primary-300 transition-colors"
+                       focus:border-primary-300 transition-colors ${!canAssignOthers ? "bg-transparent cursor-not-allowed" : ""}`}
           />
 
           <div className="border-t border-gray-100 my-4" />
@@ -157,41 +170,69 @@ function Modal({ card, listId, onClose }) {
             {/* Assignee Search Dropdown */}
             <div className="relative" ref={assigneeRef}>
               <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">
-                Assignee
+                {board?.allowMultipleAssignees ? "Assignees" : "Assignee"}
               </label>
               
               <div 
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
+                onClick={() => canAssignOthers && setDropdownOpen(!dropdownOpen)}
+                className={`w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
                            text-gray-700 bg-white flex items-center justify-between
-                           hover:border-primary-300 transition-all cursor-pointer shadow-sm"
+                           hover:border-primary-300 transition-all shadow-sm min-h-11.5
+                           ${canAssignOthers ? "cursor-pointer" : "cursor-not-allowed bg-gray-50/50"}`}
               >
-                {assignedTo ? (
-                  <div className="flex items-center gap-2 overflow-hidden">
-                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary-400 to-primary-600
-                                    flex items-center justify-center flex-shrink-0 text-white text-[9px] font-bold">
-                      {assignedTo.avatar ? (
-                        <img src={assignedTo.avatar} alt="" className="w-full h-full rounded-full object-cover" />
-                      ) : (
-                        assignedTo.name?.charAt(0).toUpperCase() || "A"
+                {!board?.allowMultipleAssignees ? (
+                  assignedTo ? (
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <div className="w-5 h-5 rounded-full bg-linear-to-br from-primary-400 to-primary-600
+                                      flex items-center justify-center shrink-0 text-white text-[9px] font-bold">
+                        {assignedTo.avatar ? (
+                          <img src={assignedTo.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                        ) : (
+                          assignedTo.name?.charAt(0).toUpperCase() || "A"
+                        )}
+                      </div>
+                      <span className="truncate font-medium">{assignedTo.name}</span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400">Unassigned</span>
+                  )
+                ) : (
+                  assignees.length > 0 ? (
+                    <div className="flex -space-x-1.5 overflow-hidden">
+                      {assignees.slice(0, 4).map((a, i) => (
+                        <div key={a._id || i} className="w-6 h-6 rounded-full border-2 border-white
+                                      bg-linear-to-br from-primary-400 to-primary-600
+                                      flex items-center justify-center shrink-0 text-white text-[10px] font-bold"
+                             title={a.name}>
+                          {a.avatar ? (
+                            <img src={a.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                          ) : (
+                            a.name?.charAt(0).toUpperCase() || "A"
+                          )}
+                        </div>
+                      ))}
+                      {assignees.length > 4 && (
+                        <div className="w-6 h-6 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-[10px] font-semibold text-gray-500">
+                          +{assignees.length - 4}
+                        </div>
                       )}
                     </div>
-                    <span className="truncate font-medium">{assignedTo.name}</span>
-                  </div>
-                ) : (
-                  <span className="text-gray-400">Unassigned</span>
+                  ) : (
+                    <span className="text-gray-400">Unassigned</span>
+                  )
                 )}
                 
-                <div className="flex items-center gap-1.5">
-                  {assignedTo && (
+                <div className="flex items-center gap-1.5 ml-2">
+                  {canAssignOthers && ((!board?.allowMultipleAssignees && assignedTo) || (board?.allowMultipleAssignees && assignees.length > 0)) && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setAssignedTo(null);
+                        if (board?.allowMultipleAssignees) setAssignees([]);
+                        else setAssignedTo(null);
                       }}
                       className="text-gray-400 hover:text-red-500 text-xs w-4 h-4 
                                  flex items-center justify-center rounded-full hover:bg-gray-100"
-                      title="Unassign"
+                      title="Clear All"
                     >
                       ✕
                     </button>
@@ -230,21 +271,32 @@ function Modal({ card, listId, onClose }) {
                       <div className="text-center py-4 text-xs text-gray-400">No users found</div>
                     ) : (
                       (searchTerm ? searchResults : collaborators).map((user) => {
-                        const isSelected = assignedTo?._id === user._id;
+                        const isSelected = board?.allowMultipleAssignees 
+                          ? assignees.some(a => a._id === user._id)
+                          : assignedTo?._id === user._id;
+                          
                         return (
                           <div
                             key={user._id}
                             onClick={() => {
-                              setAssignedTo(user);
-                              setDropdownOpen(false);
+                              if (board?.allowMultipleAssignees) {
+                                if (isSelected) {
+                                  setAssignees(assignees.filter(a => a._id !== user._id));
+                                } else {
+                                  setAssignees([...assignees, user]);
+                                }
+                              } else {
+                                setAssignedTo(user);
+                                setDropdownOpen(false);
+                              }
                               setSearchTerm("");
                             }}
                             className={`flex items-center justify-between p-2 rounded-xl text-xs cursor-pointer
                                         transition-colors ${isSelected ? "bg-primary-50 text-primary-600 font-semibold" : "hover:bg-gray-50 text-gray-700"}`}
                           >
                             <div className="flex items-center gap-2 overflow-hidden">
-                              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary-300 to-primary-500
-                                              flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                              <div className="w-6 h-6 rounded-full bg-linear-to-br from-primary-300 to-primary-500
+                                              flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                                 {user.avatar ? (
                                   <img src={user.avatar} alt="" className="w-full h-full rounded-full object-cover" />
                                 ) : (
@@ -257,7 +309,7 @@ function Modal({ card, listId, onClose }) {
                               </div>
                             </div>
                             {isSelected && (
-                              <svg className="w-4 h-4 text-primary-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <svg className="w-4 h-4 text-primary-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                               </svg>
                             )}
@@ -280,12 +332,13 @@ function Modal({ card, listId, onClose }) {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              disabled={!canAssignOthers}
               rows={4}
               placeholder="Add a detailed description..."
-              className="w-full border border-gray-200 rounded-xl p-3 text-sm
+              className={`w-full border border-gray-200 rounded-xl p-3 text-sm
                          text-gray-700 placeholder-gray-300
                          focus:outline-none focus:ring-2 focus:ring-primary-200
-                         focus:border-primary-300 transition-all resize-none"
+                         focus:border-primary-300 transition-all resize-none ${!canAssignOthers ? "bg-gray-50/50 cursor-not-allowed" : ""}`}
             />
           </div>
 
@@ -299,11 +352,13 @@ function Modal({ card, listId, onClose }) {
               <input
                 type="date"
                 value={dueDate}
+                min={new Date().toISOString().split("T")[0]}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
+                disabled={!canAssignOthers}
+                className={`w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
                            text-gray-700
                            focus:outline-none focus:ring-2 focus:ring-primary-200
-                           focus:border-primary-300 transition-all"
+                           focus:border-primary-300 transition-all ${!canAssignOthers ? "bg-gray-50/50 cursor-not-allowed" : ""}`}
               />
             </div>
 
@@ -314,10 +369,11 @@ function Modal({ card, listId, onClose }) {
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
+                disabled={!canAssignOthers}
+                className={`w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
                            text-gray-700 bg-white
                            focus:outline-none focus:ring-2 focus:ring-primary-200
-                           focus:border-primary-300 transition-all cursor-pointer"
+                           focus:border-primary-300 transition-all ${canAssignOthers ? "cursor-pointer" : "cursor-not-allowed bg-gray-50/50"}`}
               >
                 <option value="">None</option>
                 <option value="High">🔴 High</option>
@@ -331,14 +387,18 @@ function Modal({ card, listId, onClose }) {
           {/* Actions */}
           <div className="flex items-center justify-between pt-4 border-t border-gray-100">
 
-            <button
-              onClick={handleDelete}
-              className="text-sm font-medium text-red-500 hover:text-red-600
-                         hover:bg-red-50 px-4 py-2 rounded-lg
-                         transition-all duration-200 cursor-pointer"
-            >
-              Delete Card
-            </button>
+            {canAssignOthers ? (
+              <button
+                onClick={handleDelete}
+                className="text-sm font-medium text-red-500 hover:text-red-600
+                           hover:bg-red-50 px-4 py-2 rounded-lg
+                           transition-all duration-200 cursor-pointer"
+              >
+                Delete Card
+              </button>
+            ) : (
+              <div />
+            )}
 
             <div className="flex gap-2">
               <button
@@ -352,7 +412,7 @@ function Modal({ card, listId, onClose }) {
               <button
                 onClick={handleSave}
                 className="text-sm font-semibold text-white
-                           bg-gradient-to-r from-primary-500 to-primary-600
+                           bg-linear-to-r from-primary-500 to-primary-600
                            hover:from-primary-600 hover:to-primary-700
                            px-5 py-2.5 rounded-xl shadow-sm
                            hover:shadow-md transition-all duration-200 cursor-pointer"
