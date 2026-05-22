@@ -115,9 +115,6 @@ function Loginpage() {
             {loading ? "Signing in..." : "Sign In"}
           </button>
 
-<<<<<<< Updated upstream
-          {/* Redirect to Registration */}
-=======
           {/* OR Divider */}
           <div className="relative my-5">
             <div className="absolute inset-0 flex items-center">
@@ -148,7 +145,6 @@ function Loginpage() {
           </div>
 
           {/* Redirect */}
->>>>>>> Stashed changes
           <p className="text-center text-sm text-slate-500 mt-6">
             Don't have an account?{' '}
             <NavLink to="/register" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">

@@ -45,29 +45,6 @@ function Navbar() {
           {/* Conditional Rendering based on Authentication */}
           {isAuthenticated ? (
             <>
-<<<<<<< Updated upstream
-              {/* Authenticated User Profile Info */}
-              <div className="flex items-center gap-2">
-                {currentUser?.avatar ? (
-                  <img 
-                    src={currentUser.avatar} 
-                    alt={currentUser.name} 
-                    className="w-6 h-6 rounded-full object-cover border border-slate-200"
-                  />
-                ) : (
-                  // Fallback avatar displaying user's initial
-                  <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 border border-slate-200 uppercase">
-                    {currentUser?.name?.[0]}
-                  </div>
-                )}
-                <span className="text-sm font-medium text-slate-600 hidden sm:inline">
-                  {currentUser?.name}
-                </span>
-              </div>
-
-              {/* Link to User Dashboard */}
-=======
->>>>>>> Stashed changes
               <NavLink
                 to="/dashboard"
                 className={({ isActive }) =>
@@ -81,15 +58,6 @@ function Navbar() {
                 Dashboard
               </NavLink>
 
-<<<<<<< Updated upstream
-              {/* Logout Button */}
-              <button
-                onClick={logout}
-                className="text-sm font-semibold text-red-600 hover:text-white hover:bg-red-600 px-4 py-2 rounded-xl border border-red-200 hover:border-red-600 transition-colors duration-200 cursor-pointer"
-              >
-                Logout
-              </button>
-=======
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -142,7 +110,6 @@ function Navbar() {
                   </div>
                 )}
               </div>
->>>>>>> Stashed changes
             </>
           ) : (
             <>

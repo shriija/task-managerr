@@ -1,7 +1,8 @@
-<<<<<<< Updated upstream
 import { UserModel } from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '../utils/generateToken.js';
+import { OAuth2Client } from 'google-auth-library';
+import crypto from 'crypto';
 
 /**
  * Handle user registration (Sign up)
@@ -30,7 +31,9 @@ export const signup = async (req, res) => {
             name: user.name,
             email: user.email,
             password: hashedPass,
-            avatar: user.avatar
+            avatar: user.avatar || "",
+            isGoogleUser: false,
+            hasPasswordSet: true
         });
         await newUser.save();
         
@@ -188,170 +191,33 @@ export const uploadAvatar = async (req, res) => {
         res.status(500).json({ message: "Avatar upload failed", error: error.message });
     }
 };
-=======
-import {UserModel} from '../models/User.js'
-import bcrypt from 'bcryptjs'
-import {generateToken} from '../utils/generateToken.js'
-import { OAuth2Client } from 'google-auth-library'
-import crypto from 'crypto'
 
-
-export const signup = async(req,res) =>{
-    const user = req.body;
-    const response = await UserModel.findOne({email:user.email})
-    if(response){
-        return res.status(409).json({message:"email already exists"})
-    }
-    try {
-        await UserModel.validate(user);
-        const hashedPass = await bcrypt.hash(user.password,8)
-        const newUser = new UserModel({
-            name:user.name,
-            email:user.email,
-            password:hashedPass,
-            avatar:user.avatar || "",
-            isGoogleUser: false,
-            hasPasswordSet: true
-        })
-        await newUser.save()
-        res.status(201).json({message:"user created sucessfully"})
-    } catch (error) {
-        res.json({error:error.message})
-    }
-}
-export const signin = async(req,res)=>{
-
-    const { email, password } = req.body
-    try {
-        const user = await UserModel.findOne({email})
-        if(!user){
-            return res.status(404).json({message:"user not found"})
-        }
-
-        const response = await bcrypt.compare(password,user.password)
-        if(!response){
-            return res.status(401).json({message:"invalid credentials"})
-        }
-        const userObj = user.toObject()
-        delete userObj.password
-        const token = generateToken(user)
-        
-        res.cookie('token', token, {
-            httpOnly: true,
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-            secure:true,
-            sameSite:"none",
-            partitioned: true 
-        });
-        res.status(200).json({message:"signin sucessfull",payload:userObj})
-
-    } catch (error) {
-        res.status(500).json({error:error.message})
-    }
-}
-export const logout = async(req,res)=>{
-    try {
-        res.clearCookie('token',{
-            httpOnly:true,
-            secure:true,
-            sameSite:"none",
-            partitioned: true
-        })
-        res.status(200).json({message:"logout success"})
-        
-    } catch (error) {
-        res.status(201).json({error:error.message})
-    }
-}
-
-
-// Verify if the current session (JWT cookie) is still valid
-export const verifySession = async (req, res) => {
-    try {
-        const user = await UserModel.findById(req.userId).select('-password')
-        if (!user) {
-            return res.status(401).json({ message: "User not found" })
-        }
-        res.json({ message: "Session valid", payload: user })
-    } catch (error) {
-        res.status(401).json({ message: "Session invalid" })
-    }
-}
-
-// Search users by name or email
-export const searchUsers = async (req, res) => {
-    const { q } = req.query
-    try {
-        if (!q) {
-            return res.json({ payload: [] })
-        }
-        const users = await UserModel.find({
-            $or: [
-                { name: { $regex: q, $options: 'i' } },
-                { email: { $regex: q, $options: 'i' } }
-            ]
-        }).select('-password').limit(20)
-        res.json({ payload: users })
-    } catch (error) {
-        res.status(500).json({ error: error.message })
-    }
-}
-
-// Upload avatar image to Cloudinary
-export const uploadAvatar = async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ message: "No file uploaded" })
-        }
-
-        const { default: cloudinary } = await import("../config/cloudinary.js")
-
-        const result = await new Promise((resolve, reject) => {
-            const stream = cloudinary.uploader.upload_stream(
-                {
-                    folder: "task-manager/avatars",
-                    transformation: [
-                        { width: 256, height: 256, crop: "fill", gravity: "face" },
-                        { quality: "auto", fetch_format: "auto" }
-                    ]
-                },
-                (error, result) => {
-                    if (error) reject(error)
-                    else resolve(result)
-                }
-            )
-            stream.end(req.file.buffer)
-        })
-
-        res.status(200).json({ url: result.secure_url })
-    } catch (error) {
-        res.status(500).json({ message: "Avatar upload failed", error: error.message })
-    }
-}
-
-// Google Sign-In Controller
+/**
+ * Authenticate or register a user using their Google OAuth ID token.
+ * Validates the ID token via Google's library, creates a user profile if one doesn't exist,
+ * and issues a JWT session token in an HTTP-only cookie.
+ */
 export const googleSignin = async (req, res) => {
-    const { token } = req.body
+    const { token } = req.body;
     if (!token) {
-        return res.status(400).json({ message: "Google ID Token is required" })
+        return res.status(400).json({ message: "Google ID Token is required" });
     }
 
     try {
-        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
         const ticket = await client.verifyIdToken({
             idToken: token,
             audience: process.env.GOOGLE_CLIENT_ID,
-        })
-        const payload = ticket.getPayload()
-        const { email, name, picture } = payload
+        });
+        const payload = ticket.getPayload();
+        const { email, name, picture } = payload;
 
-        let user = await UserModel.findOne({ email })
+        let user = await UserModel.findOne({ email });
 
         if (!user) {
-            // User does not exist, create a new one
-            // Generate a secure high-entropy random password
-            const randomPassword = crypto.randomBytes(16).toString('hex')
-            const hashedPass = await bcrypt.hash(randomPassword, 8)
+            // User does not exist, create a new one with a secure high-entropy random password
+            const randomPassword = crypto.randomBytes(16).toString('hex');
+            const hashedPass = await bcrypt.hash(randomPassword, 8);
 
             user = new UserModel({
                 name: name || email.split('@')[0],
@@ -360,123 +226,128 @@ export const googleSignin = async (req, res) => {
                 avatar: picture || "",
                 isGoogleUser: true,
                 hasPasswordSet: false
-            })
-            await user.save()
+            });
+            await user.save();
         } else {
+            // If the user already exists but isn't marked as a Google user, link their account
             if (!user.isGoogleUser) {
-                user.isGoogleUser = true
-                await user.save()
+                user.isGoogleUser = true;
+                await user.save();
             }
         }
 
-        const userObj = user.toObject()
-        delete userObj.password
+        const userObj = user.toObject();
+        delete userObj.password;
 
-        const appToken = generateToken(user)
+        const appToken = generateToken(user);
 
         res.cookie('token', appToken, {
             httpOnly: true,
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
             secure: true,
             sameSite: "none",
             partitioned: true 
-        })
+        });
 
-        res.status(200).json({ message: "Google signin successful", payload: userObj })
+        res.status(200).json({ message: "Google signin successful", payload: userObj });
 
     } catch (error) {
-        res.status(500).json({ error: error.message })
+        res.status(500).json({ error: error.message });
     }
-}
+};
 
-// Update profile name
+/**
+ * Update the logged-in user's profile display name.
+ */
 export const updateProfile = async (req, res) => {
-    const { name } = req.body
+    const { name } = req.body;
     if (!name || name.trim().length < 2) {
-        return res.status(400).json({ message: "Name must be at least 2 characters long" })
+        return res.status(400).json({ message: "Name must be at least 2 characters long" });
     }
 
     try {
-        const user = await UserModel.findById(req.userId)
+        const user = await UserModel.findById(req.userId);
         if (!user) {
-            return res.status(404).json({ message: "User not found" })
+            return res.status(404).json({ message: "User not found" });
         }
 
-        user.name = name.trim()
-        await user.save()
+        user.name = name.trim();
+        await user.save();
 
-        const userObj = user.toObject()
-        delete userObj.password
+        const userObj = user.toObject();
+        delete userObj.password;
 
-        res.status(200).json({ message: "Profile updated successfully", payload: userObj })
+        res.status(200).json({ message: "Profile updated successfully", payload: userObj });
     } catch (error) {
-        res.status(500).json({ error: error.message })
+        res.status(500).json({ error: error.message });
     }
-}
+};
 
-// Change or Set Password
+/**
+ * Handle password changes. Supports standard password changes using the old password,
+ * as well as first-time password setting or linkage updates using Google ID verification.
+ */
 export const changePassword = async (req, res) => {
-    const { oldPassword, newPassword, googleToken } = req.body
+    const { oldPassword, newPassword, googleToken } = req.body;
 
     if (!newPassword || newPassword.length < 6) {
-        return res.status(400).json({ message: "New password must be at least 6 characters long" })
+        return res.status(400).json({ message: "New password must be at least 6 characters long" });
     }
 
     try {
-        const user = await UserModel.findById(req.userId)
+        const user = await UserModel.findById(req.userId);
         if (!user) {
-            return res.status(404).json({ message: "User not found" })
+            return res.status(404).json({ message: "User not found" });
         }
 
         if (googleToken) {
             // Case A: Verify Google ID token to bypass old password check
-            const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+            const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
             const ticket = await client.verifyIdToken({
                 idToken: googleToken,
                 audience: process.env.GOOGLE_CLIENT_ID,
-            })
-            const payload = ticket.getPayload()
+            });
+            const payload = ticket.getPayload();
             
             if (payload.email.toLowerCase() !== user.email.toLowerCase()) {
-                return res.status(401).json({ message: "Google account email does not match profile email" })
+                return res.status(401).json({ message: "Google account email does not match profile email" });
             }
 
-            // Google verification successful. Set the new password!
-            const hashedPass = await bcrypt.hash(newPassword, 8)
-            user.password = hashedPass
-            user.hasPasswordSet = true
-            user.isGoogleUser = true
-            await user.save()
+            // Google verification successful. Set the new password and flag password set / google account linked.
+            const hashedPass = await bcrypt.hash(newPassword, 8);
+            user.password = hashedPass;
+            user.hasPasswordSet = true;
+            user.isGoogleUser = true;
+            await user.save();
 
-            const userObj = user.toObject()
-            delete userObj.password
-            return res.status(200).json({ message: "Password updated successfully", payload: userObj })
+            const userObj = user.toObject();
+            delete userObj.password;
+            return res.status(200).json({ message: "Password updated successfully", payload: userObj });
         } else {
             // Case B: Verify using old password
             if (!user.hasPasswordSet) {
-                return res.status(400).json({ message: "Password not set. Please authenticate with Google to set a new password." })
+                return res.status(400).json({ message: "Password not set. Please authenticate with Google to set a new password." });
             }
 
             if (!oldPassword) {
-                return res.status(400).json({ message: "Old password is required" })
+                return res.status(400).json({ message: "Old password is required" });
             }
 
-            const isMatch = await bcrypt.compare(oldPassword, user.password)
+            const isMatch = await bcrypt.compare(oldPassword, user.password);
             if (!isMatch) {
-                return res.status(401).json({ message: "Invalid old password" })
+                return res.status(401).json({ message: "Invalid old password" });
             }
 
-            const hashedPass = await bcrypt.hash(newPassword, 8)
-            user.password = hashedPass
-            user.hasPasswordSet = true
-            await user.save()
+            const hashedPass = await bcrypt.hash(newPassword, 8);
+            user.password = hashedPass;
+            user.hasPasswordSet = true;
+            await user.save();
 
-            const userObj = user.toObject()
-            delete userObj.password
-            return res.status(200).json({ message: "Password changed successfully", payload: userObj })
+            const userObj = user.toObject();
+            delete userObj.password;
+            return res.status(200).json({ message: "Password changed successfully", payload: userObj });
         }
     } catch (error) {
-        res.status(500).json({ error: error.message })
+        res.status(500).json({ error: error.message });
     }
-}
->>>>>>> Stashed changes
+};

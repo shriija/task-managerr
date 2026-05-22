@@ -17,12 +17,8 @@ import { useAuthStore } from "../context/AuthContext";
 function RegisterPage() {
   // Initialize form controls and validation state
   const { register, handleSubmit, formState: { errors } } = useForm();
-<<<<<<< Updated upstream
-  
-  // Local UI and submission states
-=======
   const googleLogin = useAuthStore((state) => state.googleLogin);
->>>>>>> Stashed changes
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -273,9 +269,6 @@ function RegisterPage() {
             {loading ? "Creating Account..." : "Create Account"}
           </button>
 
-<<<<<<< Updated upstream
-          {/* Redirect to Login */}
-=======
           {/* OR Divider */}
           <div className="relative my-5">
             <div className="absolute inset-0 flex items-center">
@@ -306,7 +299,6 @@ function RegisterPage() {
           </div>
 
           {/* Redirect */}
->>>>>>> Stashed changes
           <p className="text-center text-sm text-slate-500 mt-6">
             Already have an account?{' '}
             <NavLink to="/login" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">

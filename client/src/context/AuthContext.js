@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 import { create } from "zustand";
 import axios from "axios";
 import { API_URL as API } from "../services/api";
@@ -80,6 +79,40 @@ export const useAuthStore = create((set) => ({
   },
 
   /**
+   * Authenticate User via Google OAuth
+   * Sends the credential token returned from Google's Sign-In button to the backend.
+   * On success, the backend signs in or registers the user, sets an httpOnly cookie,
+   * and returns the user object.
+   */
+  googleLogin: async (credentialToken) => {
+    try {
+      set({ loading: true, error: null });
+
+      let res = await axios.post(
+        `${API}/user-api/google-signin`,
+        { token: credentialToken },
+        { withCredentials: true }
+      );
+
+      const data = res.data;
+
+      set({
+        loading: false,
+        isAuthenticated: true,
+        currentUser: data.payload
+      });
+
+    } catch (err) {
+      set({
+        loading: false,
+        isAuthenticated: false,
+        currentUser: null,
+        error: err.response?.data?.message || err.response?.data?.error || "Google login failed"
+      });
+    }
+  },
+
+  /**
    * Log User Out
    * Instructs the backend to clear the httpOnly cookie.
    * Clears the local Zustand state regardless of whether the API call succeeds or fails.
@@ -112,6 +145,55 @@ export const useAuthStore = create((set) => ({
   },
 
   /**
+   * Update User Profile Name
+   * Updates the user's name on the backend and synchronizes the global auth store state.
+   */
+  updateProfile: async (name) => {
+    try {
+      set({ loading: true, error: null });
+      const res = await axios.put(
+        `${API}/user-api/profile`,
+        { name },
+        { withCredentials: true }
+      );
+      set({
+        loading: false,
+        currentUser: res.data.payload
+      });
+      return { success: true };
+    } catch (err) {
+      const errMsg = err.response?.data?.message || err.response?.data?.error || "Profile update failed";
+      set({ loading: false, error: errMsg });
+      return { success: false, error: errMsg };
+    }
+  },
+
+  /**
+   * Change User Password
+   * Updates the user's password on the backend. This supports standard old/new password
+   * updates, as well as password creation/update via Google verification token.
+   */
+  changePassword: async (passwordObj) => {
+    try {
+      set({ loading: true, error: null });
+      const res = await axios.put(
+        `${API}/user-api/change-password`,
+        passwordObj,
+        { withCredentials: true }
+      );
+      set({
+        loading: false,
+        currentUser: res.data.payload
+      });
+      return { success: true };
+    } catch (err) {
+      const errMsg = err.response?.data?.message || err.response?.data?.error || "Password change failed";
+      set({ loading: false, error: errMsg });
+      return { success: false, error: errMsg };
+    }
+  },
+
+  /**
    * Clear Auth State (Emergency fallback)
    * Automatically called by Axios interceptors if a 401 Unauthorized response is detected 
    * on any authenticated route.
@@ -125,177 +207,3 @@ export const useAuthStore = create((set) => ({
     });
   }
 }));
-=======
-import { create } from "zustand"
-import axios from "axios"
-import { API_URL as API } from "../services/api"
-
-export const useAuthStore = create((set) => ({
-  currentUser: null,
-  loading: false,
-  isAuthenticated: false,
-  error: null,
-
-  // Verify session on page load — checks if JWT cookie is still valid
-  verifySession: async () => {
-    try {
-      set({ loading: true, error: null })
-
-      const res = await axios.get(
-        `${API}/user-api/verify`,
-        { withCredentials: true }
-      )
-
-      set({
-        loading: false,
-        isAuthenticated: true,
-        currentUser: res.data.payload
-      })
-
-      return true
-
-    } catch {
-      set({
-        loading: false,
-        isAuthenticated: false,
-        currentUser: null
-      })
-
-      return false
-    }
-  },
-
-  login: async (userCredObj) => {
-    try {
-      set({ loading: true, error: null })
-
-      let res = await axios.post(
-        `${API}/user-api/signin`,
-        userCredObj,
-        { withCredentials: true }
-      )
-
-      const data = res.data
-
-      set({
-        loading: false,
-        isAuthenticated: true,
-        currentUser: data.payload
-      })
-
-    } catch (err) {
-      set({
-        loading: false,
-        isAuthenticated: false,
-        currentUser: null,
-        error: err.response?.data?.message || err.response?.data?.error || "Login failed"
-      })
-    }
-  },
-
-  googleLogin: async (credentialToken) => {
-    try {
-      set({ loading: true, error: null })
-
-      let res = await axios.post(
-        `${API}/user-api/google-signin`,
-        { token: credentialToken },
-        { withCredentials: true }
-      )
-
-      const data = res.data
-
-      set({
-        loading: false,
-        isAuthenticated: true,
-        currentUser: data.payload
-      })
-
-    } catch (err) {
-      set({
-        loading: false,
-        isAuthenticated: false,
-        currentUser: null,
-        error: err.response?.data?.message || err.response?.data?.error || "Google login failed"
-      })
-    }
-  },
-
-  logout: async () => {
-    try {
-      set({ loading: true, error: null })
-
-      await axios.post(
-        `${API}/user-api/logout`,
-        {},
-        { withCredentials: true }
-      )
-
-      set({
-        loading: false,
-        isAuthenticated: false,
-        currentUser: null
-      })
-
-    } catch (err) {
-      // Even if logout API fails, clear local state
-      set({
-        loading: false,
-        isAuthenticated: false,
-        currentUser: null,
-        error: err.response?.data?.error || "Logout failed"
-      })
-    }
-  },
-
-  updateProfile: async (name) => {
-    try {
-      set({ loading: true, error: null })
-      const res = await axios.put(
-        `${API}/user-api/profile`,
-        { name },
-        { withCredentials: true }
-      )
-      set({
-        loading: false,
-        currentUser: res.data.payload
-      })
-      return { success: true }
-    } catch (err) {
-      const errMsg = err.response?.data?.message || err.response?.data?.error || "Profile update failed"
-      set({ loading: false, error: errMsg })
-      return { success: false, error: errMsg }
-    }
-  },
-
-  changePassword: async (passwordObj) => {
-    try {
-      set({ loading: true, error: null })
-      const res = await axios.put(
-        `${API}/user-api/change-password`,
-        passwordObj,
-        { withCredentials: true }
-      )
-      set({
-        loading: false,
-        currentUser: res.data.payload
-      })
-      return { success: true }
-    } catch (err) {
-      const errMsg = err.response?.data?.message || err.response?.data?.error || "Password change failed"
-      set({ loading: false, error: errMsg })
-      return { success: false, error: errMsg }
-    }
-  },
-
-  // Clear auth state (called when 401 is detected)
-  clearAuth: () => {
-    set({
-      loading: false,
-      isAuthenticated: false,
-      currentUser: null,
-      error: null
-    })
-  }
-}))
->>>>>>> Stashed changes
