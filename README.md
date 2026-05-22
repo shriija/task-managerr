@@ -4,6 +4,13 @@ A full-featured collaborative task management application built with **React**, 
 
 ---
 
+## 🌍 Live Demo
+
+- **Frontend Application**: [https://task-managerr-g0c3.onrender.com](https://task-managerr-g0c3.onrender.com)
+- **Backend API Base**: [https://task-managerr-oigx.onrender.com](https://task-managerr-oigx.onrender.com)
+
+---
+
 ## 🗂️ Project Structure
 
 ```
