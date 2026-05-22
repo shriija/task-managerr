@@ -1,147 +1,119 @@
-import { BoardModel } from '../models/Board.js'
-import { ListModel } from '../models/List.js'
-import { CardModel } from '../models/Card.js'
-import { UserModel } from '../models/User.js'
-import { logActivity } from '../utils/activityLogger.js'
-import { Activity } from '../models/Activity.js'
+import { BoardModel } from '../models/Board.js';
+import { ListModel } from '../models/List.js';
+import { CardModel } from '../models/Card.js';
+import { UserModel } from '../models/User.js';
+import { logActivity } from '../utils/activityLogger.js';
+import { Activity } from '../models/Activity.js';
 
+/**
+ * Create a new Board
+ * Automatically creates 3 default lists (To Do, In Progress, Done) when a board is created.
+ * 
+ * @param {Object} req - Express request object containing the board title in the body
+ * @param {Object} res - Express response object
+ */
 export const addBoard = async (req, res) => {
-
   try {
+    const { title } = req.body;
 
-    const { title } = req.body
-
-    // Create board
+    // Create the main board document
     const board = await BoardModel.create({
       title,
       owner: req.userId
-    })
+    });
 
-    // Create default lists
+    // Bulk insert default starter lists attached to the new board
     await ListModel.insertMany([
-      {
-        title: "To Do",
-        board: board._id,
-        position: 0
-      },
-      {
-        title: "In Progress",
-        board: board._id,
-        position: 1
-      },
-      {
-        title: "Done",
-        board: board._id,
-        position: 2
-      }
-    ])
+      { title: "To Do", board: board._id, position: 0 },
+      { title: "In Progress", board: board._id, position: 1 },
+      { title: "Done", board: board._id, position: 2 }
+    ]);
 
-    res.status(201).json({
-      message: "Board created",
-      payload: board
-    })
-
+    res.status(201).json({ message: "Board created", payload: board });
   } catch (error) {
-
-    res.status(500).json({
-      error: error.message
-    })
+    res.status(500).json({ error: error.message });
   }
-}
+};
 
-
+/**
+ * Get details of a single Board by ID
+ * Populates owner, members, and admins fields with user details (name, email, avatar).
+ */
 export const getBoard = async (req, res) => {
-
   try {
-
     const board = await BoardModel.findById(req.params.id)
       .populate("owner", "name email avatar")
       .populate("members", "name email avatar")
-      .populate("admins", "name email avatar")
+      .populate("admins", "name email avatar");
 
-    if (!board || board.length == 0) {
-
-      return res.status(404).json({
-        message: "Board not found"
-      })
+    if (!board) {
+      return res.status(404).json({ message: "Board not found" });
     }
 
-    res.json({
-      message: "Board fetched",
-      payload: board
-    })
-
+    res.json({ message: "Board fetched", payload: board });
   } catch (error) {
-
-    res.status(500).json({
-      error: error.message
-    })
+    res.status(500).json({ error: error.message });
   }
+};
 
-}
-
-
+/**
+ * Soft Delete a Board
+ * Sets isDeleted flag to true instead of permanently removing data.
+ */
 export const deleteBoard = async (req, res) => {
   try {
-    const boardId = req.params.id
+    const boardId = req.params.id;
 
     const response = await BoardModel.findByIdAndUpdate(
       boardId,
       { isDeleted: true, deletedAt: new Date() },
       { new: true }
-    )
+    );
 
     if (!response) {
-      return res.status(404).json({
-        message: "board not found"
-      })
+      return res.status(404).json({ message: "board not found" });
     }
 
-    res.status(200).json({
-      message: "board deleted (soft delete)",
-      payload: response
-    })
-
+    res.status(200).json({ message: "board deleted (soft delete)", payload: response });
   } catch (error) {
-    res.status(500).json({
-      message: "Could not delete board",
-      error: error.message
-    })
+    res.status(500).json({ message: "Could not delete board", error: error.message });
   }
-}
+};
 
-
+/**
+ * Get all boards owned by the current user (excluding soft-deleted ones)
+ */
 export const getMyBoards = async (req, res) => {
   try {
     const boards = await BoardModel.find({
       owner: req.userId,
       isDeleted: { $ne: true }
-    })
+    });
 
-    res.json({
-      message: "Boards fetched",
-      payload: boards
-    })
-
+    res.json({ message: "Boards fetched", payload: boards });
   } catch (error) {
-    res.status(500).json({
-      error: error.message
-    })
+    res.status(500).json({ error: error.message });
   }
-}
+};
 
+/**
+ * Get all soft-deleted boards owned by the current user (Trash view)
+ */
 export const getDeletedBoards = async (req, res) => {
   try {
     const boards = await BoardModel.find({
       owner: req.userId,
       isDeleted: true
-    })
-    res.status(200).json({ message: "Deleted boards fetched", payload: boards })
+    });
+    res.status(200).json({ message: "Deleted boards fetched", payload: boards });
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    res.status(500).json({ error: error.message });
   }
-}
+};
 
+/**
+ * Restore a soft-deleted board from the trash
+ */
 export const restoreBoard = async (req, res) => {
   try {
     const boardId = req.params.id;
@@ -149,41 +121,54 @@ export const restoreBoard = async (req, res) => {
       boardId,
       { isDeleted: false, deletedAt: null },
       { new: true }
-    )
+    );
     if (!restored) {
-      return res.status(404).json({ message: "Board not found" })
+      return res.status(404).json({ message: "Board not found" });
     }
-    res.status(200).json({ message: "Board restored", payload: restored })
+    res.status(200).json({ message: "Board restored", payload: restored });
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    res.status(500).json({ error: error.message });
   }
-}
+};
 
+/**
+ * Permanently Delete a Board and all its cascades (Lists, Cards, Attachments)
+ */
 export const permanentDeleteBoard = async (req, res) => {
   try {
     const boardId = req.params.id;
     const board = await BoardModel.findByIdAndDelete(boardId);
     
     if (!board) {
-      return res.status(404).json({ message: "Board not found" })
+      return res.status(404).json({ message: "Board not found" });
     }
 
-    // Cascade hard delete
-    const lists = await ListModel.find({ board: boardId })
-    const listIds = lists.map(l => l._id)
-    await CardModel.deleteMany({ list: { $in: listIds } })
-    await ListModel.deleteMany({ board: boardId })
+    // Cascade hard delete: find all lists belonging to the board
+    const lists = await ListModel.find({ board: boardId });
+    const listIds = lists.map(l => l._id);
+    
+    // Delete all cards that belong to any of those lists
+    await CardModel.deleteMany({ list: { $in: listIds } });
+    
+    // Delete all lists
+    await ListModel.deleteMany({ board: boardId });
 
-    res.status(200).json({ message: "Board permanently deleted" })
+    res.status(200).json({ message: "Board permanently deleted" });
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    res.status(500).json({ error: error.message });
   }
-}
+};
 
+/**
+ * Update Board Metadata (Title, Multiple Assignee Settings)
+ * Only the owner can perform these updates. Logs the change in Activity.
+ */
 export const updateBoard = async (req, res) => {
   try {
     const board = await BoardModel.findById(req.params.id);
     if (!board) return res.status(404).json({ message: "Board not found" });
+    
+    // Authorization check
     if (board.owner.toString() !== req.userId) {
       return res.status(403).json({ message: "Only the board owner can update settings" });
     }
@@ -192,11 +177,13 @@ export const updateBoard = async (req, res) => {
     const oldTitle = board.title;
     const oldAllowMultiple = board.allowMultipleAssignees;
 
+    // Apply updates
     if (title !== undefined) board.title = title;
     if (allowMultipleAssignees !== undefined) board.allowMultipleAssignees = allowMultipleAssignees;
     
     await board.save();
 
+    // Log activities for specific setting changes
     if (title !== undefined && title !== oldTitle) {
       await logActivity(board._id, req.userId, `renamed board to "${title}"`);
     }
@@ -204,6 +191,7 @@ export const updateBoard = async (req, res) => {
       await logActivity(board._id, req.userId, `${allowMultipleAssignees ? "enabled" : "disabled"} multi-assignee support`);
     }
     
+    // Return populated board for frontend state update
     const updated = await BoardModel.findById(board._id)
       .populate("owner", "name email avatar")
       .populate("members", "name email avatar")
@@ -213,21 +201,30 @@ export const updateBoard = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-}
+};
 
+/**
+ * Get all boards where the user is a member (but not the owner)
+ * Used to populate the "Shared with me" section on the dashboard.
+ */
 export const getSharedBoards = async (req, res) => {
   try {
     const boards = await BoardModel.find({
-      owner: { $ne: req.userId },
-      members: req.userId,
-      isDeleted: { $ne: true }
+      owner: { $ne: req.userId }, // Exclude owned boards
+      members: req.userId,        // Include boards where user is in members array
+      isDeleted: { $ne: true }    // Exclude trash
     }).populate("owner", "name email avatar");
+    
     res.status(200).json({ message: "Shared boards fetched", payload: boards });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-}
+};
 
+/**
+ * Manage Board Members (Promote, Demote, Remove)
+ * Admins can remove regular members. Owners can do everything.
+ */
 export const manageMember = async (req, res) => {
   try {
     const { boardId } = req.params;
@@ -245,11 +242,12 @@ export const manageMember = async (req, res) => {
     const isOwner = board.owner.toString() === req.userId;
     const isAdmin = board.admins.some(a => a.toString() === req.userId);
 
+    // Only owners and admins can manage members
     if (!isOwner && !isAdmin) {
       return res.status(403).json({ message: "You do not have permission to manage members on this board" });
     }
 
-    // Check if target is Owner
+    // Protection: The owner cannot be modified or removed
     const isTargetOwner = board.owner.toString() === memberId;
     if (isTargetOwner) {
       return res.status(400).json({ message: "Cannot perform action on the board owner" });
@@ -262,34 +260,23 @@ export const manageMember = async (req, res) => {
       return res.status(404).json({ message: "Target user is not a member of this board" });
     }
 
+    // Process the requested action
     if (action === "promote") {
-      if (!isOwner) {
-        return res.status(403).json({ message: "Only the board owner can promote members to admin" });
-      }
-      if (isTargetAdmin) {
-        return res.status(400).json({ message: "User is already an admin" });
-      }
+      if (!isOwner) return res.status(403).json({ message: "Only the board owner can promote members to admin" });
+      if (isTargetAdmin) return res.status(400).json({ message: "User is already an admin" });
       board.admins.push(memberId);
     } 
     else if (action === "demote") {
-      if (!isOwner) {
-        return res.status(403).json({ message: "Only the board owner can demote admins" });
-      }
-      if (!isTargetAdmin) {
-        return res.status(400).json({ message: "User is not an admin" });
-      }
+      if (!isOwner) return res.status(403).json({ message: "Only the board owner can demote admins" });
+      if (!isTargetAdmin) return res.status(400).json({ message: "User is not an admin" });
       board.admins = board.admins.filter(a => a.toString() !== memberId);
     } 
     else if (action === "remove") {
-      // Admins can only remove regular members (not admins)
-      if (isAdmin && !isOwner) {
-        if (isTargetAdmin) {
-          return res.status(403).json({ message: "Admins cannot remove other admins" });
-        }
+      // Admins can only remove regular members (not other admins or the owner)
+      if (isAdmin && !isOwner && isTargetAdmin) {
+        return res.status(403).json({ message: "Admins cannot remove other admins" });
       }
-      // Remove from members
       board.members = board.members.filter(m => m.toString() !== memberId);
-      // Remove from admins just in case
       board.admins = board.admins.filter(a => a.toString() !== memberId);
     } 
     else {
@@ -298,21 +285,18 @@ export const manageMember = async (req, res) => {
 
     await board.save();
 
-    // Log the member update
+    // Log the member update activity
     try {
       const memberUser = await UserModel.findById(memberId);
       const memberName = memberUser ? memberUser.name : "Unknown User";
-      if (action === "promote") {
-        await logActivity(boardId, req.userId, `promoted ${memberName} to Admin`);
-      } else if (action === "demote") {
-        await logActivity(boardId, req.userId, `demoted ${memberName} to Member`);
-      } else if (action === "remove") {
-        await logActivity(boardId, req.userId, `removed ${memberName} from the board`);
-      }
+      if (action === "promote") await logActivity(boardId, req.userId, `promoted ${memberName} to Admin`);
+      else if (action === "demote") await logActivity(boardId, req.userId, `demoted ${memberName} to Member`);
+      else if (action === "remove") await logActivity(boardId, req.userId, `removed ${memberName} from the board`);
     } catch (logErr) {
       console.error("Failed to log member update activity:", logErr);
     }
 
+    // Return the updated state
     const updatedBoard = await BoardModel.findById(boardId)
       .populate("owner", "name email avatar")
       .populate("members", "name email avatar")
@@ -324,14 +308,20 @@ export const manageMember = async (req, res) => {
   }
 };
 
+/**
+ * Fetch Board Activity Log
+ * Retrieves the last 100 logged events for a specific board (e.g., who moved which card).
+ */
 export const getBoardActivity = async (req, res) => {
   try {
     const { boardId } = req.params;
     const board = await BoardModel.findById(boardId);
+    
     if (!board || board.isDeleted) {
       return res.status(404).json({ message: "Board not found" });
     }
     
+    // Ensure the requester is part of the board
     const isOwner = board.owner.toString() === req.userId;
     const isMember = board.members.some(m => m.toString() === req.userId);
     
@@ -339,13 +329,14 @@ export const getBoardActivity = async (req, res) => {
       return res.status(403).json({ message: "You do not have permission to view activity on this board" });
     }
 
+    // Fetch the latest 100 activities, populated with user info
     const activities = await Activity.find({ board: boardId })
       .populate("user", "name email avatar")
-      .sort({ timestamp: -1 })
+      .sort({ timestamp: -1 }) // Newest first
       .limit(100);
 
     res.status(200).json({ message: "Activity logs fetched", payload: activities });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-};
+};

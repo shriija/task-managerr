@@ -10,29 +10,45 @@ import InviteModal from "../components/InviteModal"
 import MembersModal from "../components/MembersModal"
 import * as socketService from "../socket/socketService"
 
+/**
+ * BoardPage Component
+ * 
+ * Top-level page component for a single Board.
+ * Manages fetching board data, setting up Socket.io connections for real-time sync,
+ * and rendering the appropriate view (Board, My Tasks, Calendar, Activity, Trash)
+ * based on the URL parameters.
+ */
 function BoardPage() {
-
   const { id, view } = useParams()
   const navigate = useNavigate()
+  // Default to "board" view if no specific view is provided in the URL
   const currentView = view || "board"
+  
+  // Selectors from the global BoardStore Zustand context
   const { board, loading, error, fetchBoard, addList, reset, setupSocket, updateBoardSettings } = useBoardStore()
   const currentUser = useAuthStore(s => s.currentUser)
   
-
+  // Local UI State
   const [searchQuery, setSearchQuery] = useState("")
   const [showInvite, setShowInvite] = useState(false)
   const [showMembers, setShowMembers] = useState(false)
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState("")
 
+  // Determine if the current user has owner permissions for this board
   const isOwner = board?.owner?._id === currentUser?._id || board?.owner === currentUser?._id
 
+  // Synchronize local title state with board data when it loads/updates
   useEffect(() => {
     if (board) {
       setTitleValue(board.title)
     }
   }, [board])
 
+  /**
+   * Saves the edited board title if it has changed.
+   * If the input is empty, reverts to the original title.
+   */
   const handleTitleSave = () => {
     const trimmed = titleValue.trim()
     if (!trimmed) {
@@ -46,6 +62,10 @@ function BoardPage() {
     setEditingTitle(false)
   }
 
+  /**
+   * Keyboard handler for the board title input.
+   * Submits on Enter, cancels on Escape.
+   */
   const handleTitleKeyDown = (e) => {
     if (e.key === "Enter") handleTitleSave()
     if (e.key === "Escape") {
@@ -54,19 +74,21 @@ function BoardPage() {
     }
   }
 
+  // Redirect to the default "board" view if the URL contains an invalid view
   useEffect(() => {
     if (!view || !["board", "my-tasks", "calendar", "trash", "activity"].includes(view)) {
       navigate(`/board/${id}/board`, { replace: true })
     }
   }, [id, view, navigate])
 
-  // Fetch board data on mount
+  // Fetch board data when the component mounts or the ID changes
   useEffect(() => {
     if (id) fetchBoard(id)
-    return () => reset()
+    return () => reset() // Cleanup board state on unmount
   }, [id, fetchBoard, reset])
 
-  // Socket setup
+  // ── Socket.io Setup ─────────────────────────────────
+  // Connects to the socket server, sets up listeners, and joins the specific board room.
   useEffect(() => {
     if (id && currentUser) {
       const socket = socketService.connectSocket()
@@ -74,6 +96,7 @@ function BoardPage() {
       socketService.joinBoard(id, currentUser)
     }
     return () => {
+      // Leave the board room and clean up listeners when unmounting or switching boards
       if (id) socketService.leaveBoard(id)
     }
   }, [id, currentUser, setupSocket])
@@ -146,7 +169,7 @@ function BoardPage() {
       <aside className="w-64 bg-white/80 backdrop-blur-xl border-r border-gray-100
                          flex-col p-6 hidden lg:flex">
 
-        {/* Nav items */}
+        {/* Navigation items for switching views */}
         <nav className="space-y-1 text-sm">
           <button 
             onClick={() => navigate(`/board/${id}/board`)}
@@ -210,7 +233,7 @@ function BoardPage() {
           </button>
         </nav>
 
-        {/* Bottom: New Project */}
+        {/* Bottom: New List Creation */}
         <button
           onClick={() => addList(board?._id || "local", "New List")}
           className="mt-3.5 bg-linear-to-r from-primary-500 to-primary-600
@@ -234,7 +257,8 @@ function BoardPage() {
                            flex items-center justify-between px-8 shrink-0">
 
           <div className="flex items-center gap-4">
-            {/* Board title */}
+            
+            {/* Board title / Edit Title Input */}
             {isOwner ? (
               editingTitle ? (
                 <input
@@ -261,7 +285,7 @@ function BoardPage() {
               </h2>
             )}
 
-            {/* Members */}
+            {/* Board Members Display */}
             <div 
               onClick={() => setShowMembers(true)}
               className="flex -space-x-2.5 ml-2 cursor-pointer hover:opacity-85 active:scale-95 transition-all"
@@ -280,6 +304,7 @@ function BoardPage() {
                   </span>
                 </div>
               ))}
+              {/* Show overflow indicator if there are more than 4 members */}
               {(board?.members?.length || 0) > 4 && (
                 <div className="w-8 h-8 rounded-full border-2 border-white
                                bg-gray-100 flex items-center justify-center">
@@ -290,7 +315,7 @@ function BoardPage() {
               )}
             </div>
 
-            {/* Invite button — owner only */}
+            {/* Invite button — Only visible to board owners */}
             {isOwner && (
               <button
                 onClick={() => setShowInvite(true)}
@@ -308,7 +333,7 @@ function BoardPage() {
               </button>
             )}
 
-            {/* Multiple Assignees Toggle */}
+            {/* Multiple Assignees Setting Toggle */}
             {isOwner && (
               <label className="flex items-center gap-2 cursor-pointer ml-3">
                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Multiple Assignees</span>
@@ -321,7 +346,7 @@ function BoardPage() {
             )}
           </div>
 
-          {/* Search */}
+          {/* Search Bar - passed down to child components */}
           <div className="relative">
             <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -342,6 +367,7 @@ function BoardPage() {
         </header>
 
         {/* ─── BOARD CANVAS / VIEWS ───────────────────────────── */}
+        {/* Render the appropriate component based on the active tab */}
         {currentView === "calendar" ? (
           <CalendarView searchQuery={searchQuery} />
         ) : currentView === "activity" ? (
@@ -356,7 +382,7 @@ function BoardPage() {
 
     </div>
 
-    {/* ─── INVITE MODAL (portal-level overlay) ─────────────── */}
+    {/* ─── MODALS (portal-level overlays) ─────────────── */}
     {showInvite && (
       <InviteModal
         boardId={id}

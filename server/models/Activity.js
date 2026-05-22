@@ -1,26 +1,32 @@
 import { Schema, model } from "mongoose";
 
-
-
-
-//Activity Schema
+/**
+ * Activity Schema Definition
+ * 
+ * Used for logging user activities and events on boards, such as creating a card, 
+ * moving a card, or deleting lists. Provides an audit trail for the board's history.
+ */
 const activitySchema = new Schema(
   {
+    // Reference to the Board where the activity occurred
     board: {
       type: Schema.Types.ObjectId,
       required: [true, "Board ref is required"],
       ref: "Board",
-      index: true,
+      index: true, // Indexed to quickly fetch all history for a specific board
     },
+    // Reference to the User who performed the action
     user: {
       type: Schema.Types.ObjectId,
       required: [true, "User ref is required"],
       ref: "User",
     },
+    // A string description of the action (e.g., "created card 'Setup Database'")
     action: {
       type: String,
       required: [true, "Action is required"],
     },
+    // When the action occurred
     timestamp: {
       type: Date,
       default: Date.now,
@@ -29,9 +35,8 @@ const activitySchema = new Schema(
   {
     strict: true,
     timestamps: true,
-  },
+  }
 );
 
-export const Activity = model("Activity", activitySchema);
-
-//This schema is used for logging user activities on boards, such as creating a card, moving a card, etc. It includes references to the board and user involved, a description of the action, and a timestamp.
+// Export the mongoose model for creating activity logs
+export const Activity = model("Activity", activitySchema);

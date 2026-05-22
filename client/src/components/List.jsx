@@ -3,13 +3,28 @@ import { useBoardStore } from "../context/BoardContext"
 import { useAuthStore } from "../context/AuthContext"
 import Card from "./Card"
 
+/**
+ * List Component
+ * 
+ * Represents a single column (list) on the board (e.g., "To Do", "In Progress").
+ * Handles renaming the list, adding new cards, and processing drag-and-drop events
+ * when cards are moved within or across lists.
+ *
+ * @param {Object} props
+ * @param {Object} props.list - The list data object, including its cards array.
+ * @param {Function} props.onOpenModal - Callback to open the Card Detail Modal.
+ * @param {string} props.searchQuery - Current search query to filter visible cards.
+ * @param {boolean} props.filterByMe - Flag to only show cards assigned to the current user.
+ */
 function List({ list, onOpenModal, searchQuery, filterByMe }) {
 
+  // Global store actions
   const addCard = useBoardStore(s => s.addCard)
   const deleteList = useBoardStore(s => s.deleteList)
   const updateListTitle = useBoardStore(s => s.updateListTitle)
   const moveCard = useBoardStore(s => s.moveCard)
 
+  // Local state for UI interactions
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(list.title)
   const [showAddCard, setShowAddCard] = useState(false)
@@ -19,6 +34,7 @@ function List({ list, onOpenModal, searchQuery, filterByMe }) {
 
   const currentUser = useAuthStore(s => s.currentUser)
 
+  // Refs for auto-focusing inputs when toggled
   const titleRef = useRef(null)
   const addCardRef = useRef(null)
 
@@ -30,6 +46,7 @@ function List({ list, onOpenModal, searchQuery, filterByMe }) {
     if (showAddCard) addCardRef.current?.focus()
   }, [showAddCard])
 
+  /** Saves the updated list title and triggers the global update */
   const handleTitleSave = () => {
     const trimmed = title.trim()
     if (!trimmed) {
@@ -49,6 +66,7 @@ function List({ list, onOpenModal, searchQuery, filterByMe }) {
     }
   }
 
+  /** Submits a new card to the list */
   const handleAddCard = () => {
     if (!cardText.trim()) {
       setCardError("Card name required")
@@ -70,12 +88,15 @@ function List({ list, onOpenModal, searchQuery, filterByMe }) {
   }
 
   // ── Drag & Drop handlers ────────────────────────────
+  
+  /** Allows the drop event to fire */
   const handleDragOver = (e) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = "move"
     setIsDragOver(true)
   }
 
+  /** Clears the drop styling if the mouse leaves the list */
   const handleDragLeave = (e) => {
     // Only set false if we're actually leaving the list container
     if (!e.currentTarget.contains(e.relatedTarget)) {
@@ -83,6 +104,11 @@ function List({ list, onOpenModal, searchQuery, filterByMe }) {
     }
   }
 
+  /**
+   * Processes the drop event.
+   * Determines exactly where the card was dropped by calculating its relative 
+   * position to other cards in the list based on mouse coordinates.
+   */
   const handleDrop = (e) => {
     e.preventDefault()
     setIsDragOver(false)
@@ -104,6 +130,7 @@ function List({ list, onOpenModal, searchQuery, filterByMe }) {
       if (dropTarget) {
         const targetIndex = parseInt(dropTarget.dataset.cardIndex, 10)
         const rect = dropTarget.getBoundingClientRect()
+        // Calculate the middle of the target card to decide if it drops above or below it
         const midY = rect.top + rect.height / 2
 
         if (e.clientY < midY) {
@@ -112,7 +139,7 @@ function List({ list, onOpenModal, searchQuery, filterByMe }) {
           newPosition = targetIndex + 1
         }
 
-        // Adjust if moving within the same list
+        // Adjust index logic if moving a card downwards within the SAME list
         if (fromListId === toListId) {
           const cards = list.cards || []
           const oldIdx = cards.findIndex(c => c._id === cardId)
@@ -124,38 +151,41 @@ function List({ list, onOpenModal, searchQuery, filterByMe }) {
 
       moveCard(cardId, fromListId, toListId, newPosition)
     } catch (err) {
-      // Drop error
+      // Ignore invalid drag data
     }
   }
 
+  /**
+   * Determine the accent color bar for the list based on its title or position.
+   * Pre-defined colors for default lists ("To Do", "In Progress", "Done").
+   */
   const getAccentColor = () => {
+    const title = list.title?.toLowerCase()
 
-  const title = list.title?.toLowerCase()
+    if (title === "to do") {
+      return "from-red-400 to-red-500"
+    }
 
-  if (title === "to do") {
-    return "from-red-400 to-red-500"
+    if (title === "in progress") {
+      return "from-amber-400 to-yellow-500"
+    }
+
+    if (title === "done") {
+      return "from-emerald-400 to-green-500"
+    }
+
+    // Default colors for custom user-created lists
+    const accentColors = [
+      "from-primary-400 to-primary-500",
+      "from-cyan-400 to-cyan-500",
+      "from-violet-400 to-violet-500",
+      "from-pink-400 to-pink-500"
+    ]
+
+    return accentColors[(list.position || 0) % accentColors.length]
   }
 
-  if (title === "in progress") {
-    return "from-amber-400 to-yellow-500"
-  }
-
-  if (title === "done") {
-    return "from-emerald-400 to-green-500"
-  }
-
-  // Default colors for custom lists
-  const accentColors = [
-    "from-primary-400 to-primary-500",
-    "from-cyan-400 to-cyan-500",
-    "from-violet-400 to-violet-500",
-    "from-pink-400 to-pink-500"
-  ]
-
-  return accentColors[(list.position || 0) % accentColors.length]
-}
-
-const accent = getAccentColor()
+  const accent = getAccentColor()
 
   return (
     <div
@@ -197,11 +227,13 @@ const accent = getAccentColor()
         )}
 
         <div className="flex items-center gap-2 ml-3">
+          {/* Card count badge */}
           <span className="text-[10px] font-semibold bg-gray-100 text-gray-500
                            px-2 py-0.5 rounded-full min-w-5.5 text-center">
             {list.cards?.length || 0}
           </span>
 
+          {/* Delete List Button */}
           <button
             onClick={() => deleteList(list._id)}
             className="text-gray-400 hover:text-red-500
@@ -223,7 +255,7 @@ const accent = getAccentColor()
                       [&::-webkit-scrollbar-thumb]:rounded-full
                       ${isDragOver && (!list.cards || list.cards.length === 0) ? "min-h-15" : ""}`}>
 
-        {/* Drop zone placeholder when empty and dragging over */}
+        {/* Drop zone placeholder when the list is completely empty and a card is dragged over it */}
         {isDragOver && (!list.cards || list.cards.length === 0) && (
           <div className="border-2 border-dashed border-primary-300 rounded-xl p-4
                           text-center text-primary-400 text-xs font-medium
@@ -233,8 +265,9 @@ const accent = getAccentColor()
         )}
 
         {(list.cards || [])
-          .map((c, i) => ({ ...c, originalIndex: i }))
+          .map((c, i) => ({ ...c, originalIndex: i })) // Preserve original index for accurate drop calculations
           .filter(card => {
+            // Filtering Logic for Top Navbar Search/Filter
             let match = true;
             if (searchQuery) {
               const query = searchQuery.toLowerCase();

@@ -1,11 +1,27 @@
 import { useState } from "react";
 import { useBoardStore } from "../context/BoardContext";
 
+/**
+ * Card Component
+ * 
+ * Represents a draggable individual task item inside a list.
+ * Displays a summary of the task details (title, labels, priority, due date, assignees, 
+ * attachment count, remark count). Clicking on the card opens the detailed Modal.
+ *
+ * @param {Object} props
+ * @param {Object} props.card - The card data object.
+ * @param {string} props.listId - The ID of the parent list.
+ * @param {Function} props.onOpenModal - Callback to open the full Card Details Modal.
+ * @param {Function} props.onDragStart - Optional callback fired when dragging begins.
+ * @param {Function} props.onDragEnd - Optional callback fired when dragging ends.
+ */
 function Card({ card, listId, onOpenModal, onDragStart, onDragEnd }) {
   const board = useBoardStore(s => s.board);
   const [isHovered, setIsHovered] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  // ── Styling Configurations ─────────────────────────────
+  
   const priorityStyles = {
     High: "bg-red-500/10 text-red-600",
     Medium: "bg-amber-500/10 text-amber-600",
@@ -24,14 +40,23 @@ function Card({ card, listId, onOpenModal, onDragStart, onDragEnd }) {
     "completed": "bg-emerald-500"
   };
 
+  /** Determine if a task is overdue by comparing due date to today's date */
   const isOverdue = card.dueDate && card.status !== "completed" && new Date(card.dueDate) < new Date();
 
+  /** Helper to format the due date into a readable string (e.g., "Oct 12") */
   const formatDate = (dateStr) => {
     if (!dateStr) return null;
     const d = new Date(dateStr);
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
+  // ── Drag Handlers ─────────────────────────────────────
+  
+  /**
+   * Fires when the user starts dragging the card.
+   * Serializes the cardId and fromListId into the dataTransfer object so the 
+   * receiving List component knows exactly what was dropped.
+   */
   const handleDragStart = (e) => {
     setIsDragging(true);
     e.dataTransfer.effectAllowed = "move";
@@ -42,7 +67,7 @@ function Card({ card, listId, onOpenModal, onDragStart, onDragEnd }) {
         fromListId: listId,
       }),
     );
-    // Add a slight delay for the drag image
+    // Add a slight delay for the drag image to render before making the original transparent
     setTimeout(() => {
       e.target.style.opacity = "0.4";
     }, 0);
@@ -86,14 +111,14 @@ function Card({ card, listId, onOpenModal, onDragStart, onDragEnd }) {
         {card.title}
       </p>
 
-      {/* Description indicator */}
+      {/* Description indicator snippet */}
       {card.description && (
         <p className="text-xs text-gray-400 mt-1 line-clamp-1">
           {card.description}
         </p>
       )}
 
-      {/* Meta row */}
+      {/* Meta row: Icons for attachments, remarks, due dates, priority, assignees */}
       <div className="flex items-center gap-2 mt-2.5 flex-wrap">
         {/* Due status tag in red */}
         {isOverdue && (
@@ -160,7 +185,7 @@ function Card({ card, listId, onOpenModal, onDragStart, onDragEnd }) {
           </span>
         )}
 
-        {/* Assignee Avatar(s) */}
+        {/* Assignee Avatar(s) rendering logic handles both single and multiple assignees based on board settings */}
         {!board?.allowMultipleAssignees ? (
           card.assignedTo && (
             <div 
@@ -215,7 +240,7 @@ function Card({ card, listId, onOpenModal, onDragStart, onDragEnd }) {
         </svg>
       </div>
 
-      {/* Hover indicator */}
+      {/* Hover indicator side-bar color */}
       <div
         className={`absolute top-0 left-0 w-0.5 h-full rounded-l-xl transition-opacity duration-200
                     ${isOverdue ? 'bg-red-500' : (hoverIndicatorColors[card.status] || 'bg-primary-500')}

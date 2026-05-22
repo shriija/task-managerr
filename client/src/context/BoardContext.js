@@ -18,7 +18,12 @@ export const useBoardStore = create((set, get) => ({
   deletedLists: [],
   deletedCards: [],
 
-  // ── Socket Listeners ───────────────────────────────────
+  // ── Socket Listeners & Real-Time Sync ──────────────────
+  /**
+   * Initializes all Socket.io listeners when a user joins a board.
+   * Whenever an event is received (e.g., another user moved a card), the local Zustand 
+   * state is immediately updated without requiring a full page refresh or API call.
+   */
   setupSocket: (socket) => {
     if (!socket) return
 
@@ -194,7 +199,12 @@ socket.on("member-updated", (data) => {
 })
   },
 
-  // ── Fetch board + lists + cards ────────────────────────
+  // ── REST API Interactions & State Updates ────────────────
+
+  /**
+   * Fetch the main board, its lists, and all nested cards.
+   * Uses Promise.all to fetch cards for all lists concurrently.
+   */
   fetchBoard: async (boardId) => {
     try {
       set({ loading: true, error: null })
@@ -228,6 +238,10 @@ socket.on("member-updated", (data) => {
   },
 
   // ── List Actions ───────────────────────────────────────
+  /**
+   * Add a new list. Uses Optimistic UI: immediately updates the local state with a 
+   * temporary ID, then replaces it with the real DB record once the API responds.
+   */
   addList: async (boardId, title) => {
     const { lists } = get()
     const position = lists.length
@@ -264,6 +278,12 @@ socket.on("member-updated", (data) => {
   },
 
   // ── Card Actions ───────────────────────────────────────
+  
+  /**
+   * Add a new card to a list.
+   * Optimistically adds a temporary card to the local state, then emits a socket event
+   * to other users once the backend confirms creation.
+   */
   addCard: async (listId, title, additionalFields = {}) => {
     const boardId = get().board?._id
     const { lists } = get()
@@ -302,6 +322,11 @@ socket.on("member-updated", (data) => {
     if (boardId) socketService.emitCardDeleted(boardId, { cardId, listId })
   },
 
+  /**
+   * Update a card's details.
+   * Uses Optimistic UI for immediate feedback. Handles moving the card between lists
+   * if the target list changed during the update. Emits a socket event after success.
+   */
   updateCard: async (cardId, listId, updates) => {
     const boardId = get().board?._id
     const stateUpdates = { ...updates }
@@ -381,6 +406,11 @@ socket.on("member-updated", (data) => {
     }
   },
 
+  /**
+   * Helper function to forcefully sync a specific card's state locally and broadcast it.
+   * Often used for complex updates like uploading attachments or adding remarks where 
+   * the backend returns the fully populated document.
+   */
   syncCardUpdate: (updatedCard) => {
     const boardId = get().board?._id
     const cardId = updatedCard._id
@@ -402,6 +432,11 @@ socket.on("member-updated", (data) => {
     }
   },
 
+  /**
+   * Handles Drag & Drop repositioning of cards.
+   * Immediately re-orders the arrays in the local state, then fires the API call in the 
+   * background. Broadcasts the 'move-card' socket event so other viewers see the animation.
+   */
   moveCard: (cardId, fromListId, toListId, newPosition) => {
 
   const boardId = get().board?._id

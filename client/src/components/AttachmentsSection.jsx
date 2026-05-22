@@ -3,11 +3,24 @@ import axios from "axios"
 import { API_URL } from "../services/api"
 import toast from "react-hot-toast"
 
+/**
+ * AttachmentsSection Component
+ * 
+ * Manages the display, upload, and deletion of file attachments for a specific card.
+ * Uses a hidden file input to trigger native file selection and handles multipart/form-data 
+ * API requests to stream files to Cloudinary via the backend.
+ *
+ * @param {Object} props
+ * @param {Object} props.card - The current card data object containing the attachments array.
+ * @param {boolean} props.canEdit - Permission flag indicating if the user can upload/delete files.
+ * @param {Function} props.onCardUpdate - Callback fired when attachments are added or removed to sync state.
+ */
 function AttachmentsSection({ card, canEdit, onCardUpdate }) {
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef(null)
   const attachments = card?.attachments || []
 
+  /** Formats raw byte sizes into readable strings (KB, MB) */
   const formatSize = (bytes) => {
     if (!bytes) return ""
     if (bytes < 1024) return bytes + " B"
@@ -15,6 +28,7 @@ function AttachmentsSection({ card, canEdit, onCardUpdate }) {
     return (bytes / 1048576).toFixed(1) + " MB"
   }
 
+  /** Returns an emoji icon based on the file MIME type */
   const getFileIcon = (type) => {
     if (!type) return "📄"
     if (type.startsWith("image/")) return "🖼️"
@@ -26,6 +40,10 @@ function AttachmentsSection({ card, canEdit, onCardUpdate }) {
     return "📄"
   }
 
+  /**
+   * Handles file selection and uploads them to the backend.
+   * Restricts upload to 5 files at a time to prevent server overload.
+   */
   const handleUpload = async (e) => {
     const files = e.target.files
     if (!files?.length) return
@@ -41,16 +59,19 @@ function AttachmentsSection({ card, canEdit, onCardUpdate }) {
         formData,
         { withCredentials: true, headers: { "Content-Type": "multipart/form-data" } }
       )
+      // The backend returns the fully populated updated card
       onCardUpdate(res.data.payload)
       toast.success("Files uploaded!")
     } catch (err) {
       toast.error(err.response?.data?.message || "Upload failed")
     } finally {
       setUploading(false)
+      // Reset the file input so the exact same file can be uploaded again if needed
       if (fileRef.current) fileRef.current.value = ""
     }
   }
 
+  /** Removes a specific attachment from the card */
   const handleDelete = async (attachmentId) => {
     try {
       const res = await axios.delete(
@@ -64,6 +85,7 @@ function AttachmentsSection({ card, canEdit, onCardUpdate }) {
     }
   }
 
+  // If there are no attachments and the user lacks edit permission, completely hide this section
   if (attachments.length === 0 && !canEdit) return null
 
   return (
@@ -87,8 +109,10 @@ function AttachmentsSection({ card, canEdit, onCardUpdate }) {
         )}
       </div>
 
+      {/* Hidden file input controlled by the "Add Files" button */}
       <input ref={fileRef} type="file" multiple onChange={handleUpload} className="hidden" />
 
+      {/* Render list of attachments */}
       {attachments.length > 0 && (
         <div className="space-y-1.5 max-h-40 overflow-y-auto">
           {attachments.map((att) => (
@@ -98,6 +122,8 @@ function AttachmentsSection({ card, canEdit, onCardUpdate }) {
                 <p className="text-xs font-medium text-gray-700 truncate">{att.name}</p>
                 <p className="text-[10px] text-gray-400">{formatSize(att.size)}</p>
               </div>
+              
+              {/* Attachment Actions (View, Download, Delete) */}
               <div className="flex items-center gap-1 shrink-0">
                 <a href={att.url} target="_blank" rel="noopener noreferrer"
                   className="text-[10px] font-medium text-primary-600 hover:text-primary-700 px-1.5 py-0.5 rounded hover:bg-primary-50 transition-colors"
@@ -115,6 +141,7 @@ function AttachmentsSection({ card, canEdit, onCardUpdate }) {
         </div>
       )}
 
+      {/* Uploading loading state indicator */}
       {uploading && (
         <div className="flex items-center gap-2 mt-2 p-2 bg-primary-50 rounded-xl">
           <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />

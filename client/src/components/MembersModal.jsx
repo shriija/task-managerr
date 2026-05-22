@@ -2,6 +2,16 @@ import { useState, useRef, useEffect } from "react";
 import { useBoardStore } from "../context/BoardContext";
 import { useAuthStore } from "../context/AuthContext";
 
+/**
+ * MembersModal Component
+ * 
+ * Displays a modal listing all members of the board (Owner, Admins, and Members).
+ * Provides controls for the board owner to promote/demote/remove members, and for admins
+ * to remove regular members. 
+ *
+ * @param {Object} props
+ * @param {Function} props.onClose - Callback to close the modal.
+ */
 function MembersModal({ onClose }) {
   const board = useBoardStore(s => s.board);
   const manageBoardMember = useBoardStore(s => s.manageBoardMember);
@@ -9,6 +19,7 @@ function MembersModal({ onClose }) {
   
   const backdropRef = useRef(null);
   const [error, setError] = useState("");
+  // Track which specific member and action is currently loading to disable buttons properly
   const [loadingId, setLoadingId] = useState("");
 
   const ownerId = board?.owner?._id || board?.owner;
@@ -18,7 +29,7 @@ function MembersModal({ onClose }) {
   // Group all members: Board owner + board members
   const uniqueMembers = [];
   
-  // Add Owner first if exists
+  // Add Owner first if they exist so they appear at the top of the list
   if (board?.owner) {
     uniqueMembers.push({
       ...board.owner,
@@ -26,9 +37,10 @@ function MembersModal({ onClose }) {
     });
   }
 
-  // Add members
+  // Iterate over members array and map their actual role based on the admins array
   if (board?.members) {
     board.members.forEach(member => {
+      // Exclude the owner since they are already added manually above
       if (member && member._id !== ownerId) {
         const isUserAdmin = board.admins?.some(admin => (admin._id || admin) === member._id);
         uniqueMembers.push({
@@ -39,6 +51,10 @@ function MembersModal({ onClose }) {
     });
   }
 
+  /**
+   * Dispatches the member management action to the backend.
+   * Actions: "promote" (member -> admin), "demote" (admin -> member), "remove".
+   */
   const handleAction = async (memberId, action) => {
     setError("");
     setLoadingId(memberId + "-" + action);
@@ -51,6 +67,7 @@ function MembersModal({ onClose }) {
     }
   };
 
+  // Listen for Escape key to close the modal
   useEffect(() => {
     const handler = (e) => {
       if (e.key === "Escape") onClose();
@@ -59,6 +76,7 @@ function MembersModal({ onClose }) {
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
+  // Handle clicking the modal backdrop
   const handleBackdropClick = (e) => {
     if (e.target === backdropRef.current) onClose();
   };
@@ -70,6 +88,7 @@ function MembersModal({ onClose }) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm animate-fade-in"
     >
       <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl p-6 relative flex flex-col max-h-[85vh] animate-fade-in-up">
+        
         {/* Header */}
         <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
           <div>
@@ -84,13 +103,14 @@ function MembersModal({ onClose }) {
           </button>
         </div>
 
+        {/* Global Error Message */}
         {error && (
           <div className="mb-3 p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-xl font-medium">
             {error}
           </div>
         )}
 
-        {/* Member list */}
+        {/* Member List */}
         <div className="flex-1 overflow-y-auto space-y-3 pr-1">
           {uniqueMembers.map((member) => {
             const isMe = member._id === currentUser?._id;
@@ -98,10 +118,12 @@ function MembersModal({ onClose }) {
             const isTargetAdmin = member.role === "admin";
             const isTargetMember = member.role === "member";
 
-            // Determine what actions are allowed
+            // ── Permissions Logic ──
+            // Owners can remove anyone but themselves. Admins can only remove regular members.
             const canRemove = !isTargetOwner && (
               isOwner || (isAdmin && isTargetMember)
             );
+            // Only owners can promote/demote admins
             const canPromote = isOwner && isTargetMember;
             const canDemote = isOwner && isTargetAdmin;
 
@@ -111,6 +133,7 @@ function MembersModal({ onClose }) {
                 className="flex items-center justify-between p-3 rounded-2xl border border-gray-50 bg-gray-50/30 hover:bg-gray-50/80 transition-all duration-200"
               >
                 <div className="flex items-center gap-3 overflow-hidden">
+                  
                   {/* Avatar */}
                   <div className="w-9 h-9 rounded-full bg-linear-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm">
                     {member.avatar ? (
@@ -136,7 +159,8 @@ function MembersModal({ onClose }) {
 
                 {/* Role badge and controls */}
                 <div className="flex items-center gap-2 shrink-0">
-                  {/* Role Badge */}
+                  
+                  {/* Role Badge with conditional coloring */}
                   <span
                     className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
                       isTargetOwner
@@ -160,6 +184,7 @@ function MembersModal({ onClose }) {
                         {loadingId === member._id + "-promote" ? "..." : "Make Admin"}
                       </button>
                     )}
+                    
                     {canDemote && (
                       <button
                         onClick={() => handleAction(member._id, "demote")}
@@ -169,6 +194,7 @@ function MembersModal({ onClose }) {
                         {loadingId === member._id + "-demote" ? "..." : "Demote"}
                       </button>
                     )}
+                    
                     {canRemove && (
                       <button
                         onClick={() => handleAction(member._id, "remove")}
@@ -179,6 +205,7 @@ function MembersModal({ onClose }) {
                       </button>
                     )}
                   </div>
+
                 </div>
               </div>
             );
