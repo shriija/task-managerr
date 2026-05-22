@@ -1,2 +1,2 @@
 VITE_API_URL=
-VITE_GOOGLE_CLIENT_ID=149088095010-6uetcu3p1cv46bj79ghbprfs4osr2quo.apps.googleusercontent.com
+VITE_GOOGLE_CLIENT_ID=
