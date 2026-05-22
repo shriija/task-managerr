@@ -186,19 +186,21 @@ sequenceDiagram
     participant S as Express Server
     participant DB as MongoDB
 
-    U->>C: Enter email + password → Submit
-    C->>S: POST /user-api/signin { email, password }
-    S->>DB: UserModel.findOne({ email })
-    DB-->>S: User document (with hashed password)
-    S->>S: bcrypt.compare(password, user.password)
+    U->>C: Enter email and password
+    C->>S: POST signin request
+    S->>DB: Find user by email
+    DB-->>S: Return user document
+    S->>S: Compare password using bcrypt
+
     alt Credentials valid
-        S->>S: jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1d" })
-        S-->>C: 200 { payload: user } + Set-Cookie: token=JWT; HttpOnly; SameSite=Lax
-        C->>C: AuthContext.setUser(user)
-        C-->>U: Redirect to /dashboard
+        S->>S: Generate JWT token
+        S-->>C: Success response and auth cookie set
+        C->>C: Update AuthContext
+        C-->>U: Redirect dashboard
+
     else Invalid credentials
-        S-->>C: 401 { message: "invalid credentials" }
-        C-->>U: Show error toast
+        S-->>C: Error response
+        C-->>U: Show error
     end
 ```
 

@@ -215,25 +215,25 @@ sequenceDiagram
     participant S as Express Server
     participant DB as MongoDB
 
-    Note over U,DB: ── Signup ──
-    U->>S: POST /user-api/signup { name, email, password }
-    S->>DB: UserModel.findOne({ email }) → check duplicate
-    S->>S: bcrypt.hash(password, 8) — salt rounds = 8
-    S->>DB: new UserModel({ name, email, hashedPassword }).save()
-    S-->>U: 201 { message: "user created successfully" }
+    Note over U,DB: Signup
+    U->>S: POST /user-api/signup {name,email,password}
+    S->>DB: find user by email
+    S->>S: bcrypt.hash(password,8)
+    S->>DB: save user
+    S-->>U: 201 user created successfully
 
-    Note over U,DB: ── Login ──
-    U->>S: POST /user-api/signin { email, password }
-    S->>DB: UserModel.findOne({ email })
-    S->>S: bcrypt.compare(password, user.password)
-    S->>S: jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1d" })
-    S-->>U: 200 { payload: user } + Set-Cookie: token=JWT; HttpOnly; SameSite=Lax; Max-Age=7d
+    Note over U,DB: Login
+    U->>S: POST /user-api/signin {email,password}
+    S->>DB: find user by email
+    S->>S: bcrypt.compare()
+    S->>S: jwt.sign() expires=1d
+    S-->>U: 200 return user and set auth cookie
 
-    Note over U,DB: ── Protected Request ──
-    U->>S: GET /board-api/ (Cookie: token=JWT auto-sent)
-    S->>S: verifyToken → jwt.verify → req.userId
-    S->>DB: BoardModel.find({ owner: req.userId })
-    S-->>U: 200 { payload: boards }
+    Note over U,DB: Protected Request
+    U->>S: GET /board-api/ with auth cookie
+    S->>S: verifyToken and jwt.verify
+    S->>DB: find boards by owner id
+    S-->>U: 200 boards response
 ```
 
 ### Cookie Flags Explained
