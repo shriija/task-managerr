@@ -5,24 +5,40 @@ import { API_URL } from "../services/api"
 import { useBoardStore } from "../context/BoardContext"
 import { useAuthStore } from "../context/AuthContext"
 
+/**
+ * UserDashboard Component
+ * 
+ * The primary landing area for authenticated users.
+ * Displays personal boards, shared boards, and deleted (trash) boards.
+ * Handles fetching board lists, global dashboard stats, and soft-delete/restore functionality.
+ */
 function UserDashboard() {
   const navigate = useNavigate()
+  
+  // Destructure the active tab from the URL parameters (boards, shared, trash)
   const { tab } = useParams()
+  // Default to "boards" if the tab parameter is not provided
   const currentView = tab || "boards"
 
+  // Selectors from global stores
   const currentUser = useAuthStore((state) => state.currentUser)
-  const [boards, setBoards] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [stats, setStats] = useState({ personal: 0, shared: 0 })
-
   const deletedBoards = useBoardStore(s => s.deletedBoards)
   const fetchDeletedBoards = useBoardStore(s => s.fetchDeletedBoards)
   const restoreBoard = useBoardStore(s => s.restoreBoard)
   const permanentDeleteBoard = useBoardStore(s => s.permanentDeleteBoard)
 
-  // Dynamic greeting based on time of day
+  // Local state for dashboard data
+  const [boards, setBoards] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
+  // Keep track of counts for personal and shared boards to display in the overview cards
+  const [stats, setStats] = useState({ personal: 0, shared: 0 })
+
+  /**
+   * Generates a dynamic greeting based on the user's current local time.
+   * @returns {string} The greeting message (Good morning, Good afternoon, Good evening)
+   */
   const getGreeting = () => {
     const hrs = new Date().getHours()
     if (hrs < 12) return "Good morning"
@@ -30,13 +46,18 @@ function UserDashboard() {
     return "Good evening"
   }
 
+  // Effect to handle invalid tab routes and redirect to the default view
   useEffect(() => {
     if (!tab || !["boards", "shared", "trash"].includes(tab)) {
       navigate("/dashboard/boards", { replace: true })
     }
   }, [tab, navigate])
 
-  // Fetch boards data and update dashboard stats
+  /**
+   * Fetches the board data for the current active tab (My Boards, Shared, Trash).
+   * Depending on the view, it either fetches active boards from the API or delegates
+   * to the BoardStore to fetch deleted items.
+   */
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -44,13 +65,16 @@ function UserDashboard() {
         setError("")
         
         let endpoint = `${API_URL}/board-api/`
+        // Update endpoint if viewing shared boards
         if (currentView === "shared") {
           endpoint = `${API_URL}/board-api/shared/all`
         }
 
         if (currentView === "trash") {
+          // Fetch deleted boards via Zustand action
           await fetchDeletedBoards()
         } else {
+          // Fetch active/shared boards
           const res = await axios.get(endpoint, { withCredentials: true })
           setBoards(res.data.payload || [])
         }
@@ -63,7 +87,10 @@ function UserDashboard() {
     loadData()
   }, [currentView, fetchDeletedBoards])
 
-  // Refresh counts on mount and when views update
+  /**
+   * Fetches independent dashboard statistics (total personal boards, total shared boards)
+   * to ensure the top overview cards are always accurate regardless of the current active tab.
+   */
   useEffect(() => {
     const fetchCounts = async () => {
       try {
@@ -82,9 +109,15 @@ function UserDashboard() {
     fetchCounts()
   }, [currentView])
 
-  // Delete Board (soft delete)
+  /**
+   * Handles the soft deletion of a board.
+   * Sends the delete request, removes the board from local UI state, and updates stats.
+   * 
+   * @param {Event} e - Click event
+   * @param {string} boardId - The ID of the board to soft-delete
+   */
   const handleDeleteBoard = async (e, boardId) => {
-    e.stopPropagation()
+    e.stopPropagation() // Prevent the click from navigating to the board page
     try {
       await axios.delete(`${API_URL}/board-api/deleteBoard/${boardId}`, { withCredentials: true })
       setBoards(boards.filter(b => b._id !== boardId))
@@ -94,13 +127,18 @@ function UserDashboard() {
     }
   }
 
-  // Handle restoring a board
+  /**
+   * Handles restoring a board from the trash.
+   * Delegates to the BoardStore action and updates the personal boards stat.
+   * 
+   * @param {string} boardId - The ID of the board to restore
+   */
   const handleRestore = async (boardId) => {
     await restoreBoard(boardId)
     setStats(prev => ({ ...prev, personal: prev.personal + 1 }))
   }
 
-  // Filter boards based on search query
+  // Filter the currently loaded boards based on the user's search query (case-insensitive)
   const filteredBoards = boards.filter(b => 
     b.title?.toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -108,9 +146,10 @@ function UserDashboard() {
   return (
     <div className="min-h-[calc(100vh-4rem)] flex bg-slate-50 font-body">
       
-      {/* Sidebar */}
+      {/* ─── SIDEBAR ──────────────────────────────────────────────────────── */}
       <aside className="w-64 bg-white border-r border-slate-200/80 p-6 hidden lg:flex flex-col justify-between shrink-0">
         <div>
+          {/* Create Board Action */}
           <button
             onClick={() => navigate("/create-board")}
             className="w-full flex items-center justify-center gap-2 py-3 px-4 text-sm font-semibold rounded-xl text-white bg-primary-600 hover:bg-primary-700 transition-all shadow-md shadow-primary-500/10 cursor-pointer mb-6"
@@ -121,6 +160,7 @@ function UserDashboard() {
             Create Board
           </button>
 
+          {/* Navigation Links */}
           <div className="space-y-1">
             <button
               onClick={() => navigate("/dashboard/boards")}
@@ -167,7 +207,7 @@ function UserDashboard() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
+      {/* ─── MAIN CONTENT AREA ──────────────────────────────────────────────── */}
       <main className="flex-1 p-8 lg:p-12 overflow-y-auto max-w-7xl mx-auto w-full">
         
         {/* Welcome Header */}
@@ -179,7 +219,7 @@ function UserDashboard() {
             <p className="text-slate-500 text-sm mt-1">Here's an overview of your active workspaces and boards.</p>
           </div>
 
-          {/* Search Boards Input */}
+          {/* Search Boards Input (Only visible in 'boards' or 'shared' tabs) */}
           {(currentView === "boards" || currentView === "shared") && (
             <div className="relative">
               <svg className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -196,7 +236,7 @@ function UserDashboard() {
           )}
         </div>
 
-        {/* Dashboard Statistics Overview */}
+        {/* Dashboard Statistics Overview Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
           <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm">
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">My Boards</p>
@@ -212,20 +252,21 @@ function UserDashboard() {
           </div>
         </div>
 
-        {/* Error Alert */}
+        {/* Error Alert Display */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200/50 rounded-2xl text-center">
             <p className="text-red-600 text-sm font-semibold">{error}</p>
           </div>
         )}
 
-        {/* Grid Lists */}
+        {/* ─── ACTIVE OR SHARED BOARDS GRID ────────────────────────────────────── */}
         {(currentView === "boards" || currentView === "shared") && (
           <div>
             <div className="flex items-center justify-between mb-5 border-b border-slate-200/60 pb-3">
               <h2 className="font-display text-lg font-bold text-slate-800 uppercase tracking-wider">
                 {currentView === "boards" ? "Active Boards" : "Shared Boards"}
               </h2>
+              {/* Show count of filtered results if searching */}
               {searchQuery && (
                 <span className="text-xs text-slate-500">
                   Showing {filteredBoards.length} of {boards.length} results
@@ -234,6 +275,7 @@ function UserDashboard() {
             </div>
 
             {loading ? (
+              // Loading Skeleton Grid
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
                 {[1, 2, 3, 4].map(i => (
                   <div key={i} className="animate-pulse bg-white border border-slate-200/80 rounded-2xl h-36" />
@@ -242,7 +284,7 @@ function UserDashboard() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
                 
-                {/* Create Board dotted button card */}
+                {/* Create Board dotted button card (only shown in 'boards' view when not searching) */}
                 {currentView === "boards" && !searchQuery && (
                   <div
                     onClick={() => navigate("/create-board")}
@@ -255,7 +297,7 @@ function UserDashboard() {
                   </div>
                 )}
 
-                {/* Boards Iteration */}
+                {/* Boards Iteration Grid */}
                 {filteredBoards.map((board) => (
                   <div
                     key={board._id}
@@ -264,11 +306,12 @@ function UserDashboard() {
                   >
                     <div>
                       <div className="flex items-center justify-between">
+                        {/* Board Initial Avatar */}
                         <div className="w-9 h-9 rounded-xl bg-linear-to-tr from-primary-500 to-indigo-500 flex items-center justify-center text-white font-bold text-sm shadow-sm">
                           {board.title?.charAt(0)?.toUpperCase() || "B"}
                         </div>
 
-                        {/* Owner Label for Shared */}
+                        {/* Owner Label for Shared Boards */}
                         {currentView === "shared" && board.owner && (
                           <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100 shadow-sm max-w-[120px]">
                             <div className="w-4 h-4 rounded-full bg-linear-to-br from-primary-400 to-primary-600 flex items-center justify-center text-[8px] font-bold text-white shrink-0 overflow-hidden">
@@ -297,7 +340,7 @@ function UserDashboard() {
                         })}
                       </p>
 
-                      {/* Delete action */}
+                      {/* Delete action (Only available for personal boards) */}
                       {currentView !== "shared" && (
                         <button
                           onClick={(e) => handleDeleteBoard(e, board._id)}
@@ -315,6 +358,7 @@ function UserDashboard() {
               </div>
             )}
             
+            {/* Empty State when search yields no results */}
             {!loading && filteredBoards.length === 0 && (
               <div className="text-center py-12 bg-white border border-slate-200/80 rounded-2xl">
                 <p className="text-slate-400 text-sm font-semibold">No workspaces found matching "{searchQuery}"</p>
@@ -323,7 +367,7 @@ function UserDashboard() {
           </div>
         )}
 
-        {/* Trash Tab View */}
+        {/* ─── TRASH TAB VIEW ─────────────────────────────────────────────────── */}
         {currentView === "trash" && (
           <div>
             <h2 className="font-display text-lg font-bold text-slate-800 uppercase tracking-wider mb-5 border-b border-slate-200/60 pb-3">
@@ -337,10 +381,12 @@ function UserDashboard() {
                 ))}
               </div>
             ) : deletedBoards.length === 0 ? (
+              // Empty Trash State
               <div className="text-center py-12 bg-white border border-slate-200/80 rounded-2xl">
                 <p className="text-slate-400 text-sm font-semibold">Trash is empty.</p>
               </div>
             ) : (
+              // Deleted Boards Grid
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
                 {deletedBoards.map(board => (
                   <div 

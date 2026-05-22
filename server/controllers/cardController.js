@@ -1,6 +1,8 @@
 import { CardModel } from "../models/Card.js";
 import { ListModel } from "../models/List.js";
 import { BoardModel } from "../models/Board.js";
+import { UserModel } from "../models/User.js";
+import { logActivity } from "../utils/activityLogger.js";
 
 // Helper to parse date string in local timezone to avoid timezone shifting
 const parseLocalDate = (dateStr) => {
@@ -13,7 +15,14 @@ const parseLocalDate = (dateStr) => {
     return new Date(dateStr);
 };
 
-//Create Cards
+/**
+ * Create a New Task Card
+ * Validates due dates, determines initial status based on the target list,
+ * auto-assigns the creator to the board if they aren't a member, and logs the activity.
+ * 
+ * @param {Object} req - Express request object containing card details (title, list, dueDate, etc.)
+ * @param {Object} res - Express response object
+ */
 export const addCard=async(req,res)=>{
     const createCard = req.body;
     if(createCard.dueDate){
@@ -97,6 +106,10 @@ export const addCard=async(req,res)=>{
             .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar");
 
+        if (list) {
+            await logActivity(list.board, req.userId, `created task "${saveCard.title}"`);
+        }
+
         res.status(201).json({message:"New card added successfully", payload:saveCard})
     }
     catch(error){
@@ -104,7 +117,10 @@ export const addCard=async(req,res)=>{
     }
 }
 
-//Get card by id
+/**
+ * Fetch details of a single Card by its ID
+ * Populates the assigned user, multiple assignees, and the creator with user details.
+ */
 export const getCardById=async(req,res)=>{
     const getCard=req.params.id;
     try{
@@ -119,7 +135,10 @@ export const getCardById=async(req,res)=>{
     }
 }
 
-//Fetch Cards
+/**
+ * Fetch all active Cards for a specific List
+ * Returns them sorted vertically by their `position` property.
+ */
 export const getCards=async(req,res)=>{
     const list=req.params.id
     try{
@@ -134,7 +153,12 @@ export const getCards=async(req,res)=>{
     }
 }
 
-//Update card
+/**
+ * Update Card Details (Title, Description, Status, Priority, Due Date, Assignees)
+ * Contains extensive permission checks: only owners/admins can change core details.
+ * Regular members can only change the status (e.g., from "To Do" to "Done").
+ * Logs all specific changes to the board's activity history.
+ */
 export const updateCard=async(req,res)=>{
     const cardId=req.params.id
     const {title, description, dueDate, priority, status, assignedTo, assignees}=req.body
@@ -246,13 +270,55 @@ export const updateCard=async(req,res)=>{
             .populate("assignedTo", "name email avatar")
             .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar")
+
+        if (list && updatedCard) {
+            const boardId = list.board;
+            if (title !== undefined && title !== card.title) {
+                await logActivity(boardId, req.userId, `renamed task from "${card.title}" to "${title}"`);
+            }
+            if (status !== undefined && status !== card.status) {
+                await logActivity(boardId, req.userId, `changed task "${card.title}" status to "${status}"`);
+            }
+            if (priority !== undefined && priority !== card.priority) {
+                await logActivity(boardId, req.userId, `set task "${card.title}" priority to "${priority}"`);
+            }
+            if (dueDate !== undefined) {
+                const oldDueStr = card.dueDate ? new Date(card.dueDate).toISOString().split("T")[0] : null;
+                const newDueStr = dueDate ? new Date(dueDate).toISOString().split("T")[0] : null;
+                if (oldDueStr !== newDueStr) {
+                    if (newDueStr) {
+                        await logActivity(boardId, req.userId, `set task "${card.title}" due date to ${newDueStr}`);
+                    } else {
+                        await logActivity(boardId, req.userId, `removed task "${card.title}" due date`);
+                    }
+                }
+            }
+            if (assignedTo !== undefined) {
+                const oldAssigned = card.assignedTo ? card.assignedTo.toString() : null;
+                const newAssigned = assignedTo ? assignedTo.toString() : null;
+                if (oldAssigned !== newAssigned) {
+                    if (assignedTo) {
+                        const userObj = await UserModel.findById(assignedTo);
+                        await logActivity(boardId, req.userId, `assigned task "${card.title}" to ${userObj ? userObj.name : "Unknown User"}`);
+                    } else {
+                        await logActivity(boardId, req.userId, `unassigned task "${card.title}"`);
+                    }
+                }
+            }
+        }
+
         res.status(200).json({message:"Card updated successfully",payload:updatedCard})
     }catch(error){
         res.status(500).json({message:"Could not update card",error:error.message})
     }
 }
 
-//Move card (drag & drop)
+/**
+ * Move Card (Drag & Drop functionality)
+ * Handles repositioning a card within the same list or moving it to a completely different list.
+ * Automatically updates the card's status based on the destination list's name and re-sequences 
+ * the positions of all other cards in the affected list(s) to maintain correct order.
+ */
 export const moveCard=async(req,res)=>{
     const cardId=req.params.id
     const {toListId, newPosition}=req.body
@@ -305,13 +371,22 @@ export const moveCard=async(req,res)=>{
             .populate("assignedTo", "name email avatar")
             .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar");
+
+        if (destList && updatedCard) {
+            await logActivity(destList.board, req.userId, `moved task "${updatedCard.title}" to list "${destList.title}"`);
+        }
+
         res.status(200).json({ message: "Card moved successfully", payload: updatedCard });
     }catch(error){
         res.status(500).json({message:"Could not move card",error:error.message})
     }
 }
 
-//Delete Cards (Soft Delete)
+/**
+ * Soft Delete a Card
+ * Moves the card to the trash by setting isDeleted to true.
+ * Only board owners or admins can delete tasks.
+ */
 export const deleteCards=async(req,res)=>{
     const cardId=req.params.id
     try{
@@ -336,6 +411,9 @@ export const deleteCards=async(req,res)=>{
             { new: true }
         )
         if(deleteCard){
+            if (list) {
+                await logActivity(list.board, req.userId, `deleted task "${deleteCard.title}"`);
+            }
             res.status(200).json({message:"Card deleted successfully",payload:deleteCard})
         }
         else{
@@ -346,6 +424,10 @@ export const deleteCards=async(req,res)=>{
     }
 }
 
+/**
+ * Trash Management: Get all soft-deleted cards for a specific board
+ * Looks up all lists in the board first, then finds all deleted cards belonging to those lists.
+ */
 export const getDeletedCardsByBoard = async (req, res) => {
     try {
         const boardId = req.params.boardId;
@@ -364,6 +446,10 @@ export const getDeletedCardsByBoard = async (req, res) => {
     }
 }
 
+/**
+ * Trash Management: Restore a soft-deleted card back to its list
+ * If the parent list was also deleted, it will auto-restore the parent list as well.
+ */
 export const restoreCard = async (req, res) => {
     try {
         const cardId = req.params.id;
@@ -392,6 +478,9 @@ export const restoreCard = async (req, res) => {
         .populate("createdBy", "name email avatar")
 
         if (restoredCard) {
+            if (list) {
+                await logActivity(list.board, req.userId, `restored task "${restoredCard.title}"`);
+            }
             // Auto-restore parent list if it was also deleted
             const parentList = await ListModel.findById(restoredCard.list);
             if (parentList && parentList.isDeleted) {
@@ -406,6 +495,9 @@ export const restoreCard = async (req, res) => {
     }
 }
 
+/**
+ * Trash Management: Permanently delete a card from the database
+ */
 export const permanentDeleteCard = async (req, res) => {
     try {
         const cardId = req.params.id;
@@ -426,6 +518,9 @@ export const permanentDeleteCard = async (req, res) => {
         }
         const deletedCard = await CardModel.findByIdAndDelete(cardId);
         if (deletedCard) {
+            if (list) {
+                await logActivity(list.board, req.userId, `permanently deleted task "${deletedCard.title}"`);
+            }
             res.status(200).json({ message: "Card permanently deleted", payload: deletedCard })
         } else {
             res.status(404).json({ message: "Card not found" })
@@ -437,7 +532,11 @@ export const permanentDeleteCard = async (req, res) => {
 
 // ── File Attachments ──────────────────────────────────────
 
-// Upload attachments to a card
+/**
+ * Upload one or multiple attachments to a card
+ * Uses Cloudinary for secure file storage and streams files directly from memory.
+ * Only board owners or admins can upload attachments to tasks.
+ */
 export const uploadAttachments = async (req, res) => {
     try {
         const cardId = req.params.cardId;
@@ -506,7 +605,10 @@ export const uploadAttachments = async (req, res) => {
     }
 };
 
-// Delete a specific attachment from a card
+/**
+ * Delete a specific attachment from a card
+ * Removes the file reference from the DB and performs a best-effort cleanup from Cloudinary.
+ */
 export const deleteAttachment = async (req, res) => {
     try {
         const { cardId, attachmentId } = req.params;
@@ -558,7 +660,11 @@ export const deleteAttachment = async (req, res) => {
 
 // ── Remarks ──────────────────────────────────────────────
 
-// Add a remark to a card
+/**
+ * Add a remark (comment) to a card
+ * Remarks can contain text, multiple file attachments, or both.
+ * Any board member can add remarks to a card.
+ */
 export const addRemark = async (req, res) => {
     try {
         const cardId = req.params.cardId;
@@ -634,7 +740,11 @@ export const addRemark = async (req, res) => {
     }
 };
 
-// Delete a remark from a card
+/**
+ * Delete a remark from a card
+ * Users can delete their own remarks. Board owners and admins can delete anyone's remarks.
+ * Automatically cleans up any files attached specifically to this remark from Cloudinary.
+ */
 export const deleteRemark = async (req, res) => {
     try {
         const { cardId, remarkId } = req.params;

@@ -3,26 +3,42 @@ import axios from "axios"
 import { useNavigate } from "react-router"
 import { API_URL } from "../services/api"
 
+/**
+ * CreateBoardPage Component
+ * 
+ * Provides a UI for users to either create a new workspace (board) or join an 
+ * existing one via an invitation link. Operates in three states: selection mode, 
+ * creation mode, and join mode.
+ */
 function CreateBoardPage() {
 
+  // "create" | "join" | "" (empty string implies selection mode)
   const [mode, setMode] = useState("")
+  
+  // State for creation mode
   const [title, setTitle] = useState("")
+  
+  // State for join mode
   const [inviteLink, setInviteLink] = useState("")
+  
+  // Shared UI states
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
   const navigate = useNavigate()
 
-  // Create Board
+  /**
+   * Handles the creation of a new board.
+   * Validates the input title, posts to the API, and automatically redirects
+   * the user to the newly created board upon success.
+   */
   const createBoard = async () => {
-
     if (!title.trim()) {
       setError("Board title is required")
       return
     }
 
     try {
-
       setError("")
       setLoading(true)
 
@@ -30,7 +46,7 @@ function CreateBoardPage() {
         `${API_URL}/board-api/addBoard`,
         {
           title: title.trim(),
-          background: "#0052cc"
+          background: "#0052cc" // Default board background color
         },
         {
           withCredentials: true
@@ -39,40 +55,37 @@ function CreateBoardPage() {
 
       const board = res.data.payload
 
+      // Redirect to the newly created board
       navigate(`/board/${board._id}`)
 
     } catch (err) {
-
       setError(
         err?.response?.data?.message ||
         "Something went wrong while creating board"
       )
-
     } finally {
-
       setLoading(false)
     }
   }
 
-  // Join Through Link
+  /**
+   * Parses an invitation link and extracts the token to route the user
+   * to the standard accept invite handler.
+   */
   const joinBoard = () => {
-
     if (!inviteLink.trim()) {
-
       setError("Invite link required")
       return
     }
 
     try {
-
+      // Extract the token from the end of the provided URL
       const url = new URL(inviteLink)
-
       const token = url.pathname.split("/").pop()
 
+      // Redirect to the AcceptInvitePage which handles the actual verification
       navigate(`/invite/${token}`)
-
     } catch {
-
       setError("Invalid invite link")
     }
   }
@@ -81,6 +94,7 @@ function CreateBoardPage() {
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-slate-50 px-4 font-body">
       <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-xl shadow-slate-100 w-full max-w-md">
         
+        {/* Header Section */}
         <div className="text-center mb-8">
           <h1 className="font-display text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
             Workspace Access
@@ -90,7 +104,7 @@ function CreateBoardPage() {
           </p>
         </div>
 
-        {/* SELECT MODE */}
+        {/* ─── SELECT MODE ─── */}
         {!mode && (
           <div className="space-y-4">
             <button
@@ -132,7 +146,7 @@ function CreateBoardPage() {
           </div>
         )}
 
-        {/* CREATE BOARD */}
+        {/* ─── CREATE BOARD MODE ─── */}
         {mode === "create" && (
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Board Title</label>
@@ -171,7 +185,7 @@ function CreateBoardPage() {
           </div>
         )}
 
-        {/* JOIN BOARD */}
+        {/* ─── JOIN BOARD MODE ─── */}
         {mode === "join" && (
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Invite Link</label>

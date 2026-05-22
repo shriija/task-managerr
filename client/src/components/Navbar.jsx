@@ -1,7 +1,14 @@
 import { NavLink } from "react-router"
 import { useAuthStore } from "../context/AuthContext"
 
+/**
+ * Navbar Component
+ * 
+ * Top navigation bar that appears across the application.
+ * Dynamically renders links and user actions based on authentication state.
+ */
 function Navbar() {
+  // Access authentication state from the global store
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const logout = useAuthStore((state) => state.logout)
   const currentUser = useAuthStore((state) => state.currentUser)
@@ -10,7 +17,7 @@ function Navbar() {
     <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/80">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         
-        {/* Logo */}
+        {/* Logo and Brand Name */}
         <NavLink to="/" className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-linear-to-tr from-primary-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md shadow-primary-500/20">
             K
@@ -18,10 +25,13 @@ function Navbar() {
           <span className="font-display text-xl font-bold tracking-tight text-slate-900">Kanvas</span>
         </NavLink>
 
-        {/* Navigation / Actions */}
+        {/* Navigation / Actions Container */}
         <div className="flex items-center gap-6">
+          
+          {/* Conditional Rendering based on Authentication */}
           {isAuthenticated ? (
             <>
+              {/* Authenticated User Profile Info */}
               <div className="flex items-center gap-2">
                 {currentUser?.avatar ? (
                   <img 
@@ -30,6 +40,7 @@ function Navbar() {
                     className="w-6 h-6 rounded-full object-cover border border-slate-200"
                   />
                 ) : (
+                  // Fallback avatar displaying user's initial
                   <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 border border-slate-200 uppercase">
                     {currentUser?.name?.[0]}
                   </div>
@@ -39,6 +50,7 @@ function Navbar() {
                 </span>
               </div>
 
+              {/* Link to User Dashboard */}
               <NavLink
                 to="/dashboard"
                 className={({ isActive }) =>
@@ -52,6 +64,7 @@ function Navbar() {
                 Dashboard
               </NavLink>
 
+              {/* Logout Button */}
               <button
                 onClick={logout}
                 className="text-sm font-semibold text-red-600 hover:text-white hover:bg-red-600 px-4 py-2 rounded-xl border border-red-200 hover:border-red-600 transition-colors duration-200 cursor-pointer"
@@ -61,6 +74,7 @@ function Navbar() {
             </>
           ) : (
             <>
+              {/* Unauthenticated State: Login & Register Links */}
               <NavLink
                 to="/login"
                 className={({ isActive }) =>

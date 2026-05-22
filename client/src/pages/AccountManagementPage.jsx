@@ -1,5 +1,11 @@
 import React from 'react'
 
+/**
+ * AccountManagementPage Component
+ * 
+ * Placeholder page for future account management features (e.g., updating profile, changing password).
+ * Currently displays an "under construction" message.
+ */
 function AccountManagementPage() {
   return (
     <div className="p-8">

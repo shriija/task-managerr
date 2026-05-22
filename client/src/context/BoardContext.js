@@ -11,13 +11,19 @@ export const useBoardStore = create((set, get) => ({
   loading: false,
   error: null,
   onlineUsers: [],
+  activities: [],
 
   // ── Trash State ─────────────────────────────────────────
   deletedBoards: [],
   deletedLists: [],
   deletedCards: [],
 
-  // ── Socket Listeners ───────────────────────────────────
+  // ── Socket Listeners & Real-Time Sync ──────────────────
+  /**
+   * Initializes all Socket.io listeners when a user joins a board.
+   * Whenever an event is received (e.g., another user moved a card), the local Zustand 
+   * state is immediately updated without requiring a full page refresh or API call.
+   */
   setupSocket: (socket) => {
     if (!socket) return
 
@@ -30,6 +36,8 @@ export const useBoardStore = create((set, get) => ({
     socket.off("list-updated")
     socket.off("list-deleted")
     socket.off("online-users")
+    socket.off("board-updated")  
+    socket.off("member-updated")
 
     socket.on("card-moved", async (data) => {
 
@@ -177,9 +185,26 @@ export const useBoardStore = create((set, get) => ({
     socket.on("online-users", (users) => {
       set({ onlineUsers: users })
     })
+
+    socket.on("board-updated", (data) => {
+  if (data.board) {
+    set({ board: data.board })
+  }
+})
+
+socket.on("member-updated", (data) => {
+  if (data.board) {
+    set({ board: data.board })
+  }
+})
   },
 
-  // ── Fetch board + lists + cards ────────────────────────
+  // ── REST API Interactions & State Updates ────────────────
+
+  /**
+   * Fetch the main board, its lists, and all nested cards.
+   * Uses Promise.all to fetch cards for all lists concurrently.
+   */
   fetchBoard: async (boardId) => {
     try {
       set({ loading: true, error: null })
@@ -213,6 +238,10 @@ export const useBoardStore = create((set, get) => ({
   },
 
   // ── List Actions ───────────────────────────────────────
+  /**
+   * Add a new list. Uses Optimistic UI: immediately updates the local state with a 
+   * temporary ID, then replaces it with the real DB record once the API responds.
+   */
   addList: async (boardId, title) => {
     const { lists } = get()
     const position = lists.length
@@ -249,6 +278,12 @@ export const useBoardStore = create((set, get) => ({
   },
 
   // ── Card Actions ───────────────────────────────────────
+  
+  /**
+   * Add a new card to a list.
+   * Optimistically adds a temporary card to the local state, then emits a socket event
+   * to other users once the backend confirms creation.
+   */
   addCard: async (listId, title, additionalFields = {}) => {
     const boardId = get().board?._id
     const { lists } = get()
@@ -287,6 +322,11 @@ export const useBoardStore = create((set, get) => ({
     if (boardId) socketService.emitCardDeleted(boardId, { cardId, listId })
   },
 
+  /**
+   * Update a card's details.
+   * Uses Optimistic UI for immediate feedback. Handles moving the card between lists
+   * if the target list changed during the update. Emits a socket event after success.
+   */
   updateCard: async (cardId, listId, updates) => {
     const boardId = get().board?._id
     const stateUpdates = { ...updates }
@@ -366,6 +406,11 @@ export const useBoardStore = create((set, get) => ({
     }
   },
 
+  /**
+   * Helper function to forcefully sync a specific card's state locally and broadcast it.
+   * Often used for complex updates like uploading attachments or adding remarks where 
+   * the backend returns the fully populated document.
+   */
   syncCardUpdate: (updatedCard) => {
     const boardId = get().board?._id
     const cardId = updatedCard._id
@@ -387,6 +432,11 @@ export const useBoardStore = create((set, get) => ({
     }
   },
 
+  /**
+   * Handles Drag & Drop repositioning of cards.
+   * Immediately re-orders the arrays in the local state, then fires the API call in the 
+   * background. Broadcasts the 'move-card' socket event so other viewers see the animation.
+   */
   moveCard: (cardId, fromListId, toListId, newPosition) => {
 
   const boardId = get().board?._id
@@ -551,6 +601,9 @@ export const useBoardStore = create((set, get) => ({
         { withCredentials: true }
       )
       set({ board: res.data.payload })
+      socketService.emitBoardUpdated(boardId, {
+  board: res.data.payload
+})
     } catch (err) { console.error(err) }
   },
 
@@ -562,6 +615,9 @@ export const useBoardStore = create((set, get) => ({
         { withCredentials: true }
       )
       set({ board: res.data.payload })
+      socketService.emitMemberUpdated(boardId, {
+  board: res.data.payload
+})
       return res.data
     } catch (err) {
       console.error(err)
@@ -578,6 +634,9 @@ export const useBoardStore = create((set, get) => ({
     )
     // Update local board state with the new member list
     set({ board: res.data.payload })
+    socketService.emitMemberUpdated(boardId, {
+  board: res.data.payload
+})
     return res.data
   },
 
@@ -589,6 +648,15 @@ export const useBoardStore = create((set, get) => ({
       { withCredentials: true }
     )
     return res.data.payload // { link, token }
+  },
+
+  fetchActivities: async (boardId) => {
+    try {
+      const res = await axios.get(`${API}/board-api/activity/${boardId}`, { withCredentials: true })
+      set({ activities: res.data.payload || [] })
+    } catch (err) {
+      console.error("Failed to fetch activity logs:", err)
+    }
   },
 
 }))

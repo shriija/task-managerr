@@ -51,3 +51,6 @@ boardSocket(io);
 
 // 🔹 Start server
 server.listen(process.env.PORT || 4001, () => console.log(`🚀 Server running on port ${process.env.PORT || 4001}`));
+
+// Auto-trigger nodemon restart
+

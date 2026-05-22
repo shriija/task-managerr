@@ -2,10 +2,19 @@ import React, { useState } from 'react'
 import { NavLink } from 'react-router'
 import { useAuthStore } from '../context/AuthContext'
 
+/**
+ * Home Component
+ * 
+ * The landing page of the Kanvas application. 
+ * Displays features, an interactive product showcase (mockup), and productivity stats.
+ * Provides dynamic navigation depending on whether the user is authenticated.
+ */
 function Home() {
+  // Access global authentication state to determine CTA routing
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const startPath = isAuthenticated ? "/dashboard" : "/register"
   
+  // State for toggling between different views in the mockup showcase section
   const [activeShowcase, setActiveShowcase] = useState("board")
 
   return (
@@ -14,6 +23,8 @@ function Home() {
       {/* ─── NAVIGATION ─── */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          
+          {/* Logo */}
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-linear-to-tr from-primary-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md shadow-primary-500/20">
               K
@@ -21,12 +32,14 @@ function Home() {
             <span className="font-display text-xl font-bold tracking-tight text-slate-900">Kanvas</span>
           </div>
           
+          {/* Main Links */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
             <a href="#features" className="hover:text-primary-600 transition-colors">Features</a>
             <a href="#showcase" className="hover:text-primary-600 transition-colors">Walkthrough</a>
             <a href="#cta" className="hover:text-primary-600 transition-colors">Get Started</a>
           </nav>
           
+          {/* Conditional Auth Actions */}
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
               <NavLink 
@@ -88,14 +101,16 @@ function Home() {
             </a>
           </div>
 
-          {/* Clean Mockup Panel */}
+          {/* Clean Mockup Panel / Interactive Showcase */}
           <div id="showcase" className="max-w-5xl mx-auto bg-slate-950 rounded-2xl p-4 shadow-2xl shadow-slate-950/20 border border-slate-800/80 scroll-mt-20">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+              {/* Window Controls Decoration */}
               <div className="flex gap-2">
                 <span className="w-3 h-3 rounded-full bg-red-500/85"></span>
                 <span className="w-3 h-3 rounded-full bg-yellow-500/85"></span>
                 <span className="w-3 h-3 rounded-full bg-green-500/85"></span>
               </div>
+              {/* View Toggle Controls */}
               <div className="flex gap-1 bg-slate-900 rounded-lg p-0.5 border border-slate-800">
                 <button 
                   onClick={() => setActiveShowcase("board")}
@@ -124,9 +139,10 @@ function Home() {
               </div>
             </div>
 
-            {/* Showcase Canvas */}
+            {/* Showcase Canvas rendering the selected dummy view */}
             <div className="bg-slate-900 rounded-xl p-6 min-h-[360px] text-left border border-slate-800 overflow-hidden">
               
+              {/* Board View Showcase */}
               {activeShowcase === "board" && (
                 <div className="grid md:grid-cols-3 gap-5 animate-fade-in duration-200">
                   {/* List 1 */}
@@ -180,6 +196,7 @@ function Home() {
                 </div>
               )}
 
+              {/* Calendar View Showcase */}
               {activeShowcase === "calendar" && (
                 <div className="animate-fade-in duration-200 space-y-4">
                   <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -215,6 +232,7 @@ function Home() {
                 </div>
               )}
 
+              {/* Activity Logs Showcase */}
               {activeShowcase === "activity" && (
                 <div className="animate-fade-in duration-200 space-y-4">
                   <h4 className="text-sm font-bold text-slate-300 mb-2">Live Board History</h4>
@@ -410,4 +428,4 @@ function Home() {
   )
 }
 
-export default Home
+export default Home;

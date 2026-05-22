@@ -2,10 +2,16 @@ import { randomUUID } from "crypto";
 import { BoardModel } from "../models/Board.js";
 import { UserModel } from "../models/User.js";
 import { InviteTokenModel } from "../models/InviteToken.js";
+import { logActivity } from "../utils/activityLogger.js";
 
-// ── 1. Invite by registered email ─────────────────────────────
-// Looks up the user by their login email and adds them to board.members directly.
-// No email is sent.
+/**
+ * ── 1. Invite by registered email ─────────────────────────────
+ * Looks up a user by their registered email address and adds them directly to the board's members list.
+ * This does not send a physical email; it instantly adds them if the account exists.
+ * 
+ * @param {Object} req - Express request object containing boardId (params) and email (body)
+ * @param {Object} res - Express response object
+ */
 export const inviteByEmail = async (req, res) => {
   try {
     const { boardId } = req.params;
@@ -15,29 +21,29 @@ export const inviteByEmail = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    // Find the board
+    // Ensure the board exists and hasn't been soft-deleted
     const board = await BoardModel.findById(boardId);
     if (!board || board.isDeleted) {
       return res.status(404).json({ message: "Board not found" });
     }
 
-    // Only the board owner can invite
+    // Security Check: Only the board owner has permission to invite new members
     if (board.owner.toString() !== req.userId) {
       return res.status(403).json({ message: "Only the board owner can invite members" });
     }
 
-    // Find the user by login email
+    // Lookup the invitee by email (case-insensitive and trimmed)
     const invitee = await UserModel.findOne({ email: email.toLowerCase().trim() }).select("-password");
     if (!invitee) {
       return res.status(404).json({ message: "No account found with that email address" });
     }
 
-    // Cannot invite yourself
+    // Prevent the owner from inviting themselves
     if (invitee._id.toString() === req.userId) {
       return res.status(400).json({ message: "You cannot invite yourself" });
     }
 
-    // Check if already a member
+    // Check if the user is already in the board's member list
     const alreadyMember = board.members.some(
       (m) => m.toString() === invitee._id.toString()
     );
@@ -45,11 +51,14 @@ export const inviteByEmail = async (req, res) => {
       return res.status(409).json({ message: `${invitee.name} is already a member of this board` });
     }
 
-    // Add to members
+    // Add the user's ObjectId to the board's members array and save
     board.members.push(invitee._id);
     await board.save();
 
-    // Return updated board with populated members
+    // Log this action to the board's activity history
+    await logActivity(boardId, req.userId, `added user ${invitee.name} (${invitee.email}) to the board`);
+
+    // Fetch the updated board and populate the user details for the frontend to render the new member
     const updatedBoard = await BoardModel.findById(boardId)
       .populate("owner", "name email avatar")
       .populate("members", "name email avatar")
@@ -64,39 +73,49 @@ export const inviteByEmail = async (req, res) => {
   }
 };
 
-// ── 2. Generate a shareable invite link ────────────────────────
-// Creates (or re-uses an existing valid) InviteToken for the board.
+/**
+ * ── 2. Generate a shareable invite link ────────────────────────
+ * Creates a unique, time-limited token that anyone with an account can use to join the board.
+ * If a valid, unexpired token already exists, it reuses it instead of cluttering the DB.
+ * 
+ * @param {Object} req - Express request object containing boardId (params)
+ * @param {Object} res - Express response object
+ */
 export const generateInviteLink = async (req, res) => {
   try {
     const { boardId } = req.params;
+    // Fallback to localhost if CLIENT_URL is not set in production
     const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
 
-    // Find the board
+    // Validate the board exists
     const board = await BoardModel.findById(boardId);
     if (!board || board.isDeleted) {
       return res.status(404).json({ message: "Board not found" });
     }
 
-    // Only the board owner can generate the link
+    // Security Check: Only the owner can generate public invite links
     if (board.owner.toString() !== req.userId) {
       return res.status(403).json({ message: "Only the board owner can generate invite links" });
     }
 
-    // Re-use existing valid token if it exists
+    // Check the database for an existing token that hasn't expired yet
     const existing = await InviteTokenModel.findOne({
       boardId,
       expiresAt: { $gt: new Date() },
     });
 
+    // If a valid token exists, return it immediately
     if (existing) {
       const link = `${clientUrl}/invite/${existing.token}`;
       return res.status(200).json({ message: "Invite link", payload: { link, token: existing.token } });
     }
 
-    // Generate a new token
+    // Otherwise, generate a brand new token using crypto.randomUUID()
     const token = randomUUID();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    // Set expiration to 7 days from now
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); 
 
+    // Save the new token to the database
     await InviteTokenModel.create({ boardId, token, createdBy: req.userId, expiresAt });
 
     const link = `${clientUrl}/invite/${token}`;
@@ -106,43 +125,52 @@ export const generateInviteLink = async (req, res) => {
   }
 };
 
-// ── 3. Accept an invite link ───────────────────────────────────
-// Validates the token and adds the current logged-in user to the board.
+/**
+ * ── 3. Accept an invite link ───────────────────────────────────
+ * Validates an invite token and adds the currently authenticated user to the board.
+ * 
+ * @param {Object} req - Express request object containing token (params)
+ * @param {Object} res - Express response object
+ */
 export const acceptInvite = async (req, res) => {
   try {
     const { token } = req.params;
 
-    // Find the token
+    // Look up the token in the database
     const invite = await InviteTokenModel.findOne({ token });
     if (!invite) {
       return res.status(404).json({ message: "Invalid invite link" });
     }
 
-    // Check expiry
+    // Ensure the token hasn't expired
     if (invite.expiresAt < new Date()) {
       return res.status(410).json({ message: "This invite link has expired" });
     }
 
+    // Ensure the board still exists
     const board = await BoardModel.findById(invite.boardId);
     if (!board || board.isDeleted) {
       return res.status(404).json({ message: "Board no longer exists" });
     }
 
-    // Check if already a member or owner
+    // Check if the user trying to join is already a member or the owner
     const isOwner = board.owner.toString() === req.userId;
     const isMember = board.members.some((m) => m.toString() === req.userId);
 
     if (isOwner || isMember) {
-      // Already in the board — just redirect
+      // User is already in the board — no changes needed, just redirect them
       return res.status(200).json({
         message: "You are already a member of this board",
         payload: { boardId: board._id, alreadyMember: true },
       });
     }
 
-    // Add to members
+    // Add the user to the board's members array
     board.members.push(req.userId);
     await board.save();
+
+    // Log the fact that they joined via a link
+    await logActivity(board._id, req.userId, "joined the board via invite link");
 
     res.status(200).json({
       message: "You have joined the board!",
@@ -152,3 +180,4 @@ export const acceptInvite = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+

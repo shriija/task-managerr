@@ -1,11 +1,25 @@
 import { useState, useEffect, useRef } from "react"
 import { useBoardStore } from "../context/BoardContext"
 
+/**
+ * InviteModal Component
+ * 
+ * Provides an interface for the Board Owner or Admins to invite other users to the board.
+ * Supports two methods of invitation:
+ * 1. Email: Directly adding a user via their registered email address.
+ * 2. Link: Generating a unique, secure invite link that can be copied and shared.
+ *
+ * @param {Object} props
+ * @param {string} props.boardId - The ID of the board to invite users to.
+ * @param {Function} props.onClose - Callback to close the modal.
+ */
 function InviteModal({ boardId, onClose }) {
+  // Toggle between 'email' and 'link' invitation modes
   const [tab, setTab] = useState("email") // "email" | "link"
 
   // ── Email tab state ──────────────────────────────────────────
   const [email, setEmail] = useState("")
+  // Stores success or error messages after attempting an email invite
   const [emailStatus, setEmailStatus] = useState(null) // { type: "success"|"error", msg }
   const [emailLoading, setEmailLoading] = useState(false)
 
@@ -14,15 +28,16 @@ function InviteModal({ boardId, onClose }) {
   const [linkLoading, setLinkLoading] = useState(false)
   const [copied, setCopied] = useState(false)
 
+  // Actions from global state
   const { inviteByEmail, generateInviteLink } = useBoardStore()
   const emailRef = useRef(null)
 
-  // Focus email input when modal opens
+  // Focus the email input automatically when the email tab is active
   useEffect(() => {
     if (tab === "email") emailRef.current?.focus()
   }, [tab])
 
-  // Close on Escape
+  // Close modal on Escape key press
   useEffect(() => {
     const handler = (e) => { if (e.key === "Escape") onClose() }
     window.addEventListener("keydown", handler)
@@ -30,15 +45,20 @@ function InviteModal({ boardId, onClose }) {
   }, [onClose])
 
   // ── Handlers ────────────────────────────────────────────────
+
+  /**
+   * Submits the entered email to the backend to add the user to the board.
+   * Handles both success and error responses to provide UI feedback.
+   */
   const handleInviteByEmail = async (e) => {
     e.preventDefault()
     if (!email.trim()) return
     setEmailLoading(true)
-    setEmailStatus(null)
+    setEmailStatus(null) // Reset previous status
     try {
       const result = await inviteByEmail(boardId, email.trim())
       setEmailStatus({ type: "success", msg: result.message })
-      setEmail("")
+      setEmail("") // Clear input on success
     } catch (err) {
       const msg = err.response?.data?.message || "Something went wrong"
       setEmailStatus({ type: "error", msg })
@@ -47,6 +67,9 @@ function InviteModal({ boardId, onClose }) {
     }
   }
 
+  /**
+   * Requests a new secure invite link for this board from the backend.
+   */
   const handleGenerateLink = async () => {
     setLinkLoading(true)
     try {
@@ -59,6 +82,9 @@ function InviteModal({ boardId, onClose }) {
     }
   }
 
+  /**
+   * Copies the generated link to the user's clipboard and shows a temporary success state.
+   */
   const handleCopy = () => {
     navigator.clipboard.writeText(inviteLink).then(() => {
       setCopied(true)
@@ -78,7 +104,7 @@ function InviteModal({ boardId, onClose }) {
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up"
         style={{ animation: "fadeInUp 0.22s ease" }}
       >
-        {/* Header */}
+        {/* Header Section */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-linear-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-sm">
@@ -102,7 +128,7 @@ function InviteModal({ boardId, onClose }) {
           </button>
         </div>
 
-        {/* Tabs */}
+        {/* Navigation Tabs (Email | Link) */}
         <div className="flex gap-1 px-6 pt-4">
           {[
             { id: "email", label: "Add by Email", icon: (
@@ -131,7 +157,7 @@ function InviteModal({ boardId, onClose }) {
           ))}
         </div>
 
-        {/* Tab Content */}
+        {/* Tab Content Area */}
         <div className="px-6 py-5">
 
           {/* ── Email Tab ─────────────────────────────────────── */}
@@ -157,7 +183,7 @@ function InviteModal({ boardId, onClose }) {
                 </p>
               </div>
 
-              {/* Feedback banner */}
+              {/* Status Feedback banner (Success or Error) */}
               {emailStatus && (
                 <div className={`flex items-start gap-2.5 rounded-xl px-4 py-3 text-sm ${
                   emailStatus.type === "success"
@@ -214,6 +240,7 @@ function InviteModal({ boardId, onClose }) {
                 Generate a link and share it with anyone who has an account. They'll be added as a member when they open it.
               </p>
 
+              {/* Initial state: button to generate link */}
               {!inviteLink ? (
                 <button
                   onClick={handleGenerateLink}
@@ -244,7 +271,7 @@ function InviteModal({ boardId, onClose }) {
                 </button>
               ) : (
                 <div className="space-y-3">
-                  {/* Link display box */}
+                  {/* Generated Link display box */}
                   <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5">
                     <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
