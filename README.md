@@ -126,6 +126,7 @@ npm run dev
 | HTTP Client | Axios v1 |
 | Real-time | Socket.IO v4 (client + server) |
 | Calendar View | FullCalendar v6 |
+| File Uploads | Multer (memory storage) + Cloudinary v2 |
 | Backend Framework | Express v5 |
 | Database | MongoDB via Mongoose v9 |
 | Authentication | JWT + HttpOnly Cookies |
@@ -247,13 +248,15 @@ sequenceDiagram
 |-------|-----------|-------------|
 | `join-board` | Client → Server | Join a board room |
 | `leave-board` | Client → Server | Leave a board room |
-| `card-added` | Server → Client | New card broadcast |
-| `card-updated` | Server → Client | Card edit broadcast |
-| `card-deleted` | Server → Client | Card delete broadcast |
-| `card-moved` | Server → Client | Drag-and-drop broadcast |
-| `list-added` | Server → Client | New list broadcast |
-| `list-updated` | Server → Client | List edit broadcast |
-| `list-deleted` | Server → Client | List delete broadcast |
+| `card-added` | Broadcast | New card broadcast |
+| `card-updated` | Broadcast | Card edit broadcast |
+| `card-deleted` | Broadcast | Card delete broadcast |
+| `card-moved` / `move-card` | Broadcast | Drag-and-drop broadcast |
+| `list-added` | Broadcast | New list broadcast |
+| `list-updated` | Broadcast | List edit broadcast |
+| `list-deleted` | Broadcast | List delete broadcast |
+| `board-updated` | Broadcast | Board settings/title change |
+| `member-updated` | Broadcast | Member promote/demote/remove |
 | `online-users` | Server → Client | Active users in board room |
 
 ### Sequence: Real-Time Card Add (Multi-user)
@@ -507,6 +510,83 @@ sequenceDiagram
         CG-->>G: Redirect to /board/:boardId
     end
 ```
+
+---
+
+## 📎 File Upload & Attachment System
+
+The application uses **Multer** (memory storage) on the backend to receive multipart file uploads, then streams the file buffers directly to **Cloudinary** via `cloudinary.uploader.upload_stream`. This avoids writing temporary files to disk.
+
+### Supported Upload Types
+
+| Feature | Field Name | Max Size | Allowed Types | Max Files |
+|---------|-----------|----------|---------------|-----------|
+| Avatar | `avatar` | 5 MB | Images only (`image/*`) | 1 |
+| Card Attachments | `files` | 10 MB each | Images, PDF, Word, Excel, PowerPoint, Text, CSV, ZIP, RAR | 5 per request |
+| Remark Attachments | `files` | 10 MB each | Same as card attachments | 5 per request |
+
+### Card Attachment Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/card-api/attachments/:cardId` | Upload files to a card (multipart/form-data) |
+| `DELETE` | `/card-api/attachments/:cardId/:attachmentId` | Remove a specific attachment from a card |
+
+### Remark Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/card-api/remarks/:cardId` | Add a remark with optional file attachments |
+| `DELETE` | `/card-api/remarks/:cardId/:remarkId` | Delete a specific remark |
+
+### Avatar Upload Endpoint
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/user-api/upload-avatar` | Upload a profile picture (returns Cloudinary URL) |
+
+### Sequence: File Upload to Cloudinary (Buffer Stream)
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant S as Express Server
+    participant ML as Multer (memoryStorage)
+    participant CL as Cloudinary
+    participant DB as MongoDB
+
+    C->>S: POST /card-api/attachments/:cardId (multipart/form-data)
+    S->>ML: Parse file buffers into req.files[]
+    loop For each file in req.files
+        S->>CL: cloudinary.uploader.upload_stream(buffer)
+        CL-->>S: { secure_url, public_id, bytes, format }
+    end
+    S->>DB: card.attachments.push({ name, url, type, size, publicId, uploadedBy })
+    S->>DB: card.save()
+    DB-->>S: Updated card
+    S-->>C: 200 { payload: updatedCard }
+```
+
+---
+
+## 📝 Activity Logging
+
+All significant board actions (card creation, movement, deletion, member changes, etc.) are logged via the `Activity` model. Activities are fetched and displayed in the `ActivityView` component.
+
+### Activity Model Schema
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `board` | ObjectId → Board | ✅ | The board this activity belongs to |
+| `user` | ObjectId → User | ✅ | The user who performed the action |
+| `action` | String | ✅ | Human-readable description of the action |
+| `timestamp` | Date | ❌ | Defaults to `Date.now` |
+
+### Activity Endpoint
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/board-api/activity/:boardId` | Fetch all activity logs for a board |
 
 ---
 

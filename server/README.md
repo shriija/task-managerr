@@ -20,6 +20,8 @@ A **Node.js + Express v5** REST API with **Mongoose v9**, **Socket.IO v4**, **JW
 | `socket.io` | ^4.8.3 | WebSocket server (real-time events) |
 | `socket.io-client` | ^4.8.3 | Socket client (server-side testing) |
 | `date-and-time` | ^4.3.1 | Date formatting and manipulation |
+| `cloudinary` | ^2.x | Cloud file storage (images, PDFs, docs) |
+| `multer` | ^1.x | Multipart form data parsing (file uploads) |
 
 ### Dev Dependencies
 
@@ -305,6 +307,7 @@ erDiagram
     Board ||--|{ List : "has"
     List ||--|{ Card : "has"
     Board ||--o{ InviteToken : "has"
+    Board ||--o{ Activity : "logs"
 ```
 
 ### Field Tables
@@ -336,8 +339,62 @@ erDiagram
 | `dueDate` | Date | ❌ | default: null |
 | `position` | Number | ✅ | ordering index |
 | `priority` | String (enum) | ❌ | `"High"` / `"Medium"` / `"Low"` / `""` |
+| `labels` | [String] | ❌ | Custom labels array (default: []) |
+| `attachments` | [Attachment] | ❌ | Sub-document array (see below) |
+| `remarks` | [Remark] | ❌ | Sub-document array (see below) |
 | `isDeleted` | Boolean | ❌ | default: false |
 | `deletedAt` | Date | ❌ | soft-delete timestamp |
+
+#### Attachment Sub-schema (shared by card attachments and remarks)
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `name` | String | ✅ | Original file name |
+| `url` | String | ✅ | Cloudinary secure URL |
+| `type` | String | ❌ | MIME type |
+| `size` | Number | ❌ | File size in bytes |
+| `publicId` | String | ❌ | Cloudinary public ID for deletion |
+| `uploadedBy` | ObjectId → User | ❌ | User who uploaded the file |
+| `uploadedAt` | Date | ❌ | Defaults to `Date.now` |
+
+#### Remark Sub-schema
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `text` | String | ❌ | Remark body text |
+| `attachments` | [Attachment] | ❌ | Files attached to the remark |
+| `author` | ObjectId → User | ✅ | Remark author reference |
+| `createdAt` | Date | auto | Mongoose `timestamps: true` |
+| `updatedAt` | Date | auto | Mongoose `timestamps: true` |
+
+#### User (`User.js`)
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `name` | String | ✅ | trim, minlength: 2 |
+| `email` | String | ✅ | unique, lowercase |
+| `password` | String | ✅ | minlength: 6 (stored hashed) |
+| `avatar` | String | ❌ | Cloudinary URL (default: `""`) |
+
+#### List (`List.js`)
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `title` | String | ✅ | trim, maxLength: 100 |
+| `board` | ObjectId → Board | ✅ | indexed |
+| `position` | Number | ❌ | ordering index (default: 0) |
+| `cards` | [ObjectId] → Card | ❌ | ordered card references |
+| `isDeleted` | Boolean | ❌ | soft-delete flag |
+| `deletedAt` | Date | ❌ | soft-delete timestamp |
+
+#### Activity (`Activity.js`)
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `board` | ObjectId → Board | ✅ | indexed |
+| `user` | ObjectId → User | ✅ | who performed the action |
+| `action` | String | ✅ | human-readable action description |
+| `timestamp` | Date | ❌ | Defaults to `Date.now` |
 
 ---
 
@@ -352,6 +409,7 @@ erDiagram
 | `POST` | `/logout` | ❌ | — | Clear cookie |
 | `GET` | `/verify` | ✅ | — | Validate session |
 | `GET` | `/search?q=` | ✅ | `q` query param | Search users |
+| `POST` | `/upload-avatar` | ❌ | `FormData (avatar)` | Upload profile picture to Cloudinary |
 
 ### Board API — `/board-api`
 
@@ -370,6 +428,7 @@ erDiagram
 | `POST` | `/invite/email/:boardId` | Owner | `{ email }` | Add user directly |
 | `POST` | `/invite/link/:boardId` | Owner | — | Generate invite link |
 | `GET` | `/invite/accept/:token` | Authenticated | — | Accept invite |
+| `GET` | `/activity/:boardId` | Member+ | — | Get board activity log |
 
 ### List API — `/list-api`
 
@@ -398,7 +457,16 @@ erDiagram
 | `PUT` | `/restore/:id` | Owner/Admin | — | Restore |
 | `DELETE` | `/permanent/:id` | Owner | — | Hard delete |
 
-> **Card Update:** Members may only change `status`. Changing title, description, dueDate, priority, or assignees requires Owner or Admin → returns `403`.
+### Attachment & Remark API — `/card-api` (continued)
+
+| Method | Endpoint | Role | Payload | Description |
+|--------|----------|------|---------|-------------|
+| `POST` | `/attachments/:cardId` | Member+ | `FormData (files)` | Upload up to 5 files to a card |
+| `DELETE` | `/attachments/:cardId/:attachmentId` | Owner/Admin | — | Delete a specific attachment |
+| `POST` | `/remarks/:cardId` | Member+ | `FormData (text, files)` | Add a remark with optional files |
+| `DELETE` | `/remarks/:cardId/:remarkId` | Owner/Admin | — | Delete a specific remark |
+
+> **File Handling:** Files are uploaded via Multer (memory storage) and streamed to Cloudinary. No temporary files are written to disk.
 
 ---
 
@@ -518,12 +586,33 @@ sequenceDiagram
 | `list-added` | Broadcast | `{ boardId, list }` |
 | `list-updated` | Broadcast | `{ boardId, listId, title }` |
 | `list-deleted` | Broadcast | `{ boardId, listId }` |
+| `board-updated` | Broadcast | `{ boardId, ...updates }` |
+| `member-updated` | Broadcast | `{ boardId, board }` |
 
 ---
 
 ## 🌐 Multer & Cloudinary (File Uploads)
 
-Card `attachments` is `Schema.Types.Mixed[]` — ready for file metadata objects.
+### Upload Middleware (`utils/upload.js`)
+
+The upload utility uses **Multer with `memoryStorage()`** to hold files in memory buffers, which are then streamed to Cloudinary in the controller layer.
+
+| Export | Method | Max Size | Filter | Usage |
+|--------|--------|----------|--------|-------|
+| `uploadAvatar` | `.single("avatar")` | 5 MB | Images only | User registration/profile |
+| `uploadFiles` | `.array("files", 5)` | 10 MB each | Images, PDF, Word, Excel, PPT, Text, CSV, ZIP, RAR | Card attachments & remarks |
+
+### Cloudinary Configuration (`config/cloudinary.js`)
+
+```js
+import { v2 as cloudinary } from "cloudinary";
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+export default cloudinary;
+```
 
 ### Integration Steps
 

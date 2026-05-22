@@ -306,6 +306,31 @@ graph TD
 - Three tabs: **Boards** | **Lists** | **Cards**
 - Each item shows name, deletion date, restore and permanent delete buttons
 
+#### `AttachmentsSection.jsx`
+- File upload component embedded within the card `Modal`
+- Supports multipart form upload of up to 5 files (10 MB each)
+- Accepted types: images, PDF, Word, Excel, PowerPoint, text, CSV, ZIP, RAR
+- Uses `POST /card-api/attachments/:cardId` with `FormData`
+- Displays thumbnails for images, file icons for other types
+- Delete button calls `DELETE /card-api/attachments/:cardId/:attachmentId`
+- Files are streamed via the backend to **Cloudinary** (no temp disk writes)
+
+#### `RemarksSection.jsx`
+- Comment/remark thread within the card `Modal`
+- Supports text-only or text + file attachment remarks
+- Uses `POST /card-api/remarks/:cardId` (multipart if files attached)
+- Each remark displays author avatar, name, timestamp, text, and any attached files
+- Delete remark calls `DELETE /card-api/remarks/:cardId/:remarkId`
+- Auto-scrolls to the latest remark on submission
+
+#### `ActivityView.jsx`
+- Chronological timeline of all board actions (card created, moved, deleted, member joined, etc.)
+- Fetches data via `GET /board-api/activity/:boardId`
+- Color-coded timeline dots: green (created), red (deleted), blue (moved), purple (assignment/invite), amber (edit)
+- Relative timestamps ("Just now", "5m ago", "Yesterday", etc.)
+- Bold-highlights entity names in quoted strings (e.g., `"Task Title"`)
+- Manual refresh button to re-fetch latest activity
+
 ---
 
 ## 📄 Pages
@@ -386,7 +411,8 @@ sequenceDiagram
 | `CreateBoardPage.jsx` | `/create-board` | Form: title + background color picker |
 | `BoardPage.jsx` | `/board/:id` | Full Kanban board with drag-and-drop |
 | `AcceptInvitePage.jsx` | `/invite/accept/:token` | Accept link invite → join board |
-| `RootLayout.jsx` | wrapper | Navbar + `<Outlet />` |
+| `AccountManagementPage.jsx` | `/account` | Placeholder for future account management features |
+| `RootLayout.jsx` | wrapper | Navbar + `<Outlet />` (hides Navbar on landing page) |
 
 ---
 
@@ -528,6 +554,26 @@ sequenceDiagram
 | `restoreCard` | `(cardId, boardId)` | TrashView restore card |
 | `permanentDeleteCard` | `(cardId)` | TrashView permanent delete card |
 
+#### Activity Actions
+
+| Action | Signature | Trigger |
+|--------|-----------|---------|
+| `fetchActivities` | `(boardId)` | ActivityView `useEffect` on mount |
+
+#### Attachment Actions
+
+| Action | Signature | Trigger |
+|--------|-----------|---------|
+| `uploadAttachments` | `(cardId, files)` | AttachmentsSection file submit |
+| `deleteAttachment` | `(cardId, attachmentId)` | AttachmentsSection delete button |
+
+#### Remark Actions
+
+| Action | Signature | Trigger |
+|--------|-----------|---------|
+| `addRemark` | `(cardId, text, files)` | RemarksSection submit |
+| `deleteRemark` | `(cardId, remarkId)` | RemarksSection delete button |
+
 ---
 
 ## 🌐 Axios Setup, Interceptors & Endpoints
@@ -619,6 +665,7 @@ api.interceptors.response.use(
 | `POST` | `/board-api/invite/email/:boardId` | `{ email }` | Email invite |
 | `POST` | `/board-api/invite/link/:boardId` | — | Generate link |
 | `GET` | `/board-api/invite/accept/:token` | — | Accept invite |
+| `GET` | `/board-api/activity/:boardId` | — | Fetch activity logs |
 
 #### Lists
 
@@ -645,6 +692,10 @@ api.interceptors.response.use(
 | `GET` | `/card-api/trash/deleted/:boardId` | — | Deleted cards |
 | `PUT` | `/card-api/restore/:id` | — | Restore |
 | `DELETE` | `/card-api/permanent/:id` | — | Hard delete |
+| `POST` | `/card-api/attachments/:cardId` | `FormData (files)` | Upload attachments |
+| `DELETE` | `/card-api/attachments/:cardId/:attachmentId` | — | Delete attachment |
+| `POST` | `/card-api/remarks/:cardId` | `FormData (text, files)` | Add remark |
+| `DELETE` | `/card-api/remarks/:cardId/:remarkId` | — | Delete remark |
 
 ---
 
@@ -690,6 +741,8 @@ emitCardMoved(boardId, { cardId, fromListId, toListId, newPosition })
 emitListAdded(boardId, { list })
 emitListUpdated(boardId, { listId, title })
 emitListDeleted(boardId, { listId })
+emitBoardUpdated(boardId, { ...updates })
+emitMemberUpdated(boardId, { board })
 leaveBoard(boardId)
 ```
 
