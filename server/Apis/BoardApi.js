@@ -1,6 +1,6 @@
 import exp from 'express'
-import { addBoard, getBoard, deleteBoard, getMyBoards, getDeletedBoards, restoreBoard, permanentDeleteBoard, updateBoard, getSharedBoards, manageMember, getBoardActivity } from '../controllers/boardController.js'
-import { inviteByEmail, generateInviteLink, acceptInvite } from '../controllers/inviteController.js'
+import { addBoard, getBoard, deleteBoard, getMyBoards, getDeletedBoards, restoreBoard, permanentDeleteBoard, updateBoard, getSharedBoards, manageMember, getBoardActivity } from '../controllers/board/index.js'
+import { inviteByEmail, generateInviteLink, acceptInvite } from '../controllers/invite/index.js'
 import verifyToken from '../utils/verifyToken.js'
 
 const BoardApp = exp.Router()

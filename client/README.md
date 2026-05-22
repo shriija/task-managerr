@@ -131,13 +131,18 @@ npm run dev -- --host
 RootLayout
 └── Navbar (persistent top bar)
     └── <Outlet> (page content)
-        ├── Home (/)
+        ├── Home (/) - Modularized component directory
         ├── LoginPage (/login)
-        ├── RegisterPage (/register)
-        ├── UserDashboard (/dashboard)
+        ├── RegisterPage (/register) - Modularized component directory
+        ├── UserDashboard (/dashboard) - Modularized component directory
+        │   ├── Sidebar
+        │   ├── BoardsGrid
+        │   ├── TrashGrid
         │   └── TrashView (modal overlay)
         ├── CreateBoardPage (/create-board)
-        ├── BoardPage (/board/:id)
+        ├── BoardPage (/board/:id) - Modularized component directory
+        │   ├── Header
+        │   ├── Sidebar
         │   ├── List (×N)
         │   │   └── Card (×N)
         │   ├── InviteModal

@@ -11,8 +11,13 @@ task-managerr/
 ├── client/               # React + Vite frontend
 │   ├── src/
 │   │   ├── components/   # Reusable UI components
-│   │   ├── context/      # Zustand stores (BoardContext, AuthContext)
-│   │   ├── pages/        # Route-level page components
+│   │   ├── context/      # Zustand store (BoardContext) and AuthContext
+│   │   │   └── slices/   # Zustand modular slices (board, list, card, etc.)
+│   │   ├── pages/        # Route-level page components (Modular directories)
+│   │   │   ├── BoardPage/
+│   │   │   ├── UserDashboard/
+│   │   │   ├── Home/
+│   │   │   └── RegisterPage/
 │   │   ├── services/     # Axios base URL config
 │   │   ├── socket/       # Socket.IO client service
 │   │   └── utils/        # Utility helpers
@@ -21,12 +26,20 @@ task-managerr/
 │   └── package.json
 │
 ├── server/               # Node.js + Express backend
-│   ├── Apis/             # Express routers (UserApi, BoardApi, ListApi, CardApi)
+│   ├── Apis/             # Express routers (Modular index.js barrel files)
 │   ├── config/           # MongoDB connection
-│   ├── controllers/      # Route handler logic
-│   ├── models/           # Mongoose schemas
-│   ├── sockets/          # Socket.IO event handlers
-│   ├── utils/            # JWT generation & verification middleware
+│   ├── controllers/      # Route handler logic (Modularized per feature)
+│   │   ├── auth/
+│   │   ├── board/
+│   │   ├── list/
+│   │   ├── card/
+│   │   └── invite/
+│   ├── models/           # Mongoose schemas (Extracted sub-schemas)
+│   ├── sockets/          # Socket.IO handlers
+│   │   ├── handlers/     # Feature-specific socket logic
+│   │   ├── onlineUsersStore.js
+│   │   └── boardSocket.js
+│   ├── utils/            # JWT, Uploads, Cloudinary middleware
 │   ├── server.js         # App entry point
 │   └── package.json
 │

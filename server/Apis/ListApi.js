@@ -1,5 +1,5 @@
 import exp from 'express'
-import { AddList, deleteList, getListsByBoard, getList, updateList, getDeletedLists, restoreList, permanentDeleteList } from '../controllers/ListController.js';
+import { addList as AddList, deleteList, getListsByBoard, getList, updateList, getDeletedLists, restoreList, permanentDeleteList } from '../controllers/list/index.js';
 import verifyToken from '../utils/verifyToken.js'
 const ListApp = exp.Router()
 

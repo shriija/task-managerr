@@ -1,6 +1,6 @@
 # ⚙️ Server — Node.js + Express Backend Documentation
 
-A **Node.js + Express v5** REST API with **Mongoose v9**, **Socket.IO v4**, **JWT HttpOnly cookies**, **bcryptjs** hashing, and a full soft-delete trash system.
+A **Node.js + Express v5** REST API with **Mongoose v9**, **Socket.IO v4**, **JWT HttpOnly cookies**, **bcryptjs** hashing, and a full soft-delete trash system. The server codebase is highly modularized, with feature-specific controllers, barrel files for routing, and decoupled Socket.io event handlers.
 
 ---
 
