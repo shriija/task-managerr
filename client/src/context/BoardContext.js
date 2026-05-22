@@ -11,6 +11,7 @@ export const useBoardStore = create((set, get) => ({
   loading: false,
   error: null,
   onlineUsers: [],
+  activities: [],
 
   // ── Trash State ─────────────────────────────────────────
   deletedBoards: [],
@@ -30,6 +31,8 @@ export const useBoardStore = create((set, get) => ({
     socket.off("list-updated")
     socket.off("list-deleted")
     socket.off("online-users")
+    socket.off("board-updated")  
+    socket.off("member-updated")
 
     socket.on("card-moved", async (data) => {
 
@@ -177,6 +180,18 @@ export const useBoardStore = create((set, get) => ({
     socket.on("online-users", (users) => {
       set({ onlineUsers: users })
     })
+
+    socket.on("board-updated", (data) => {
+  if (data.board) {
+    set({ board: data.board })
+  }
+})
+
+socket.on("member-updated", (data) => {
+  if (data.board) {
+    set({ board: data.board })
+  }
+})
   },
 
   // ── Fetch board + lists + cards ────────────────────────
@@ -366,6 +381,27 @@ export const useBoardStore = create((set, get) => ({
     }
   },
 
+  syncCardUpdate: (updatedCard) => {
+    const boardId = get().board?._id
+    const cardId = updatedCard._id
+    const listId = updatedCard.list
+
+    set({
+      lists: get().lists.map(l =>
+        l._id === listId
+          ? {
+              ...l,
+              cards: l.cards.map(c => c._id === cardId ? updatedCard : c)
+            }
+          : l
+      )
+    })
+
+    if (boardId) {
+      socketService.emitCardUpdated(boardId, { cardId, listId, updates: updatedCard })
+    }
+  },
+
   moveCard: (cardId, fromListId, toListId, newPosition) => {
 
   const boardId = get().board?._id
@@ -530,6 +566,9 @@ export const useBoardStore = create((set, get) => ({
         { withCredentials: true }
       )
       set({ board: res.data.payload })
+      socketService.emitBoardUpdated(boardId, {
+  board: res.data.payload
+})
     } catch (err) { console.error(err) }
   },
 
@@ -541,6 +580,9 @@ export const useBoardStore = create((set, get) => ({
         { withCredentials: true }
       )
       set({ board: res.data.payload })
+      socketService.emitMemberUpdated(boardId, {
+  board: res.data.payload
+})
       return res.data
     } catch (err) {
       console.error(err)
@@ -557,6 +599,9 @@ export const useBoardStore = create((set, get) => ({
     )
     // Update local board state with the new member list
     set({ board: res.data.payload })
+    socketService.emitMemberUpdated(boardId, {
+  board: res.data.payload
+})
     return res.data
   },
 
@@ -568,6 +613,15 @@ export const useBoardStore = create((set, get) => ({
       { withCredentials: true }
     )
     return res.data.payload // { link, token }
+  },
+
+  fetchActivities: async (boardId) => {
+    try {
+      const res = await axios.get(`${API}/board-api/activity/${boardId}`, { withCredentials: true })
+      set({ activities: res.data.payload || [] })
+    } catch (err) {
+      console.error("Failed to fetch activity logs:", err)
+    }
   },
 
 }))

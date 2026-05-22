@@ -1,6 +1,8 @@
 import { CardModel } from "../models/Card.js";
 import { ListModel } from "../models/List.js";
 import { BoardModel } from "../models/Board.js";
+import { UserModel } from "../models/User.js";
+import { logActivity } from "../utils/activityLogger.js";
 
 // Helper to parse date string in local timezone to avoid timezone shifting
 const parseLocalDate = (dateStr) => {
@@ -96,6 +98,10 @@ export const addCard=async(req,res)=>{
             .populate("assignedTo", "name email avatar")
             .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar");
+
+        if (list) {
+            await logActivity(list.board, req.userId, `created task "${saveCard.title}"`);
+        }
 
         res.status(201).json({message:"New card added successfully", payload:saveCard})
     }
@@ -246,6 +252,43 @@ export const updateCard=async(req,res)=>{
             .populate("assignedTo", "name email avatar")
             .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar")
+
+        if (list && updatedCard) {
+            const boardId = list.board;
+            if (title !== undefined && title !== card.title) {
+                await logActivity(boardId, req.userId, `renamed task from "${card.title}" to "${title}"`);
+            }
+            if (status !== undefined && status !== card.status) {
+                await logActivity(boardId, req.userId, `changed task "${card.title}" status to "${status}"`);
+            }
+            if (priority !== undefined && priority !== card.priority) {
+                await logActivity(boardId, req.userId, `set task "${card.title}" priority to "${priority}"`);
+            }
+            if (dueDate !== undefined) {
+                const oldDueStr = card.dueDate ? new Date(card.dueDate).toISOString().split("T")[0] : null;
+                const newDueStr = dueDate ? new Date(dueDate).toISOString().split("T")[0] : null;
+                if (oldDueStr !== newDueStr) {
+                    if (newDueStr) {
+                        await logActivity(boardId, req.userId, `set task "${card.title}" due date to ${newDueStr}`);
+                    } else {
+                        await logActivity(boardId, req.userId, `removed task "${card.title}" due date`);
+                    }
+                }
+            }
+            if (assignedTo !== undefined) {
+                const oldAssigned = card.assignedTo ? card.assignedTo.toString() : null;
+                const newAssigned = assignedTo ? assignedTo.toString() : null;
+                if (oldAssigned !== newAssigned) {
+                    if (assignedTo) {
+                        const userObj = await UserModel.findById(assignedTo);
+                        await logActivity(boardId, req.userId, `assigned task "${card.title}" to ${userObj ? userObj.name : "Unknown User"}`);
+                    } else {
+                        await logActivity(boardId, req.userId, `unassigned task "${card.title}"`);
+                    }
+                }
+            }
+        }
+
         res.status(200).json({message:"Card updated successfully",payload:updatedCard})
     }catch(error){
         res.status(500).json({message:"Could not update card",error:error.message})
@@ -305,6 +348,11 @@ export const moveCard=async(req,res)=>{
             .populate("assignedTo", "name email avatar")
             .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar");
+
+        if (destList && updatedCard) {
+            await logActivity(destList.board, req.userId, `moved task "${updatedCard.title}" to list "${destList.title}"`);
+        }
+
         res.status(200).json({ message: "Card moved successfully", payload: updatedCard });
     }catch(error){
         res.status(500).json({message:"Could not move card",error:error.message})
@@ -336,6 +384,9 @@ export const deleteCards=async(req,res)=>{
             { new: true }
         )
         if(deleteCard){
+            if (list) {
+                await logActivity(list.board, req.userId, `deleted task "${deleteCard.title}"`);
+            }
             res.status(200).json({message:"Card deleted successfully",payload:deleteCard})
         }
         else{
@@ -392,6 +443,9 @@ export const restoreCard = async (req, res) => {
         .populate("createdBy", "name email avatar")
 
         if (restoredCard) {
+            if (list) {
+                await logActivity(list.board, req.userId, `restored task "${restoredCard.title}"`);
+            }
             // Auto-restore parent list if it was also deleted
             const parentList = await ListModel.findById(restoredCard.list);
             if (parentList && parentList.isDeleted) {
@@ -426,6 +480,9 @@ export const permanentDeleteCard = async (req, res) => {
         }
         const deletedCard = await CardModel.findByIdAndDelete(cardId);
         if (deletedCard) {
+            if (list) {
+                await logActivity(list.board, req.userId, `permanently deleted task "${deletedCard.title}"`);
+            }
             res.status(200).json({ message: "Card permanently deleted", payload: deletedCard })
         } else {
             res.status(404).json({ message: "Card not found" })
@@ -434,4 +491,257 @@ export const permanentDeleteCard = async (req, res) => {
         res.status(500).json({ message: "Could not permanently delete card", error: error.message })
     }
 }
+
+// ── File Attachments ──────────────────────────────────────
+
+// Upload attachments to a card
+export const uploadAttachments = async (req, res) => {
+    try {
+        const cardId = req.params.cardId;
+        const card = await CardModel.findById(cardId);
+        if (!card) {
+            return res.status(404).json({ message: "Card not found" });
+        }
+
+        // Verify board membership
+        const list = await ListModel.findById(card.list);
+        if (!list) return res.status(404).json({ message: "List not found" });
+        const board = await BoardModel.findById(list.board);
+        if (!board) return res.status(404).json({ message: "Board not found" });
+
+        const isOwner = board.owner.toString() === req.userId;
+        const isAdmin = board.admins?.some(a => a.toString() === req.userId);
+        if (!isOwner && !isAdmin) {
+            return res.status(403).json({ message: "Only board owners or admins can upload attachments" });
+        }
+
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ message: "No files uploaded" });
+        }
+
+        const { default: cloudinary } = await import("../config/cloudinary.js");
+
+        const uploadPromises = req.files.map(file => {
+            return new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    {
+                        folder: "task-manager/attachments",
+                        resource_type: "auto",
+                    },
+                    (error, result) => {
+                        if (error) reject(error);
+                        else resolve({
+                            name: file.originalname,
+                            url: result.secure_url,
+                            type: file.mimetype,
+                            size: file.size,
+                            publicId: result.public_id,
+                            uploadedBy: req.userId,
+                            uploadedAt: new Date(),
+                        });
+                    }
+                );
+                stream.end(file.buffer);
+            });
+        });
+
+        const uploadedFiles = await Promise.all(uploadPromises);
+        card.attachments.push(...uploadedFiles);
+        await card.save();
+
+        const updatedCard = await CardModel.findById(cardId)
+            .populate("assignedTo", "name email avatar")
+            .populate("assignees", "name email avatar")
+            .populate("createdBy", "name email avatar")
+            .populate("attachments.uploadedBy", "name email avatar")
+            .populate("remarks.author", "name email avatar")
+            .populate("remarks.attachments.uploadedBy", "name email avatar");
+
+        res.status(200).json({ message: "Files uploaded successfully", payload: updatedCard });
+    } catch (error) {
+        res.status(500).json({ message: "File upload failed", error: error.message });
+    }
+};
+
+// Delete a specific attachment from a card
+export const deleteAttachment = async (req, res) => {
+    try {
+        const { cardId, attachmentId } = req.params;
+        const card = await CardModel.findById(cardId);
+        if (!card) {
+            return res.status(404).json({ message: "Card not found" });
+        }
+
+        const list = await ListModel.findById(card.list);
+        if (!list) return res.status(404).json({ message: "List not found" });
+        const board = await BoardModel.findById(list.board);
+        if (!board) return res.status(404).json({ message: "Board not found" });
+
+        const isOwner = board.owner.toString() === req.userId;
+        const isAdmin = board.admins?.some(a => a.toString() === req.userId);
+        if (!isOwner && !isAdmin) {
+            return res.status(403).json({ message: "Only board owners or admins can delete attachments" });
+        }
+
+        const attachment = card.attachments.id(attachmentId);
+        if (!attachment) {
+            return res.status(404).json({ message: "Attachment not found" });
+        }
+
+        // Delete from Cloudinary if publicId exists
+        if (attachment.publicId) {
+            try {
+                const { default: cloudinary } = await import("../config/cloudinary.js");
+                await cloudinary.uploader.destroy(attachment.publicId, { resource_type: "raw" });
+            } catch (e) { /* Cloudinary cleanup is best-effort */ }
+        }
+
+        card.attachments.pull(attachmentId);
+        await card.save();
+
+        const updatedCard = await CardModel.findById(cardId)
+            .populate("assignedTo", "name email avatar")
+            .populate("assignees", "name email avatar")
+            .populate("createdBy", "name email avatar")
+            .populate("attachments.uploadedBy", "name email avatar")
+            .populate("remarks.author", "name email avatar")
+            .populate("remarks.attachments.uploadedBy", "name email avatar");
+
+        res.status(200).json({ message: "Attachment deleted", payload: updatedCard });
+    } catch (error) {
+        res.status(500).json({ message: "Could not delete attachment", error: error.message });
+    }
+};
+
+// ── Remarks ──────────────────────────────────────────────
+
+// Add a remark to a card
+export const addRemark = async (req, res) => {
+    try {
+        const cardId = req.params.cardId;
+        const { text } = req.body;
+        const card = await CardModel.findById(cardId);
+        if (!card) {
+            return res.status(404).json({ message: "Card not found" });
+        }
+
+        // Verify board membership
+        const list = await ListModel.findById(card.list);
+        if (!list) return res.status(404).json({ message: "List not found" });
+        const board = await BoardModel.findById(list.board);
+        if (!board) return res.status(404).json({ message: "Board not found" });
+
+        const isMember = board.owner.toString() === req.userId
+            || board.members.some(m => m.toString() === req.userId);
+        if (!isMember) {
+            return res.status(403).json({ message: "Only board members can add remarks" });
+        }
+
+        let remarkAttachments = [];
+        if (req.files && req.files.length > 0) {
+            const { default: cloudinary } = await import("../config/cloudinary.js");
+            const uploadPromises = req.files.map(file => {
+                return new Promise((resolve, reject) => {
+                    const stream = cloudinary.uploader.upload_stream(
+                        {
+                            folder: "task-manager/remarks",
+                            resource_type: "auto",
+                        },
+                        (error, result) => {
+                            if (error) reject(error);
+                            else resolve({
+                                name: file.originalname,
+                                url: result.secure_url,
+                                type: file.mimetype,
+                                size: file.size,
+                                publicId: result.public_id,
+                                uploadedBy: req.userId,
+                                uploadedAt: new Date(),
+                            });
+                        }
+                    );
+                    stream.end(file.buffer);
+                });
+            });
+            remarkAttachments = await Promise.all(uploadPromises);
+        }
+
+        if (!text && remarkAttachments.length === 0) {
+            return res.status(400).json({ message: "Remark must have text or attachments" });
+        }
+
+        card.remarks.push({
+            text: text || "",
+            attachments: remarkAttachments,
+            author: req.userId,
+        });
+        await card.save();
+
+        const updatedCard = await CardModel.findById(cardId)
+            .populate("assignedTo", "name email avatar")
+            .populate("assignees", "name email avatar")
+            .populate("createdBy", "name email avatar")
+            .populate("attachments.uploadedBy", "name email avatar")
+            .populate("remarks.author", "name email avatar")
+            .populate("remarks.attachments.uploadedBy", "name email avatar");
+
+        res.status(201).json({ message: "Remark added", payload: updatedCard });
+    } catch (error) {
+        res.status(500).json({ message: "Could not add remark", error: error.message });
+    }
+};
+
+// Delete a remark from a card
+export const deleteRemark = async (req, res) => {
+    try {
+        const { cardId, remarkId } = req.params;
+        const card = await CardModel.findById(cardId);
+        if (!card) {
+            return res.status(404).json({ message: "Card not found" });
+        }
+
+        const remark = card.remarks.id(remarkId);
+        if (!remark) {
+            return res.status(404).json({ message: "Remark not found" });
+        }
+
+        // Only the remark author or board owner/admin can delete
+        const list = await ListModel.findById(card.list);
+        const board = list ? await BoardModel.findById(list.board) : null;
+        const isOwner = board?.owner.toString() === req.userId;
+        const isAdmin = board?.admins?.some(a => a.toString() === req.userId);
+        const isAuthor = remark.author.toString() === req.userId;
+
+        if (!isOwner && !isAdmin && !isAuthor) {
+            return res.status(403).json({ message: "You can only delete your own remarks" });
+        }
+
+        // Cleanup Cloudinary files for the remark
+        if (remark.attachments && remark.attachments.length > 0) {
+            try {
+                const { default: cloudinary } = await import("../config/cloudinary.js");
+                for (const att of remark.attachments) {
+                    if (att.publicId) {
+                        await cloudinary.uploader.destroy(att.publicId, { resource_type: "raw" }).catch(() => {});
+                    }
+                }
+            } catch (e) { /* best-effort cleanup */ }
+        }
+
+        card.remarks.pull(remarkId);
+        await card.save();
+
+        const updatedCard = await CardModel.findById(cardId)
+            .populate("assignedTo", "name email avatar")
+            .populate("assignees", "name email avatar")
+            .populate("createdBy", "name email avatar")
+            .populate("attachments.uploadedBy", "name email avatar")
+            .populate("remarks.author", "name email avatar")
+            .populate("remarks.attachments.uploadedBy", "name email avatar");
+
+        res.status(200).json({ message: "Remark deleted", payload: updatedCard });
+    } catch (error) {
+        res.status(500).json({ message: "Could not delete remark", error: error.message });
+    }
+};
 

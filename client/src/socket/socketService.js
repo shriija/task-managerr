@@ -83,3 +83,14 @@ export const emitListDeleted = (boardId, data) => {
   if (!socket?.connected) return
   socket.emit("list-deleted", { boardId, ...data })
 }
+
+
+export const emitBoardUpdated = (boardId, data) => {
+  if (!socket?.connected) return
+  socket.emit("board-updated", { boardId, ...data })
+}
+
+export const emitMemberUpdated = (boardId, data) => {
+  if (!socket?.connected) return
+  socket.emit("member-updated", { boardId, ...data })
+}
