@@ -66,9 +66,13 @@ function AccountManagementPage() {
       newPassword,
     }
 
-    if (googleVerifyToken) {
+    if (!hasPasswordSet || passwordMode === "google") {
+      if (!googleVerifyToken) {
+        toast.error("Please authenticate with Google first")
+        return
+      }
       payload.googleToken = googleVerifyToken
-    } else if (hasPasswordSet) {
+    } else {
       if (!oldPassword) {
         toast.error("Please enter your current password")
         return
@@ -89,8 +93,37 @@ function AccountManagementPage() {
     }
   }
 
+  // Helper to decode JWT on the frontend
+  const decodeJwt = (token) => {
+    try {
+      const base64Url = token.split('.')[1]
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+      const jsonPayload = decodeURIComponent(
+        window.atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      )
+      return JSON.parse(jsonPayload)
+    } catch (error) {
+      console.error("Failed to decode JWT:", error)
+      return null
+    }
+  }
+
   // Handle Google authentication in settings
   const onGoogleVerifySuccess = (credentialResponse) => {
+    const decoded = decodeJwt(credentialResponse.credential)
+    if (!decoded || !decoded.email) {
+      toast.error("Failed to read email from verified Google account.")
+      return
+    }
+
+    if (decoded.email.toLowerCase() !== currentUser.email.toLowerCase()) {
+      toast.error(`Verification failed: Verified Google email (${decoded.email}) does not match your registered account email (${currentUser.email}).`)
+      return
+    }
+
     setGoogleVerifyToken(credentialResponse.credential)
     toast.success("Google account verified successfully! Enter your new password below.")
   }

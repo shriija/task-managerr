@@ -309,6 +309,8 @@ export const changePassword = async (req, res) => {
             });
             const payload = ticket.getPayload();
             
+            console.log(`[Google Auth Verify] Password change request. Registered: ${user.email}, Google: ${payload.email}`);
+            
             if (payload.email.toLowerCase() !== user.email.toLowerCase()) {
                 return res.status(401).json({ message: "Google account email does not match profile email" });
             }
