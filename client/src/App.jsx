@@ -9,6 +9,7 @@ import CreateBoardPage from './pages/CreateBoardPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import BoardPage from './pages/BoardPage'
 import AcceptInvitePage from './pages/AcceptInvitePage'
+import AccountManagementPage from './pages/AccountManagementPage'
 
 function App() {
   const routerObj=createBrowserRouter([
@@ -27,6 +28,14 @@ function App() {
         {
           path:"/login",
           element:<Loginpage />
+        },
+        {
+          path:"/profile",
+          element:(
+            <ProtectedRoute>
+              <AccountManagementPage />
+            </ProtectedRoute>
+          )
         },
         {
           path:"/dashboard",

@@ -4,6 +4,8 @@ import { NavLink, useNavigate } from "react-router";
 import axios from 'axios'
 import { API_URL } from "../services/api"
 import toast from 'react-hot-toast'
+import { GoogleLogin } from "@react-oauth/google";
+import { useAuthStore } from "../context/AuthContext";
 
 /**
  * RegisterPage Component
@@ -15,8 +17,8 @@ import toast from 'react-hot-toast'
 function RegisterPage() {
   // Initialize form controls and validation state
   const { register, handleSubmit, formState: { errors } } = useForm();
+  const googleLogin = useAuthStore((state) => state.googleLogin);
   
-  // Local UI and submission states
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -267,7 +269,36 @@ function RegisterPage() {
             {loading ? "Creating Account..." : "Create Account"}
           </button>
 
-          {/* Redirect to Login */}
+          {/* OR Divider */}
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-slate-500 font-semibold tracking-wider">Or continue with</span>
+            </div>
+          </div>
+
+          {/* Google Register/Login Button */}
+          <div className="flex justify-center w-full">
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                await googleLogin(credentialResponse.credential);
+                if (useAuthStore.getState().isAuthenticated) {
+                  navigate("/dashboard");
+                }
+              }}
+              onError={() => {
+                console.error("Google Login Failed");
+              }}
+              useOneTap
+              theme="outline"
+              size="large"
+              width="100%"
+            />
+          </div>
+
+          {/* Redirect */}
           <p className="text-center text-sm text-slate-500 mt-6">
             Already have an account?{' '}
             <NavLink to="/login" className="font-semibold text-primary-600 hover:text-primary-700 transition-colors">
