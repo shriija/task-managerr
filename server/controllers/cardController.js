@@ -15,7 +15,14 @@ const parseLocalDate = (dateStr) => {
     return new Date(dateStr);
 };
 
-//Create Cards
+/**
+ * Create a New Task Card
+ * Validates due dates, determines initial status based on the target list,
+ * auto-assigns the creator to the board if they aren't a member, and logs the activity.
+ * 
+ * @param {Object} req - Express request object containing card details (title, list, dueDate, etc.)
+ * @param {Object} res - Express response object
+ */
 export const addCard=async(req,res)=>{
     const createCard = req.body;
     if(createCard.dueDate){
@@ -110,7 +117,10 @@ export const addCard=async(req,res)=>{
     }
 }
 
-//Get card by id
+/**
+ * Fetch details of a single Card by its ID
+ * Populates the assigned user, multiple assignees, and the creator with user details.
+ */
 export const getCardById=async(req,res)=>{
     const getCard=req.params.id;
     try{
@@ -125,7 +135,10 @@ export const getCardById=async(req,res)=>{
     }
 }
 
-//Fetch Cards
+/**
+ * Fetch all active Cards for a specific List
+ * Returns them sorted vertically by their `position` property.
+ */
 export const getCards=async(req,res)=>{
     const list=req.params.id
     try{
@@ -140,7 +153,12 @@ export const getCards=async(req,res)=>{
     }
 }
 
-//Update card
+/**
+ * Update Card Details (Title, Description, Status, Priority, Due Date, Assignees)
+ * Contains extensive permission checks: only owners/admins can change core details.
+ * Regular members can only change the status (e.g., from "To Do" to "Done").
+ * Logs all specific changes to the board's activity history.
+ */
 export const updateCard=async(req,res)=>{
     const cardId=req.params.id
     const {title, description, dueDate, priority, status, assignedTo, assignees}=req.body
@@ -295,7 +313,12 @@ export const updateCard=async(req,res)=>{
     }
 }
 
-//Move card (drag & drop)
+/**
+ * Move Card (Drag & Drop functionality)
+ * Handles repositioning a card within the same list or moving it to a completely different list.
+ * Automatically updates the card's status based on the destination list's name and re-sequences 
+ * the positions of all other cards in the affected list(s) to maintain correct order.
+ */
 export const moveCard=async(req,res)=>{
     const cardId=req.params.id
     const {toListId, newPosition}=req.body
@@ -359,7 +382,11 @@ export const moveCard=async(req,res)=>{
     }
 }
 
-//Delete Cards (Soft Delete)
+/**
+ * Soft Delete a Card
+ * Moves the card to the trash by setting isDeleted to true.
+ * Only board owners or admins can delete tasks.
+ */
 export const deleteCards=async(req,res)=>{
     const cardId=req.params.id
     try{
@@ -397,6 +424,10 @@ export const deleteCards=async(req,res)=>{
     }
 }
 
+/**
+ * Trash Management: Get all soft-deleted cards for a specific board
+ * Looks up all lists in the board first, then finds all deleted cards belonging to those lists.
+ */
 export const getDeletedCardsByBoard = async (req, res) => {
     try {
         const boardId = req.params.boardId;
@@ -415,6 +446,10 @@ export const getDeletedCardsByBoard = async (req, res) => {
     }
 }
 
+/**
+ * Trash Management: Restore a soft-deleted card back to its list
+ * If the parent list was also deleted, it will auto-restore the parent list as well.
+ */
 export const restoreCard = async (req, res) => {
     try {
         const cardId = req.params.id;
@@ -460,6 +495,9 @@ export const restoreCard = async (req, res) => {
     }
 }
 
+/**
+ * Trash Management: Permanently delete a card from the database
+ */
 export const permanentDeleteCard = async (req, res) => {
     try {
         const cardId = req.params.id;
@@ -494,7 +532,11 @@ export const permanentDeleteCard = async (req, res) => {
 
 // ── File Attachments ──────────────────────────────────────
 
-// Upload attachments to a card
+/**
+ * Upload one or multiple attachments to a card
+ * Uses Cloudinary for secure file storage and streams files directly from memory.
+ * Only board owners or admins can upload attachments to tasks.
+ */
 export const uploadAttachments = async (req, res) => {
     try {
         const cardId = req.params.cardId;
@@ -563,7 +605,10 @@ export const uploadAttachments = async (req, res) => {
     }
 };
 
-// Delete a specific attachment from a card
+/**
+ * Delete a specific attachment from a card
+ * Removes the file reference from the DB and performs a best-effort cleanup from Cloudinary.
+ */
 export const deleteAttachment = async (req, res) => {
     try {
         const { cardId, attachmentId } = req.params;
@@ -615,7 +660,11 @@ export const deleteAttachment = async (req, res) => {
 
 // ── Remarks ──────────────────────────────────────────────
 
-// Add a remark to a card
+/**
+ * Add a remark (comment) to a card
+ * Remarks can contain text, multiple file attachments, or both.
+ * Any board member can add remarks to a card.
+ */
 export const addRemark = async (req, res) => {
     try {
         const cardId = req.params.cardId;
@@ -691,7 +740,11 @@ export const addRemark = async (req, res) => {
     }
 };
 
-// Delete a remark from a card
+/**
+ * Delete a remark from a card
+ * Users can delete their own remarks. Board owners and admins can delete anyone's remarks.
+ * Automatically cleans up any files attached specifically to this remark from Cloudinary.
+ */
 export const deleteRemark = async (req, res) => {
     try {
         const { cardId, remarkId } = req.params;
