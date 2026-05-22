@@ -5,6 +5,7 @@ import { useAuthStore } from "../context/AuthContext"
 import Board from "../components/Board"
 import CalendarView from "../components/CalendarView"
 import TrashView from "../components/TrashView"
+import ActivityView from "../components/ActivityView"
 import InviteModal from "../components/InviteModal"
 import MembersModal from "../components/MembersModal"
 import * as socketService from "../socket/socketService"
@@ -21,11 +22,40 @@ function BoardPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showInvite, setShowInvite] = useState(false)
   const [showMembers, setShowMembers] = useState(false)
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleValue, setTitleValue] = useState("")
 
   const isOwner = board?.owner?._id === currentUser?._id || board?.owner === currentUser?._id
 
   useEffect(() => {
-    if (!view || !["board", "my-tasks", "calendar", "trash"].includes(view)) {
+    if (board) {
+      setTitleValue(board.title)
+    }
+  }, [board])
+
+  const handleTitleSave = () => {
+    const trimmed = titleValue.trim()
+    if (!trimmed) {
+      setTitleValue(board?.title || "")
+      setEditingTitle(false)
+      return
+    }
+    if (trimmed !== board?.title) {
+      updateBoardSettings(id, { title: trimmed })
+    }
+    setEditingTitle(false)
+  }
+
+  const handleTitleKeyDown = (e) => {
+    if (e.key === "Enter") handleTitleSave()
+    if (e.key === "Escape") {
+      setTitleValue(board?.title || "")
+      setEditingTitle(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!view || !["board", "my-tasks", "calendar", "trash", "activity"].includes(view)) {
       navigate(`/board/${id}/board`, { replace: true })
     }
   }, [id, view, navigate])
@@ -155,6 +185,18 @@ function BoardPage() {
             Calendar
           </button>
           <button 
+            onClick={() => navigate(`/board/${id}/activity`)}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+              currentView === "activity"
+                ? "bg-primary-50 text-primary-600 font-semibold"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+            }`}>
+            <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Activity Logs
+          </button>
+          <button 
             onClick={() => navigate(`/board/${id}/trash`)}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
               currentView === "trash"
@@ -193,9 +235,31 @@ function BoardPage() {
 
           <div className="flex items-center gap-4">
             {/* Board title */}
-            <h2 className="font-bold text-lg text-gray-900">
-              {board?.title || "Board"}
-            </h2>
+            {isOwner ? (
+              editingTitle ? (
+                <input
+                  value={titleValue}
+                  onChange={(e) => setTitleValue(e.target.value)}
+                  onBlur={handleTitleSave}
+                  onKeyDown={handleTitleKeyDown}
+                  className="font-bold text-lg text-gray-900 outline-none border-b-2 border-primary-500 bg-transparent py-0.5"
+                  autoFocus
+                />
+              ) : (
+                <div className="flex items-center gap-1.5 group cursor-pointer" onClick={() => setEditingTitle(true)}>
+                  <h2 className="font-bold text-lg text-gray-900 group-hover:text-primary-600 transition-colors">
+                    {board?.title || "Board"}
+                  </h2>
+                  <svg className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                  </svg>
+                </div>
+              )
+            ) : (
+              <h2 className="font-bold text-lg text-gray-900">
+                {board?.title || "Board"}
+              </h2>
+            )}
 
             {/* Members */}
             <div 
@@ -280,6 +344,8 @@ function BoardPage() {
         {/* ─── BOARD CANVAS / VIEWS ───────────────────────────── */}
         {currentView === "calendar" ? (
           <CalendarView searchQuery={searchQuery} />
+        ) : currentView === "activity" ? (
+          <ActivityView boardId={id} />
         ) : currentView === "trash" ? (
           <TrashView boardId={id} />
         ) : (

@@ -15,21 +15,22 @@ export const app = exp();
 config();
 
 // Middlewares
+app.set("trust proxy", 1);
 app.use(exp.json());
 app.use(CookieParser());
 
 app.use(
   cors({
-    origin: true,
+    origin: [process.env.CLIENT_URL],
     credentials: true
   })
 );
 
 // Routes
 app.use("/user-api", UserApi);
-app.use("/board-api",BoardApp);
-app.use("/list-api",ListApp)
-app.use("/card-api",CardApp)
+app.use("/board-api", BoardApp);
+app.use("/list-api", ListApp)
+app.use("/card-api", CardApp)
 // Connect DB
 await connectDB();
 
@@ -40,7 +41,7 @@ const server = http.createServer(app);
 // 🔹 Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: true, // change later to frontend URL
+    origin: [process.env.CLIENT_URL], // change later to frontend URL
     credentials: true
   },
 });
@@ -50,3 +51,6 @@ boardSocket(io);
 
 // 🔹 Start server
 server.listen(process.env.PORT || 4001, () => console.log(`🚀 Server running on port ${process.env.PORT || 4001}`));
+
+// Auto-trigger nodemon restart
+

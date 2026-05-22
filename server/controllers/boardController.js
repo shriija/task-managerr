@@ -1,6 +1,9 @@
 import { BoardModel } from '../models/Board.js'
 import { ListModel } from '../models/List.js'
 import { CardModel } from '../models/Card.js'
+import { UserModel } from '../models/User.js'
+import { logActivity } from '../utils/activityLogger.js'
+import { Activity } from '../models/Activity.js'
 
 export const addBoard = async (req, res) => {
 
@@ -186,10 +189,20 @@ export const updateBoard = async (req, res) => {
     }
     
     const { title, allowMultipleAssignees } = req.body;
+    const oldTitle = board.title;
+    const oldAllowMultiple = board.allowMultipleAssignees;
+
     if (title !== undefined) board.title = title;
     if (allowMultipleAssignees !== undefined) board.allowMultipleAssignees = allowMultipleAssignees;
     
     await board.save();
+
+    if (title !== undefined && title !== oldTitle) {
+      await logActivity(board._id, req.userId, `renamed board to "${title}"`);
+    }
+    if (allowMultipleAssignees !== undefined && allowMultipleAssignees !== oldAllowMultiple) {
+      await logActivity(board._id, req.userId, `${allowMultipleAssignees ? "enabled" : "disabled"} multi-assignee support`);
+    }
     
     const updated = await BoardModel.findById(board._id)
       .populate("owner", "name email avatar")
@@ -285,12 +298,53 @@ export const manageMember = async (req, res) => {
 
     await board.save();
 
+    // Log the member update
+    try {
+      const memberUser = await UserModel.findById(memberId);
+      const memberName = memberUser ? memberUser.name : "Unknown User";
+      if (action === "promote") {
+        await logActivity(boardId, req.userId, `promoted ${memberName} to Admin`);
+      } else if (action === "demote") {
+        await logActivity(boardId, req.userId, `demoted ${memberName} to Member`);
+      } else if (action === "remove") {
+        await logActivity(boardId, req.userId, `removed ${memberName} from the board`);
+      }
+    } catch (logErr) {
+      console.error("Failed to log member update activity:", logErr);
+    }
+
     const updatedBoard = await BoardModel.findById(boardId)
       .populate("owner", "name email avatar")
       .populate("members", "name email avatar")
       .populate("admins", "name email avatar");
 
     res.status(200).json({ message: `Member updated successfully`, payload: updatedBoard });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getBoardActivity = async (req, res) => {
+  try {
+    const { boardId } = req.params;
+    const board = await BoardModel.findById(boardId);
+    if (!board || board.isDeleted) {
+      return res.status(404).json({ message: "Board not found" });
+    }
+    
+    const isOwner = board.owner.toString() === req.userId;
+    const isMember = board.members.some(m => m.toString() === req.userId);
+    
+    if (!isOwner && !isMember) {
+      return res.status(403).json({ message: "You do not have permission to view activity on this board" });
+    }
+
+    const activities = await Activity.find({ board: boardId })
+      .populate("user", "name email avatar")
+      .sort({ timestamp: -1 })
+      .limit(100);
+
+    res.status(200).json({ message: "Activity logs fetched", payload: activities });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

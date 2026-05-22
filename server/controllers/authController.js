@@ -44,8 +44,9 @@ export const signin = async(req,res)=>{
         res.cookie('token', token, {
             httpOnly: true,
             maxAge: 7 * 24 * 60 * 60 * 1000,
-            secure: false,
-            sameSite: "lax"
+            secure:true,
+            sameSite:"none",
+            partitioned: true 
         });
         res.status(200).json({message:"signin sucessfull",payload:userObj})
 
@@ -57,8 +58,9 @@ export const logout = async(req,res)=>{
     try {
         res.clearCookie('token',{
             httpOnly:true,
-            secure:false,
-            sameSite:"lax"
+            secure:true,
+            sameSite:"none",
+            partitioned: true
         })
         res.status(200).json({message:"logout success"})
         
@@ -97,5 +99,37 @@ export const searchUsers = async (req, res) => {
         res.json({ payload: users })
     } catch (error) {
         res.status(500).json({ error: error.message })
+    }
+}
+
+// Upload avatar image to Cloudinary
+export const uploadAvatar = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded" })
+        }
+
+        const { default: cloudinary } = await import("../config/cloudinary.js")
+
+        const result = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                {
+                    folder: "task-manager/avatars",
+                    transformation: [
+                        { width: 256, height: 256, crop: "fill", gravity: "face" },
+                        { quality: "auto", fetch_format: "auto" }
+                    ]
+                },
+                (error, result) => {
+                    if (error) reject(error)
+                    else resolve(result)
+                }
+            )
+            stream.end(req.file.buffer)
+        })
+
+        res.status(200).json({ url: result.secure_url })
+    } catch (error) {
+        res.status(500).json({ message: "Avatar upload failed", error: error.message })
     }
 }

@@ -127,8 +127,13 @@ function CalendarView({ searchQuery }) {
     const listId = info.event.extendedProps.listId
     const newDate = info.event.start
 
+    const year = newDate.getFullYear()
+    const month = String(newDate.getMonth() + 1).padStart(2, "0")
+    const day = String(newDate.getDate()).padStart(2, "0")
+    const localDateStr = `${year}-${month}-${day}`
+
     // Update the card due date which triggers a re-render pulling from lists state
-    updateCard(cardId, listId, { dueDate: newDate.toISOString() })
+    updateCard(cardId, listId, { dueDate: localDateStr })
     
     // Revert the local drop so React state is the single source of truth
     // and since we hide pills, this ensures FullCalendar doesn't leave a dummy pill behind.
@@ -267,7 +272,7 @@ function CalendarView({ searchQuery }) {
               right: "dayGridMonth,timeGridWeek"
             }}
             droppable={true}
-            drop={handleEventReceive}
+            eventReceive={handleEventReceive}
             height="100%"
             // Hide event pills by not passing `events={...}` at all.
             dayCellClassNames={(arg) => {
