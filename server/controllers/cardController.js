@@ -1,6 +1,8 @@
 import { CardModel } from "../models/Card.js";
 import { ListModel } from "../models/List.js";
 import { BoardModel } from "../models/Board.js";
+import { UserModel } from "../models/User.js";
+import { logActivity } from "../utils/activityLogger.js";
 
 // Helper to parse date string in local timezone to avoid timezone shifting
 const parseLocalDate = (dateStr) => {
@@ -96,6 +98,10 @@ export const addCard=async(req,res)=>{
             .populate("assignedTo", "name email avatar")
             .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar");
+
+        if (list) {
+            await logActivity(list.board, req.userId, `created task "${saveCard.title}"`);
+        }
 
         res.status(201).json({message:"New card added successfully", payload:saveCard})
     }
@@ -246,6 +252,43 @@ export const updateCard=async(req,res)=>{
             .populate("assignedTo", "name email avatar")
             .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar")
+
+        if (list && updatedCard) {
+            const boardId = list.board;
+            if (title !== undefined && title !== card.title) {
+                await logActivity(boardId, req.userId, `renamed task from "${card.title}" to "${title}"`);
+            }
+            if (status !== undefined && status !== card.status) {
+                await logActivity(boardId, req.userId, `changed task "${card.title}" status to "${status}"`);
+            }
+            if (priority !== undefined && priority !== card.priority) {
+                await logActivity(boardId, req.userId, `set task "${card.title}" priority to "${priority}"`);
+            }
+            if (dueDate !== undefined) {
+                const oldDueStr = card.dueDate ? new Date(card.dueDate).toISOString().split("T")[0] : null;
+                const newDueStr = dueDate ? new Date(dueDate).toISOString().split("T")[0] : null;
+                if (oldDueStr !== newDueStr) {
+                    if (newDueStr) {
+                        await logActivity(boardId, req.userId, `set task "${card.title}" due date to ${newDueStr}`);
+                    } else {
+                        await logActivity(boardId, req.userId, `removed task "${card.title}" due date`);
+                    }
+                }
+            }
+            if (assignedTo !== undefined) {
+                const oldAssigned = card.assignedTo ? card.assignedTo.toString() : null;
+                const newAssigned = assignedTo ? assignedTo.toString() : null;
+                if (oldAssigned !== newAssigned) {
+                    if (assignedTo) {
+                        const userObj = await UserModel.findById(assignedTo);
+                        await logActivity(boardId, req.userId, `assigned task "${card.title}" to ${userObj ? userObj.name : "Unknown User"}`);
+                    } else {
+                        await logActivity(boardId, req.userId, `unassigned task "${card.title}"`);
+                    }
+                }
+            }
+        }
+
         res.status(200).json({message:"Card updated successfully",payload:updatedCard})
     }catch(error){
         res.status(500).json({message:"Could not update card",error:error.message})
@@ -305,6 +348,11 @@ export const moveCard=async(req,res)=>{
             .populate("assignedTo", "name email avatar")
             .populate("assignees", "name email avatar")
             .populate("createdBy", "name email avatar");
+
+        if (destList && updatedCard) {
+            await logActivity(destList.board, req.userId, `moved task "${updatedCard.title}" to list "${destList.title}"`);
+        }
+
         res.status(200).json({ message: "Card moved successfully", payload: updatedCard });
     }catch(error){
         res.status(500).json({message:"Could not move card",error:error.message})
@@ -336,6 +384,9 @@ export const deleteCards=async(req,res)=>{
             { new: true }
         )
         if(deleteCard){
+            if (list) {
+                await logActivity(list.board, req.userId, `deleted task "${deleteCard.title}"`);
+            }
             res.status(200).json({message:"Card deleted successfully",payload:deleteCard})
         }
         else{
@@ -392,6 +443,9 @@ export const restoreCard = async (req, res) => {
         .populate("createdBy", "name email avatar")
 
         if (restoredCard) {
+            if (list) {
+                await logActivity(list.board, req.userId, `restored task "${restoredCard.title}"`);
+            }
             // Auto-restore parent list if it was also deleted
             const parentList = await ListModel.findById(restoredCard.list);
             if (parentList && parentList.isDeleted) {
@@ -426,6 +480,9 @@ export const permanentDeleteCard = async (req, res) => {
         }
         const deletedCard = await CardModel.findByIdAndDelete(cardId);
         if (deletedCard) {
+            if (list) {
+                await logActivity(list.board, req.userId, `permanently deleted task "${deletedCard.title}"`);
+            }
             res.status(200).json({ message: "Card permanently deleted", payload: deletedCard })
         } else {
             res.status(404).json({ message: "Card not found" })

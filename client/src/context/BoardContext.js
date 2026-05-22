@@ -11,6 +11,7 @@ export const useBoardStore = create((set, get) => ({
   loading: false,
   error: null,
   onlineUsers: [],
+  activities: [],
 
   // ── Trash State ─────────────────────────────────────────
   deletedBoards: [],
@@ -589,6 +590,15 @@ export const useBoardStore = create((set, get) => ({
       { withCredentials: true }
     )
     return res.data.payload // { link, token }
+  },
+
+  fetchActivities: async (boardId) => {
+    try {
+      const res = await axios.get(`${API}/board-api/activity/${boardId}`, { withCredentials: true })
+      set({ activities: res.data.payload || [] })
+    } catch (err) {
+      console.error("Failed to fetch activity logs:", err)
+    }
   },
 
 }))

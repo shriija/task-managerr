@@ -1,5 +1,6 @@
 import {ListModel} from '../models/List.js'
 import { CardModel } from '../models/Card.js'
+import { logActivity } from '../utils/activityLogger.js'
 
 export const AddList = async(req,res) =>{
     const listInfo = req.body;
@@ -14,6 +15,7 @@ export const AddList = async(req,res) =>{
         })
 
         await list.save()
+        await logActivity(board, req.userId, `created list "${title}"`);
         res.status(201).json({message:"list created",payload:list})
     } catch (error) {
         res.status(500).json({error:error.message})
@@ -30,6 +32,7 @@ export const deleteList = async(req,res) =>{
         if(!response){
             return res.status(404).json({message:"list not found"})
         }
+        await logActivity(response.board, req.userId, `deleted list "${response.title}"`);
         res.status(200).json({message:"list deleted (soft delete)",payload:response})
     } catch (error) {
         res.status(500).json({message:"Could not delete list",error:error.message})
@@ -71,7 +74,11 @@ export const updateList = async(req,res) =>{
   const list=req.params.id
   const {title}=req.body
   try{
+    const oldList = await ListModel.findById(list)
     const updatedList=await ListModel.findByIdAndUpdate(list,{title},{new:true})
+    if (updatedList && oldList && oldList.title !== title) {
+      await logActivity(updatedList.board, req.userId, `renamed list "${oldList.title}" to "${title}"`);
+    }
     res.status(200).json({message:"List updated successfully",payload:updatedList})
   }catch(error){
     res.status(500).json({message:"Could not update list",error:error.message})
@@ -100,6 +107,7 @@ export const restoreList = async (req, res) => {
             { new: true }
         )
         if (restoredList) {
+            await logActivity(restoredList.board, req.userId, `restored list "${restoredList.title}"`);
             res.status(200).json({ message: "List restored", payload: restoredList })
         } else {
             res.status(404).json({ message: "List not found" })
@@ -115,6 +123,7 @@ export const permanentDeleteList = async (req, res) => {
         const deletedList = await ListModel.findByIdAndDelete(listId);
         if (deletedList) {
             await CardModel.deleteMany({ list: listId })
+            await logActivity(deletedList.board, req.userId, `permanently deleted list "${deletedList.title}"`);
             res.status(200).json({ message: "List permanently deleted", payload: deletedList })
         } else {
             res.status(404).json({ message: "List not found" })

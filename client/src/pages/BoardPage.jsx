@@ -5,6 +5,7 @@ import { useAuthStore } from "../context/AuthContext"
 import Board from "../components/Board"
 import CalendarView from "../components/CalendarView"
 import TrashView from "../components/TrashView"
+import ActivityView from "../components/ActivityView"
 import InviteModal from "../components/InviteModal"
 import MembersModal from "../components/MembersModal"
 import * as socketService from "../socket/socketService"
@@ -54,7 +55,7 @@ function BoardPage() {
   }
 
   useEffect(() => {
-    if (!view || !["board", "my-tasks", "calendar", "trash"].includes(view)) {
+    if (!view || !["board", "my-tasks", "calendar", "trash", "activity"].includes(view)) {
       navigate(`/board/${id}/board`, { replace: true })
     }
   }, [id, view, navigate])
@@ -182,6 +183,18 @@ function BoardPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
             </svg>
             Calendar
+          </button>
+          <button 
+            onClick={() => navigate(`/board/${id}/activity`)}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+              currentView === "activity"
+                ? "bg-primary-50 text-primary-600 font-semibold"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+            }`}>
+            <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Activity Logs
           </button>
           <button 
             onClick={() => navigate(`/board/${id}/trash`)}
@@ -331,6 +344,8 @@ function BoardPage() {
         {/* ─── BOARD CANVAS / VIEWS ───────────────────────────── */}
         {currentView === "calendar" ? (
           <CalendarView searchQuery={searchQuery} />
+        ) : currentView === "activity" ? (
+          <ActivityView boardId={id} />
         ) : currentView === "trash" ? (
           <TrashView boardId={id} />
         ) : (

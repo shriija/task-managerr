@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { BoardModel } from "../models/Board.js";
 import { UserModel } from "../models/User.js";
 import { InviteTokenModel } from "../models/InviteToken.js";
+import { logActivity } from "../utils/activityLogger.js";
 
 // ── 1. Invite by registered email ─────────────────────────────
 // Looks up the user by their login email and adds them to board.members directly.
@@ -48,6 +49,9 @@ export const inviteByEmail = async (req, res) => {
     // Add to members
     board.members.push(invitee._id);
     await board.save();
+
+    // Log invite activity
+    await logActivity(boardId, req.userId, `added user ${invitee.name} (${invitee.email}) to the board`);
 
     // Return updated board with populated members
     const updatedBoard = await BoardModel.findById(boardId)
@@ -143,6 +147,9 @@ export const acceptInvite = async (req, res) => {
     // Add to members
     board.members.push(req.userId);
     await board.save();
+
+    // Log join activity
+    await logActivity(board._id, req.userId, "joined the board via invite link");
 
     res.status(200).json({
       message: "You have joined the board!",

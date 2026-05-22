@@ -132,12 +132,12 @@ function Modal({ card, listId, onClose }) {
                  bg-black/40 backdrop-blur-sm"
     >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4
-                      overflow-hidden">
+                      overflow-hidden max-h-[90vh] flex flex-col">
 
         {/* Header accent */}
-        <div className="h-1.5 bg-linear-to-r from-primary-400 via-primary-500 to-primary-600" />
+        <div className="h-1.5 shrink-0 bg-linear-to-r from-primary-400 via-primary-500 to-primary-600" />
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto">
 
           {/* Title */}
           <input
@@ -156,7 +156,7 @@ function Modal({ card, listId, onClose }) {
 
           {/* Status & Assignee Row */}
           <div className="grid grid-cols-2 gap-4 mb-5">
-            
+
             {/* Status Select */}
             <div>
               <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">
@@ -181,8 +181,8 @@ function Modal({ card, listId, onClose }) {
               <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">
                 {board?.allowMultipleAssignees ? "Assignees" : "Assignee"}
               </label>
-              
-              <div 
+
+              <div
                 onClick={() => canAssignOthers && setDropdownOpen(!dropdownOpen)}
                 className={`w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
                            text-gray-700 bg-white flex items-center justify-between
@@ -212,7 +212,7 @@ function Modal({ card, listId, onClose }) {
                         <div key={a._id || i} className="w-6 h-6 rounded-full border-2 border-white
                                       bg-linear-to-br from-primary-400 to-primary-600
                                       flex items-center justify-center shrink-0 text-white text-[10px] font-bold"
-                             title={a.name}>
+                          title={a.name}>
                           {a.avatar ? (
                             <img src={a.avatar} alt="" className="w-full h-full rounded-full object-cover" />
                           ) : (
@@ -230,7 +230,7 @@ function Modal({ card, listId, onClose }) {
                     <span className="text-gray-400">Unassigned</span>
                   )
                 )}
-                
+
                 <div className="flex items-center gap-1.5 ml-2">
                   {canAssignOthers && ((!board?.allowMultipleAssignees && assignedTo) || (board?.allowMultipleAssignees && assignees.length > 0)) && (
                     <button
@@ -280,10 +280,10 @@ function Modal({ card, listId, onClose }) {
                       <div className="text-center py-4 text-xs text-gray-400">No users found</div>
                     ) : (
                       (searchTerm ? searchResults : collaborators).map((user) => {
-                        const isSelected = board?.allowMultipleAssignees 
+                        const isSelected = board?.allowMultipleAssignees
                           ? assignees.some(a => a._id === user._id)
                           : assignedTo?._id === user._id;
-                          
+
                         return (
                           <div
                             key={user._id}
