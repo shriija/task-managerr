@@ -366,6 +366,27 @@ export const useBoardStore = create((set, get) => ({
     }
   },
 
+  syncCardUpdate: (updatedCard) => {
+    const boardId = get().board?._id
+    const cardId = updatedCard._id
+    const listId = updatedCard.list
+
+    set({
+      lists: get().lists.map(l =>
+        l._id === listId
+          ? {
+              ...l,
+              cards: l.cards.map(c => c._id === cardId ? updatedCard : c)
+            }
+          : l
+      )
+    })
+
+    if (boardId) {
+      socketService.emitCardUpdated(boardId, { cardId, listId, updates: updatedCard })
+    }
+  },
+
   moveCard: (cardId, fromListId, toListId, newPosition) => {
 
   const boardId = get().board?._id

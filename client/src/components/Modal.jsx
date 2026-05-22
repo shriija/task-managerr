@@ -10,6 +10,7 @@ function Modal({ card, listId, onClose }) {
 
   const updateCard = useBoardStore(s => s.updateCard)
   const deleteCard = useBoardStore(s => s.deleteCard)
+  const syncCardUpdate = useBoardStore(s => s.syncCardUpdate)
   const board = useBoardStore(s => s.board)
 
   const [title, setTitle] = useState(card?.title || "")
@@ -22,6 +23,11 @@ function Modal({ card, listId, onClose }) {
   const [assignedTo, setAssignedTo] = useState(card?.assignedTo || null)
   const [assignees, setAssignees] = useState(card?.assignees || [])
   const [localCard, setLocalCard] = useState(card)
+
+  const handleCardUpdate = (updatedCard) => {
+    setLocalCard(updatedCard)
+    syncCardUpdate(updatedCard)
+  }
 
   const [searchTerm, setSearchTerm] = useState("")
   const [searchResults, setSearchResults] = useState([])
@@ -346,10 +352,10 @@ function Modal({ card, listId, onClose }) {
           </div>
 
           {/* Attachments */}
-          <AttachmentsSection card={localCard} canEdit={canAssignOthers} onCardUpdate={setLocalCard} />
+          <AttachmentsSection card={localCard} canEdit={canAssignOthers} onCardUpdate={handleCardUpdate} />
 
           {/* Remarks */}
-          <RemarksSection card={localCard} canEdit={canAssignOthers} onCardUpdate={setLocalCard} />
+          <RemarksSection card={localCard} canEdit={canAssignOthers} onCardUpdate={handleCardUpdate} />
 
           {/* Due Date & Priority Row */}
           <div className="grid grid-cols-2 gap-4 mb-6">
