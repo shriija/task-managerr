@@ -193,7 +193,7 @@ sequenceDiagram
     S->>S: bcrypt.compare(password, user.password)
     alt Credentials valid
         S->>S: jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1d" })
-        S-->>C: 200 { payload: user } + Set-Cookie: token=<JWT>; HttpOnly; SameSite=Lax
+        S-->>C: 200 { payload: user } + Set-Cookie: token=JWT; HttpOnly; SameSite=Lax
         C->>C: AuthContext.setUser(user)
         C-->>U: Redirect to /dashboard
     else Invalid credentials

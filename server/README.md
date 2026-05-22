@@ -227,10 +227,10 @@ sequenceDiagram
     S->>DB: UserModel.findOne({ email })
     S->>S: bcrypt.compare(password, user.password)
     S->>S: jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1d" })
-    S-->>U: 200 { payload: user } + Set-Cookie: token=<JWT>; HttpOnly; SameSite=Lax; Max-Age=7d
+    S-->>U: 200 { payload: user } + Set-Cookie: token=JWT; HttpOnly; SameSite=Lax; Max-Age=7d
 
     Note over U,DB: ── Protected Request ──
-    U->>S: GET /board-api/ (Cookie: token=<JWT> auto-sent)
+    U->>S: GET /board-api/ (Cookie: token=JWT auto-sent)
     S->>S: verifyToken → jwt.verify → req.userId
     S->>DB: BoardModel.find({ owner: req.userId })
     S-->>U: 200 { payload: boards }

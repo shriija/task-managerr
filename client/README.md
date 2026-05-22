@@ -596,7 +596,7 @@ sequenceDiagram
 
     ZS->>AX: axios.get(url, { withCredentials: true })
     Note over AX: withCredentials sends HttpOnly cookie automatically
-    AX->>MW: HTTP Request + Cookie: token=<JWT>
+    AX->>MW: HTTP Request + Cookie: token=JWT
     MW->>MW: express.json() — parse body
     MW->>MW: CookieParser() — parse cookies
     MW->>MW: cors() — set CORS headers
