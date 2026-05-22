@@ -50,7 +50,6 @@ function Loginpage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Password</label>
-              <a href="#" className="text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors">Forgot password?</a>
             </div>
             <input 
               type="password" 
@@ -58,16 +57,6 @@ function Loginpage() {
               {...register("password", { required: true })} 
               className="w-full bg-slate-50/50 border border-slate-200 focus:border-primary-500 focus:bg-white rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-all"
             />
-          </div>
-
-          {/* Remember Me */}
-          <div className="flex items-center">
-            <input 
-              id="remember-me" 
-              type="checkbox" 
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded cursor-pointer" 
-            />
-            <label htmlFor="remember-me" className="ml-2.5 text-sm font-medium text-slate-600 cursor-pointer">Remember me</label>
           </div>
 
           {/* Submit Button */}

@@ -3,6 +3,8 @@ import { useBoardStore } from "../context/BoardContext"
 import { useAuthStore } from "../context/AuthContext"
 import { API_URL } from "../services/api"
 import axios from "axios"
+import AttachmentsSection from "./AttachmentsSection"
+import RemarksSection from "./RemarksSection"
 
 function Modal({ card, listId, onClose }) {
 
@@ -19,6 +21,7 @@ function Modal({ card, listId, onClose }) {
   const [status, setStatus] = useState(card?.status || "to do")
   const [assignedTo, setAssignedTo] = useState(card?.assignedTo || null)
   const [assignees, setAssignees] = useState(card?.assignees || [])
+  const [localCard, setLocalCard] = useState(card)
 
   const [searchTerm, setSearchTerm] = useState("")
   const [searchResults, setSearchResults] = useState([])
@@ -341,6 +344,12 @@ function Modal({ card, listId, onClose }) {
                          focus:border-primary-300 transition-all resize-none ${!canAssignOthers ? "bg-gray-50/50 cursor-not-allowed" : ""}`}
             />
           </div>
+
+          {/* Attachments */}
+          <AttachmentsSection card={localCard} canEdit={canAssignOthers} onCardUpdate={setLocalCard} />
+
+          {/* Remarks */}
+          <RemarksSection card={localCard} canEdit={canAssignOthers} onCardUpdate={setLocalCard} />
 
           {/* Due Date & Priority Row */}
           <div className="grid grid-cols-2 gap-4 mb-6">
