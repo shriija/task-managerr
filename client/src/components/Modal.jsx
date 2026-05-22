@@ -6,6 +6,19 @@ import axios from "axios"
 import AttachmentsSection from "./AttachmentsSection"
 import RemarksSection from "./RemarksSection"
 
+/**
+ * Modal Component
+ * 
+ * Renders the detailed view of a Card over the board.
+ * Provides inputs to edit the title, description, status, priority, due date, and assignees.
+ * Handles API calls to search for users to assign and incorporates the Attachments and 
+ * Remarks sections.
+ *
+ * @param {Object} props
+ * @param {Object} props.card - The card data to be displayed/edited.
+ * @param {string} props.listId - The ID of the list the card belongs to.
+ * @param {Function} props.onClose - Callback to close the modal.
+ */
 function Modal({ card, listId, onClose }) {
 
   const updateCard = useBoardStore(s => s.updateCard)
@@ -13,6 +26,7 @@ function Modal({ card, listId, onClose }) {
   const syncCardUpdate = useBoardStore(s => s.syncCardUpdate)
   const board = useBoardStore(s => s.board)
 
+  // Local component state initialized with card data
   const [title, setTitle] = useState(card?.title || "")
   const [description, setDescription] = useState(card?.description || "")
   const [dueDate, setDueDate] = useState(
@@ -24,11 +38,16 @@ function Modal({ card, listId, onClose }) {
   const [assignees, setAssignees] = useState(card?.assignees || [])
   const [localCard, setLocalCard] = useState(card)
 
+  /**
+   * Called by child components (Attachments, Remarks) when the card document is heavily updated.
+   * Syncs the update locally and propagates it globally via Socket.io.
+   */
   const handleCardUpdate = (updatedCard) => {
     setLocalCard(updatedCard)
     syncCardUpdate(updatedCard)
   }
 
+  // Assignee Search Dropdown State
   const [searchTerm, setSearchTerm] = useState("")
   const [searchResults, setSearchResults] = useState([])
   const [searchLoading, setSearchLoading] = useState(false)
@@ -38,10 +57,12 @@ function Modal({ card, listId, onClose }) {
   const titleRef = useRef(null)
   const assigneeRef = useRef(null)
 
+  // Auto-focus title on open
   useEffect(() => {
     titleRef.current?.focus()
   }, [])
 
+  // Close modal on Escape key press
   useEffect(() => {
     const handler = (e) => {
       if (e.key === "Escape") onClose()
@@ -50,6 +71,7 @@ function Modal({ card, listId, onClose }) {
     return () => window.removeEventListener("keydown", handler)
   }, [onClose])
 
+  // Close assignee dropdown if clicked outside
   useEffect(() => {
     const handleOutsideClick = (e) => {
       if (assigneeRef.current && !assigneeRef.current.contains(e.target)) {
@@ -60,7 +82,7 @@ function Modal({ card, listId, onClose }) {
     return () => window.removeEventListener("mousedown", handleOutsideClick)
   }, [])
 
-  // User search effect
+  // User search effect: Debounces the input and fetches from the backend
   useEffect(() => {
     if (!searchTerm.trim()) {
       setSearchResults([])
@@ -72,7 +94,7 @@ function Modal({ card, listId, onClose }) {
         const res = await axios.get(`${API_URL}/user-api/search?q=${searchTerm.trim()}`, { withCredentials: true })
         setSearchResults(res.data.payload || [])
       } catch (err) {
-        // Search error
+        // Search error silently caught to not disrupt UI flow
       } finally {
         setSearchLoading(false)
       }
@@ -80,10 +102,12 @@ function Modal({ card, listId, onClose }) {
     return () => clearTimeout(delayDebounce)
   }, [searchTerm])
 
+  /** Handle clicking the dark background to close the modal */
   const handleBackdropClick = (e) => {
     if (e.target === backdropRef.current) onClose()
   }
 
+  /** Gathers all updated fields and commits the update globally */
   const handleSave = () => {
     updateCard(card._id, listId, {
       title: title.trim() || card.title,
@@ -102,7 +126,9 @@ function Modal({ card, listId, onClose }) {
     onClose()
   }
 
-  // Get board owner and members for collaborated list
+  // ── Permissions Logic ─────────────────────────────────────
+  
+  // Aggregate all users involved in the board for the default assignee list
   const owner = board?.owner
   const members = board?.members || []
   let collaborators = []
@@ -113,11 +139,13 @@ function Modal({ card, listId, onClose }) {
     }
   })
 
+  // Check if current user is an admin or owner
   const currentUser = useAuthStore(s => s.currentUser)
   const isBoardOwner = currentUser?._id === (board?.owner?._id || board?.owner)
   const isBoardAdmin = board?.admins?.some(a => (a._id || a) === currentUser?._id)
   const canAssignOthers = isBoardOwner || isBoardAdmin
 
+  // If a member is just a normal member, they can only see/assign themselves
   if (!canAssignOthers) {
     collaborators = collaborators.filter(c => c._id === currentUser?._id)
   }
@@ -137,7 +165,7 @@ function Modal({ card, listId, onClose }) {
         {/* Header accent */}
         <div className="h-1.5 shrink-0 bg-linear-to-r from-primary-400 via-primary-500 to-primary-600" />
 
-        <div className="p-6 overflow-y-auto">
+        <div className="p-6 overflow-y-auto flex-1 min-h-0">
 
           {/* Title */}
           <input
@@ -189,6 +217,7 @@ function Modal({ card, listId, onClose }) {
                            hover:border-primary-300 transition-all shadow-sm min-h-11.5
                            ${canAssignOthers ? "cursor-pointer" : "cursor-not-allowed bg-gray-50/50"}`}
               >
+                {/* Visualizer for single vs multiple assignees */}
                 {!board?.allowMultipleAssignees ? (
                   assignedTo ? (
                     <div className="flex items-center gap-2 overflow-hidden">
@@ -252,7 +281,7 @@ function Modal({ card, listId, onClose }) {
                 </div>
               </div>
 
-              {/* Dropdown Overlay */}
+              {/* Dropdown Overlay: Users search */}
               {dropdownOpen && (
                 <div className="absolute top-[102%] left-0 right-0 z-50 mt-1 bg-white border border-gray-100
                                 rounded-2xl shadow-xl p-3 max-h-56 overflow-y-auto animate-fade-in-up">
@@ -351,10 +380,8 @@ function Modal({ card, listId, onClose }) {
             />
           </div>
 
-          {/* Attachments */}
+          {/* Attachments & Remarks handled by their own components */}
           <AttachmentsSection card={localCard} canEdit={canAssignOthers} onCardUpdate={handleCardUpdate} />
-
-          {/* Remarks */}
           <RemarksSection card={localCard} canEdit={canAssignOthers} onCardUpdate={handleCardUpdate} />
 
           {/* Due Date & Priority Row */}

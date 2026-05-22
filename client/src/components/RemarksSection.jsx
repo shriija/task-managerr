@@ -4,15 +4,31 @@ import { API_URL } from "../services/api"
 import { useAuthStore } from "../context/AuthContext"
 import toast from "react-hot-toast"
 
+/**
+ * RemarksSection Component
+ * 
+ * Handles the display and creation of remarks (comments) on a specific card.
+ * Remarks can include text and/or file attachments. Supports viewing past remarks,
+ * calculating relative timestamps, and deleting remarks by the author or admins.
+ *
+ * @param {Object} props
+ * @param {Object} props.card - The card data containing the remarks sub-schema array.
+ * @param {boolean} props.canEdit - Boolean determining if the current user has permissions to modify the card.
+ * @param {Function} props.onCardUpdate - Callback fired after successfully adding/deleting a remark to sync UI.
+ */
 function RemarksSection({ card, canEdit, onCardUpdate }) {
   const [showRemarks, setShowRemarks] = useState(false)
   const [text, setText] = useState("")
   const [posting, setPosting] = useState(false)
   const fileRef = useRef(null)
   const [files, setFiles] = useState([])
+  
   const currentUser = useAuthStore(s => s.currentUser)
   const remarks = card?.remarks || []
 
+  /**
+   * Helper function to convert ISO timestamps into relative time (e.g., "5m ago", "2d ago").
+   */
   const timeAgo = (date) => {
     const diff = Date.now() - new Date(date).getTime()
     const mins = Math.floor(diff / 60000)
@@ -24,12 +40,18 @@ function RemarksSection({ card, canEdit, onCardUpdate }) {
     return `${days}d ago`
   }
 
+  /** Handle selection of multiple files for a new remark. Restricts to 5 files maximum. */
   const handleFileSelect = (e) => {
     const selected = Array.from(e.target.files || [])
     if (selected.length > 5) { toast.error("Max 5 files"); return }
     setFiles(selected)
   }
 
+  /**
+   * Submit a new remark.
+   * Compiles the text and any files into a FormData object, streams them to Cloudinary 
+   * via the backend, and appends the result to the card.
+   */
   const handlePost = async () => {
     if (!text.trim() && files.length === 0) return
     try {
@@ -37,12 +59,17 @@ function RemarksSection({ card, canEdit, onCardUpdate }) {
       const formData = new FormData()
       formData.append("text", text.trim())
       for (const f of files) formData.append("files", f)
+
       const res = await axios.post(
         `${API_URL}/card-api/remarks/${card._id}`,
         formData,
         { withCredentials: true, headers: { "Content-Type": "multipart/form-data" } }
       )
+      
+      // Update global store via the modal's callback
       onCardUpdate(res.data.payload)
+      
+      // Reset form
       setText("")
       setFiles([])
       if (fileRef.current) fileRef.current.value = ""
@@ -54,6 +81,7 @@ function RemarksSection({ card, canEdit, onCardUpdate }) {
     }
   }
 
+  /** Delete a specific remark (only accessible to the remark author or board admins) */
   const handleDelete = async (remarkId) => {
     try {
       const res = await axios.delete(
@@ -69,6 +97,7 @@ function RemarksSection({ card, canEdit, onCardUpdate }) {
 
   return (
     <div className="mb-5">
+      {/* Toggle button to show/hide the remarks thread */}
       <button
         type="button"
         onClick={() => setShowRemarks(!showRemarks)}
@@ -83,23 +112,31 @@ function RemarksSection({ card, canEdit, onCardUpdate }) {
         </svg>
       </button>
 
+      {/* Expanded Remarks Section */}
       {showRemarks && (
         <div className="mt-3 border border-gray-100 rounded-xl overflow-hidden">
-          {/* Existing remarks */}
+          
+          {/* List of existing remarks */}
           {remarks.length > 0 && (
             <div className="max-h-52 overflow-y-auto divide-y divide-gray-50">
               {remarks.map((r) => (
                 <div key={r._id} className="p-3 hover:bg-gray-50/50 transition-colors group">
                   <div className="flex items-start gap-2">
+                    
+                    {/* Author Avatar */}
                     <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-[9px] font-bold shrink-0 mt-0.5">
                       {r.author?.avatar
                         ? <img src={r.author.avatar} alt="" className="w-full h-full rounded-full object-cover" />
                         : (r.author?.name?.charAt(0).toUpperCase() || "?")}
                     </div>
+
                     <div className="flex-1 min-w-0">
+                      {/* Author Name and Timestamp */}
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-gray-700">{r.author?.name || "Unknown"}</span>
                         <span className="text-[10px] text-gray-400">{timeAgo(r.createdAt)}</span>
+                        
+                        {/* Only allow the author or an admin to delete */}
                         {(r.author?._id === currentUser?._id || canEdit) && (
                           <button onClick={() => handleDelete(r._id)}
                             className="ml-auto text-gray-300 hover:text-red-500 text-[10px] opacity-0 group-hover:opacity-100 transition-all cursor-pointer">
@@ -107,7 +144,11 @@ function RemarksSection({ card, canEdit, onCardUpdate }) {
                           </button>
                         )}
                       </div>
+
+                      {/* Remark Text */}
                       {r.text && <p className="text-xs text-gray-600 mt-1 whitespace-pre-wrap">{r.text}</p>}
+                      
+                      {/* Remark Attachments */}
                       {r.attachments?.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {r.attachments.map((att) => (
@@ -119,6 +160,7 @@ function RemarksSection({ card, canEdit, onCardUpdate }) {
                         </div>
                       )}
                     </div>
+
                   </div>
                 </div>
               ))}
@@ -129,7 +171,7 @@ function RemarksSection({ card, canEdit, onCardUpdate }) {
             <div className="p-4 text-center text-xs text-gray-400">No remarks yet</div>
           )}
 
-          {/* Add remark form */}
+          {/* New Remark Input Form */}
           <div className="border-t border-gray-100 p-3 bg-gray-50/50">
             <textarea
               value={text}
@@ -138,6 +180,8 @@ function RemarksSection({ card, canEdit, onCardUpdate }) {
               rows={2}
               className="w-full border border-gray-200 rounded-xl p-2.5 text-xs text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary-300 transition-all resize-none bg-white"
             />
+            
+            {/* Show staged files to be uploaded with the remark */}
             {files.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-1.5">
                 {files.map((f, i) => (
@@ -145,6 +189,7 @@ function RemarksSection({ card, canEdit, onCardUpdate }) {
                 ))}
               </div>
             )}
+
             <div className="flex items-center justify-between mt-2">
               <div className="flex items-center gap-2">
                 <button type="button" onClick={() => fileRef.current?.click()}

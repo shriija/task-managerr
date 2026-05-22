@@ -7,24 +7,36 @@ import dayGridPlugin from "@fullcalendar/daygrid"
 import timeGridPlugin from "@fullcalendar/timegrid"
 import interactionPlugin, { Draggable } from "@fullcalendar/interaction"
 
+/**
+ * CalendarView Component
+ * 
+ * Displays all tasks in a board using a calendar layout (FullCalendar).
+ * Provides drag-and-drop scheduling for unscheduled tasks, day-specific task viewing,
+ * and quick-add functionality for tasks on specific dates.
+ *
+ * @param {Object} props
+ * @param {string} props.searchQuery - Global search query to filter tasks.
+ */
 function CalendarView({ searchQuery }) {
   const lists = useBoardStore(s => s.lists)
   const updateCard = useBoardStore(s => s.updateCard)
   const addCard = useBoardStore(s => s.addCard)
 
+  // Modal state for editing a specific card
   const [modalCard, setModalCard] = useState(null)
   const [modalListId, setModalListId] = useState(null)
 
-  // Day tasks modal state
+  // Day tasks modal state (opens when a calendar day is clicked)
   const [selectedDate, setSelectedDate] = useState(null)
   const [isDayModalOpen, setIsDayModalOpen] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState("")
   const [selectedListId, setSelectedListId] = useState("")
   const [addError, setAddError] = useState("")
 
+  // Ref for the DOM container of unscheduled external events
   const externalEventsRef = useRef(null)
 
-  // Initialize Draggable for external events (Unscheduled tasks)
+  // Initialize Draggable for external events (Unscheduled tasks in the sidebar)
   useEffect(() => {
     let draggable = null
     if (externalEventsRef.current) {
@@ -37,24 +49,29 @@ function CalendarView({ searchQuery }) {
           return {
             id: cardId,
             title: eventEl.innerText,
-            create: true,
+            create: true, // Creates a new event when dropped
             extendedProps: { listId }
           }
         }
       })
     }
     return () => {
+      // Cleanup Draggable instance on unmount
       if (draggable) draggable.destroy()
     }
   }, [])
 
-  // Split cards into scheduled and unscheduled
+  /**
+   * Separates all cards in the board into "scheduled" (has dueDate) and 
+   * "unscheduled" (no dueDate). Applies the global search query.
+   */
   const { scheduledCards, unscheduledCards } = useMemo(() => {
     const scheduled = []
     const unscheduled = []
 
     lists.forEach(list => {
       ;(list.cards || []).forEach(card => {
+        // Filter by search query if present
         if (searchQuery) {
           const query = searchQuery.toLowerCase()
           const titleMatch = card.title?.toLowerCase().includes(query)
@@ -74,7 +91,9 @@ function CalendarView({ searchQuery }) {
     return { scheduledCards: scheduled, unscheduledCards: unscheduled }
   }, [lists, searchQuery])
 
-  // Dynamic selectedDateTasks calculation
+  /**
+   * Filters scheduled cards to find only those due on the currently selected date.
+   */
   const selectedDateTasks = useMemo(() => {
     if (!selectedDate) return []
     return scheduledCards.filter(({ card }) => {
@@ -85,6 +104,7 @@ function CalendarView({ searchQuery }) {
     })
   }, [scheduledCards, selectedDate])
 
+  /** Checks if the selected date is in the past (to block scheduling in the past) */
   const isPastDate = useMemo(() => {
     if (!selectedDate) return false
     const today = new Date()
@@ -94,6 +114,7 @@ function CalendarView({ searchQuery }) {
     return targetDate < today
   }, [selectedDate])
 
+  /** Handle adding a new task directly from the Day Modal */
   const handleAddTask = async (e) => {
     e.preventDefault()
     if (!newTaskTitle.trim()) {
@@ -121,7 +142,10 @@ function CalendarView({ searchQuery }) {
     }
   }
 
-  // Handlers
+  /**
+   * Handle receiving an external event (unscheduled task dragged onto the calendar)
+   * Dispatches the update action to set the task's due date to the dropped day.
+   */
   const handleEventReceive = (info) => {
     const cardId = info.event.id
     const listId = info.event.extendedProps.listId
@@ -153,7 +177,7 @@ function CalendarView({ searchQuery }) {
   return (
     <div className="flex flex-1 h-full overflow-hidden bg-gray-50/30">
       
-      {/* Sidebar: Unscheduled Tasks */}
+      {/* ─── SIDEBAR: Unscheduled Tasks ─────────────────────────────────────── */}
       <div className="w-72 bg-white/80 backdrop-blur-xl border-r border-gray-100 flex flex-col lg:flex shrink-0">
         <div className="p-5 border-b border-gray-100 bg-gray-50/50">
           <h3 className="font-bold text-gray-800 flex items-center gap-2">
@@ -202,7 +226,7 @@ function CalendarView({ searchQuery }) {
         </div>
       </div>
 
-      {/* Main Calendar Area */}
+      {/* ─── MAIN CALENDAR AREA ─────────────────────────────────────────────── */}
       <div className="flex-1 p-6 overflow-hidden flex flex-col bg-white relative">
         <style>{`
           .fc {
@@ -274,7 +298,7 @@ function CalendarView({ searchQuery }) {
             droppable={true}
             eventReceive={handleEventReceive}
             height="100%"
-            // Hide event pills by not passing `events={...}` at all.
+            // Dynamic cell coloring based on task completion status
             dayCellClassNames={(arg) => {
               const dayTasks = scheduledCards.filter(({ card }) => {
                 const d = new Date(card.dueDate)
@@ -304,6 +328,7 @@ function CalendarView({ searchQuery }) {
                 ? "bg-red-100 cursor-pointer hover:bg-red-200 transition-colors" 
                 : "bg-violet-300 cursor-pointer hover:bg-primary-100/50 transition-colors"
             }}
+            // Render custom content inside day cells (Status badges)
             dayCellContent={(arg) => {
               const dayTasks = scheduledCards.filter(({ card }) => {
                 const d = new Date(card.dueDate)
@@ -365,7 +390,7 @@ function CalendarView({ searchQuery }) {
         </div>
       </div>
 
-      {/* Day Tasks Modal */}
+      {/* ─── DAY TASKS MODAL ────────────────────────────────────────────────── */}
       {isDayModalOpen && selectedDate && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/30 backdrop-blur-[2px]">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in-up">
@@ -381,6 +406,7 @@ function CalendarView({ searchQuery }) {
               </button>
             </div>
             
+            {/* List of Tasks for the Selected Day */}
             <div className="p-5 max-h-[40vh] overflow-y-auto custom-scrollbar space-y-3">
               {selectedDateTasks.length === 0 ? (
                 <div className="text-center py-6 text-gray-400 text-sm">
@@ -498,7 +524,7 @@ function CalendarView({ searchQuery }) {
         </div>
       )}
 
-      {/* Main Task Edit Modal */}
+      {/* Main Task Edit Modal (Opens when a task is clicked) */}
       {modalCard && (
         <Modal
           card={modalCard}

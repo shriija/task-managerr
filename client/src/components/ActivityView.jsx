@@ -1,11 +1,21 @@
 import React, { useEffect, useState } from "react"
 import { useBoardStore } from "../context/BoardContext"
 
+/**
+ * ActivityView Component
+ * 
+ * Displays a chronological log of all actions performed within a specific board.
+ * Actions include card creation, deletion, movement, assignments, etc.
+ *
+ * @param {Object} props
+ * @param {string} props.boardId - The ID of the currently viewed board.
+ */
 function ActivityView({ boardId }) {
   const activities = useBoardStore((s) => s.activities)
   const fetchActivities = useBoardStore((s) => s.fetchActivities)
   const [loading, setLoading] = useState(true)
 
+  // Fetch activities when the component mounts or when the boardId changes
   useEffect(() => {
     if (boardId) {
       setLoading(true)
@@ -13,7 +23,10 @@ function ActivityView({ boardId }) {
     }
   }, [boardId, fetchActivities])
 
-  // Helper to format timestamps relative to current time
+  /**
+   * Formats ISO timestamp strings into human-readable relative time.
+   * e.g. "Just now", "5m ago", "Yesterday", or a full date.
+   */
   const formatRelativeTime = (dateStr) => {
     const date = new Date(dateStr)
     const now = new Date()
@@ -37,7 +50,10 @@ function ActivityView({ boardId }) {
     })
   }
 
-  // Format action text dynamically to bold quoted titles
+  /**
+   * Formats the raw action text to emphasize dynamically injected entities.
+   * Finds text wrapped in quotes (e.g. "Task Title") and applies bold styling.
+   */
   const formatActionText = (text) => {
     if (!text) return ""
     const regex = /"([^"]+)"/g
@@ -62,9 +78,14 @@ function ActivityView({ boardId }) {
     return parts.length > 0 ? parts : text
   }
 
-  // Get action styling and icon
+  /**
+   * Determines styling (colors, icons) for an activity based on keywords in its text.
+   * Used to visually differentiate creates, deletes, moves, assignments, etc.
+   */
   const getActionTypeInfo = (actionText) => {
     const text = actionText.toLowerCase()
+    
+    // Create actions (cards, lists, board)
     if (text.includes("created")) {
       return {
         bg: "bg-emerald-50 text-emerald-600 border-emerald-100",
@@ -75,6 +96,7 @@ function ActivityView({ boardId }) {
         ),
       }
     }
+    // Delete actions
     if (text.includes("delete")) {
       return {
         bg: "bg-rose-50 text-rose-600 border-rose-100",
@@ -85,6 +107,7 @@ function ActivityView({ boardId }) {
         ),
       }
     }
+    // Movement actions (drag & drop)
     if (text.includes("moved")) {
       return {
         bg: "bg-blue-50 text-blue-600 border-blue-100",
@@ -95,6 +118,7 @@ function ActivityView({ boardId }) {
         ),
       }
     }
+    // Assignment & Membership actions
     if (text.includes("assign") || text.includes("invite") || text.includes("joined") || text.includes("member")) {
       return {
         bg: "bg-purple-50 text-purple-600 border-purple-100",
@@ -105,6 +129,7 @@ function ActivityView({ boardId }) {
         ),
       }
     }
+    // Default fallback action
     return {
       bg: "bg-amber-50 text-amber-600 border-amber-100",
       icon: (
@@ -129,7 +154,7 @@ function ActivityView({ boardId }) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-linear-to-br from-slate-50/50 via-white to-slate-50/30">
       
-      {/* View Header */}
+      {/* ─── VIEW HEADER ──────────────────────────────────────────────────────── */}
       <div className="px-8 py-6 border-b border-gray-100 bg-white/50 shrink-0 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-gray-900 tracking-tight">History & Activity Logs</h2>
@@ -149,7 +174,7 @@ function ActivityView({ boardId }) {
         </button>
       </div>
 
-      {/* Main timeline container */}
+      {/* ─── TIMELINE LIST ────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-8 py-8">
         {activities.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center">
@@ -203,7 +228,7 @@ function ActivityView({ boardId }) {
                         </span>
                         {formatActionText(activity.action)}
                       </div>
-                      
+                       
                       {/* Timestamp */}
                       <span className="text-[11px] font-medium text-slate-400 mt-1.5 block tracking-wide">
                         {formatRelativeTime(activity.timestamp)}

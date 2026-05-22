@@ -3,27 +3,50 @@ import { useBoardStore } from "../context/BoardContext"
 import List from "./List"
 import Modal from "./Modal"
 
+/**
+ * Board Component
+ * 
+ * Renders the main workspace for a specific board. It retrieves the lists and board 
+ * metadata from the Zustand global store (`useBoardStore`), and displays them in a responsive grid.
+ * It also manages the state for the Card Detail Modal and handles adding new lists.
+ *
+ * @param {Object} props
+ * @param {string} props.searchQuery - Text used to filter cards globally across all lists.
+ * @param {boolean} props.filterByMe - Flag indicating whether to only show cards assigned to the current user.
+ */
 function Board({ searchQuery, filterByMe }) {
 
+  // Retrieve state and actions from the Zustand store
   const lists = useBoardStore(s => s.lists)
   const board = useBoardStore(s => s.board)
   const addList = useBoardStore(s => s.addList)
 
-  // Modal state
+  // ── Modal State ─────────────────────────────────────────
+  // Controls which card is currently open in the detailed modal view
   const [modalCard, setModalCard] = useState(null)
   const [modalListId, setModalListId] = useState(null)
   const [errorMessage, setErrorMessage] = useState("") 
 
+  /**
+   * Opens the Card Detail Modal for a specific card.
+   * Passed down as a prop to the List component.
+   */
   const handleOpenModal = (card, listId) => {
     setModalCard(card)
     setModalListId(listId)
   }
 
+  /** Closes the Card Detail Modal */
   const handleCloseModal = () => {
     setModalCard(null)
     setModalListId(null)
   }
 
+  /**
+   * Handles adding a new list to the board.
+   * Validates that the last created list has a title before allowing another one to be added
+   * to prevent users from spamming empty lists.
+   */
   const handleAddList = () => {
     const boardId = board?._id || "local"
 
@@ -77,7 +100,7 @@ function Board({ searchQuery, filterByMe }) {
         </div>
       </div>
 
-      {/* Card Detail Modal */}
+      {/* Card Detail Modal - Rendered globally over the board when active */}
       {modalCard && (
         <Modal
           card={modalCard}
