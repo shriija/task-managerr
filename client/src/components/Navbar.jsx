@@ -34,15 +34,22 @@ function Navbar() {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
 
           {/* Logo */}
-          <div
-            onClick={() => setMobileMenuOpen(true)}
-            className="flex items-center gap-3 cursor-pointer"
-          >
-            <div className="w-8 h-8 rounded-lg bg-linear-to-tr from-primary-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md shadow-primary-500/20">
+          <div className="flex items-center gap-3">
+            <div
+              onClick={() => {
+                if (window.innerWidth < 1024 && isAuthenticated) {
+                  setMobileMenuOpen(true)
+                }
+              }}
+              className={`w-8 h-8 rounded-lg bg-linear-to-tr from-primary-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md shadow-primary-500/20 ${isAuthenticated ? 'cursor-pointer lg:cursor-default' : ''}`}
+            >
               K
             </div>
 
-            <span className="font-display text-xl font-bold tracking-tight text-slate-900">
+            <span 
+              onClick={() => navigate("/")}
+              className="font-display text-xl font-bold tracking-tight text-slate-900 cursor-pointer"
+            >
               Kanvas
             </span>
           </div>
