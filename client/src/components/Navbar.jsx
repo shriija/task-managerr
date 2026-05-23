@@ -195,6 +195,16 @@ function Navbar() {
 
               <button
                 onClick={() => {
+                  navigate("/dashboard/shared")
+                  setMobileMenuOpen(false)
+                }}
+                className="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-100"
+              >
+                Shared Boards
+              </button>
+
+              <button
+                onClick={() => {
                   navigate("/create-board")
                   setMobileMenuOpen(false)
                 }}
