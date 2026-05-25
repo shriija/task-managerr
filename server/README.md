@@ -1,10 +1,10 @@
-# 🖥️ Server — Express + MongoDB Backend
+# Server — Express + MongoDB Backend
 
 This directory contains the full backend API for the Task Manager project. It is built with **Express 5**, **Mongoose 9**, **Socket.io 4**, and uses **bcryptjs** for password security, **jsonwebtoken** for session management via HttpOnly cookies, **Multer** for file parsing, and **Cloudinary** for cloud storage.
 
 ---
 
-## 📦 Packages & Dependencies
+## Packages & Dependencies
 
 ### Production Dependencies
 
@@ -32,7 +32,7 @@ This directory contains the full backend API for the Task Manager project. It is
 
 ---
 
-## 🗂️ Directory Structure
+## Directory Structure
 
 ```
 server/
@@ -77,7 +77,7 @@ server/
 
 ---
 
-## 🚀 Express Pipeline
+## Express Pipeline
 
 The request lifecycle for every API call:
 
@@ -128,7 +128,7 @@ try {
 
 ---
 
-## 🗃️ Mongoose Models
+## Mongoose Models
 
 ### `User` (`models/User.js`)
 
@@ -217,7 +217,7 @@ Manages invite links.
 
 ---
 
-## 🔐 Password Hashing (bcryptjs) & JWT (HttpOnly Cookies)
+## Password Hashing (bcryptjs) & JWT (HttpOnly Cookies)
 
 ### Password Hashing Flow
 
@@ -280,7 +280,7 @@ const verifyToken = (req, res, next) => {
 
 ---
 
-## 🛣️ REST API Endpoints, Role Filters & Payload Variables
+## REST API Endpoints, Role Filters & Payload Variables
 
 ### User API (`/user-api`)
 
@@ -360,7 +360,7 @@ All card routes require `verifyToken`.
 
 ---
 
-## 📁 Multer Config, Cloudinary Uploads & DB Rollback Strategies
+## Multer Config, Cloudinary Uploads & DB Rollback Strategies
 
 ### Multer Configuration (`utils/upload.js`)
 
@@ -431,7 +431,7 @@ Since MongoDB does not have built-in 2-phase commits outside transactions, the c
 
 ---
 
-## ⚙️ Environment Parameters
+## Environment Parameters
 
 Create a `.env` file in the `server/` directory:
 
@@ -449,17 +449,17 @@ GOOGLE_CLIENT_ID=your_google_oauth_client_id
 | Variable | Required | Description |
 |---|---|---|
 | `PORT` | No (defaults to 4001) | HTTP server port |
-| `DB_URL` | ✅ Yes | MongoDB connection string (Atlas or local) |
-| `JWT_SECRET_KEY` | ✅ Yes | Secret for signing/verifying JWTs — **never commit this** |
-| `CLIENT_URL` | ✅ Yes | Exact frontend URL including protocol and port |
-| `CLOUDINARY_CLOUD_NAME` | ✅ Yes | From Cloudinary dashboard |
-| `CLOUDINARY_API_KEY` | ✅ Yes | From Cloudinary dashboard |
-| `CLOUDINARY_API_SECRET` | ✅ Yes | From Cloudinary dashboard — **never commit this** |
-| `GOOGLE_CLIENT_ID` | ✅ Yes | Google Cloud OAuth 2.0 Client ID |
+| `DB_URL` | Yes | MongoDB connection string (Atlas or local) |
+| `JWT_SECRET_KEY` | Yes | Secret for signing/verifying JWTs — **never commit this** |
+| `CLIENT_URL` | Yes | Exact frontend URL including protocol and port |
+| `CLOUDINARY_CLOUD_NAME` | Yes | From Cloudinary dashboard |
+| `CLOUDINARY_API_KEY` | Yes | From Cloudinary dashboard |
+| `CLOUDINARY_API_SECRET` | Yes | From Cloudinary dashboard — **never commit this** |
+| `GOOGLE_CLIENT_ID` | Yes | Google Cloud OAuth 2.0 Client ID |
 
 ---
 
-## 🛠️ Local Developer Setup — Step by Step
+## Local Developer Setup — Step by Step
 
 ### Prerequisites
 - Node.js ≥ 18 (`node -v` to check)
@@ -526,7 +526,7 @@ Expected output:
 ```
 [nodemon] starting `node server.js`
 Database connected successfully
-🚀 Server running on port 4001
+Server running on port 4001
 ```
 
 ### Step 8 — Available Scripts
@@ -538,7 +538,7 @@ Database connected successfully
 
 ---
 
-## 📡 Nodemon Dev Server Configuration
+## Nodemon Dev Server Configuration
 
 Nodemon is configured via the `scripts.dev` entry in `package.json`:
 
@@ -563,7 +563,7 @@ Nodemon watches the directory recursively by default and restarts on `.js` file 
 
 ---
 
-## 🌐 Render Deployment Guide
+## Render Deployment Guide
 
 ### Step 1 — Create a Web Service on Render
 
@@ -608,7 +608,7 @@ Render free-tier services sleep after 15 minutes of inactivity. Use [UptimeRobot
 
 ---
 
-## 🔌 Socket.io Server Events Reference (`sockets/boardSocket.js`)
+## Socket.io Server Events Reference (`sockets/boardSocket.js`)
 
 All connected clients join a Socket.io room named after their `boardId`. Events flow from one client through the server and are broadcast to all other clients in the same room.
 

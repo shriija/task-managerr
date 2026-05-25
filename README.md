@@ -1,10 +1,10 @@
-# 📋 Task Manager — Full-Stack Kanban Application
+# Task Manager — Full-Stack Kanban Application
 
 A full-stack, real-time collaborative Kanban task management application built with **React + Vite** on the frontend and **Node.js + Express + MongoDB** on the backend. It supports Google OAuth, JWT-based session management via HttpOnly cookies, Cloudinary file uploads, Socket.io real-time sync, and a soft-delete trash system.
 
 ---
 
-## 📁 Monorepo Structure
+## Monorepo Structure
 
 ```
 task-managerr/
@@ -37,7 +37,7 @@ task-managerr/
 
 ---
 
-## ✨ Feature Overview
+## Feature Overview
 
 | Feature | Details |
 |---|---|
@@ -54,7 +54,7 @@ task-managerr/
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Frontend (`/client`)
 
@@ -92,7 +92,7 @@ task-managerr/
 
 ---
 
-## 🔐 Authentication & Security Architecture
+## Authentication & Security Architecture
 
 ```
 Client                              Server
@@ -117,7 +117,7 @@ Client                              Server
 
 ---
 
-## 🔌 Real-Time Events (Socket.io)
+## Real-Time Events (Socket.io)
 
 All board collaborators join a Socket.io room identified by `boardId`. Any mutating action (add/update/delete card, list, or board setting) emits the corresponding event to the room.
 
@@ -137,7 +137,7 @@ All board collaborators join a Socket.io room identified by `boardId`. Any mutat
 
 ---
 
-## 🚀 Quick Start (Local Development)
+## Quick Start (Local Development)
 
 ### Prerequisites
 
@@ -174,7 +174,7 @@ npm run dev              # starts on http://localhost:5173
 
 ---
 
-## 📖 Sub-Directory Documentation
+## Sub-Directory Documentation
 
 | README | Contents |
 |---|---|
@@ -183,7 +183,7 @@ npm run dev              # starts on http://localhost:5173
 
 ---
 
-## 🌐 Deployment
+## Deployment
 
 | Tier | Platform | Notes |
 |---|---|---|
@@ -194,6 +194,6 @@ npm run dev              # starts on http://localhost:5173
 
 ---
 
-## 📄 License
+## License
 
 ISC

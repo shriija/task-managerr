@@ -1,10 +1,10 @@
-# ⚛️ Client — React + Vite Frontend
+# Client — React + Vite Frontend
 
 This directory contains the full frontend application for the Task Manager project. It is a single-page application (SPA) built with **React 19**, **Vite 7**, **Tailwind CSS 4**, and **Zustand 5** for global state management.
 
 ---
 
-## 📦 Packages & Dependencies
+## Packages & Dependencies
 
 ### Production Dependencies
 
@@ -43,7 +43,7 @@ This directory contains the full frontend application for the Task Manager proje
 
 ---
 
-## 🗂️ Directory Structure & Design System
+## Directory Structure & Design System
 
 ```
 client/
@@ -103,7 +103,7 @@ client/
 
 ---
 
-## 🏗️ Layout Structure & Routing
+## Layout Structure & Routing
 
 The application uses **React Router v7** with `createBrowserRouter`. All authenticated routes are wrapped in `<ProtectedRoute>`, which checks the `isAuthenticated` flag from the Zustand auth store.
 
@@ -132,7 +132,7 @@ The application uses **React Router v7** with `createBrowserRouter`. All authent
 
 ---
 
-## 🎨 Design System
+## Design System
 
 The project uses **Tailwind CSS v4** (Vite plugin — no `tailwind.config.js` needed). The global stylesheet is `src/index.css`.
 
@@ -153,7 +153,7 @@ The project uses **Tailwind CSS v4** (Vite plugin — no `tailwind.config.js` ne
 
 ---
 
-## 🗃️ Zustand Store Actions, Lifecycle Triggers & Data Flows
+## Zustand Store Actions, Lifecycle Triggers & Data Flows
 
 ### `useAuthStore` (`src/context/AuthContext.js`)
 
@@ -230,7 +230,7 @@ LoginPage form submit
 
 ---
 
-## 🌐 Axios Setup, Global Response Interceptors & Endpoints
+## Axios Setup, Global Response Interceptors & Endpoints
 
 ### Base URL Configuration (`src/services/api.js`)
 
@@ -317,7 +317,7 @@ All Zustand actions use `axios` with `{ withCredentials: true }` to ensure the H
 
 ---
 
-## 📋 React UI Components — Forms & Validation
+## React UI Components — Forms & Validation
 
 ### Registration Form (`RegisterPage.jsx`)
 - Library: `react-hook-form`
@@ -341,7 +341,7 @@ All Zustand actions use `axios` with `{ withCredentials: true }` to ensure the H
 
 ---
 
-## 🔒 Security Matrix (Client-Side)
+## Security Matrix (Client-Side)
 
 | Mechanism | Implementation | File |
 |---|---|---|
@@ -354,7 +354,7 @@ All Zustand actions use `axios` with `{ withCredentials: true }` to ensure the H
 
 ---
 
-## ⚙️ Environment Variables
+## Environment Variables
 
 Create a `.env` file in the `client/` directory:
 
@@ -363,11 +363,11 @@ VITE_API_URL=http://localhost:4001       # Base URL of your Express server
 VITE_GOOGLE_CLIENT_ID=your_client_id    # Google Cloud OAuth 2.0 Client ID
 ```
 
-> ⚠️ All Vite env variables **must** be prefixed with `VITE_` to be exposed to the browser bundle.
+> All Vite env variables **must** be prefixed with `VITE_` to be exposed to the browser bundle.
 
 ---
 
-## 🛠️ Local Developer Setup — Step by Step
+## Local Developer Setup — Step by Step
 
 ### Prerequisites
 - Node.js ≥ 18 (`node -v` to check)
@@ -443,7 +443,7 @@ VITE_GOOGLE_CLIENT_ID=<same as above>
 
 ---
 
-## 🔧 Vite Configuration
+## Vite Configuration
 
 ```js
 // vite.config.js
