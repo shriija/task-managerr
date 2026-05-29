@@ -1,11 +1,11 @@
 import exp from 'express';
 import { addBoard, getBoard, deleteBoard, getMyBoards, getDeletedBoards, restoreBoard, permanentDeleteBoard, updateBoard, getSharedBoards, manageMember, getBoardActivity } from '../controllers/boardController.js';
-import { inviteByEmail, generateInviteLink, acceptInvite } from '../controllers/inviteController.js';
+import { inviteByEmail, generateInviteLink, acceptInvite, handleJoinRequest } from '../controllers/inviteController.js';
 import verifyToken from '../utils/verifyToken.js';
-
+ 
 // Create an Express router instance for board-related routes
 const BoardApp = exp.Router();
-
+ 
 /**
  * Primary Board Operations
  * Routes for creating, fetching, and updating boards.
@@ -16,13 +16,13 @@ BoardApp.get('/', verifyToken, getMyBoards);                  // Get all boards 
 BoardApp.get('/shared/all', verifyToken, getSharedBoards);    // Get all boards shared with the current user
 BoardApp.put('/updateBoard/:id', verifyToken, updateBoard);   // Update board settings (title, background, etc.)
 BoardApp.get('/:id', verifyToken, getBoard);                  // Get a specific board by ID (must be at the end to prevent catching other GET routes)
-
+ 
 /**
  * Collaboration & Activity Routes
  */
 BoardApp.put('/manage-member/:boardId', verifyToken, manageMember);     // Add/remove/update privileges for a board member
 BoardApp.get('/activity/:boardId', verifyToken, getBoardActivity);      // Fetch the activity log/history for a specific board
-
+ 
 /**
  * Invite System Routes
  * Handle generating and accepting invites to collaborate on a board.
@@ -30,6 +30,7 @@ BoardApp.get('/activity/:boardId', verifyToken, getBoardActivity);      // Fetch
 BoardApp.post('/invite/email/:boardId', verifyToken, inviteByEmail);      // Send an invite directly via email
 BoardApp.post('/invite/link/:boardId', verifyToken, generateInviteLink);  // Generate a shareable invite link
 BoardApp.get('/invite/accept/:token', verifyToken, acceptInvite);         // Process an invite acceptance via token
+BoardApp.put('/invite/handle-request/:boardId', verifyToken, handleJoinRequest); // Accept or reject a user's join request
 
 /**
  * Trash & Soft-Delete Management Routes

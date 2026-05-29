@@ -650,6 +650,20 @@ socket.on("member-updated", (data) => {
     return res.data.payload // { link, token }
   },
 
+  // Handle a user's join request (Accept or Reject)
+  handleJoinRequest: async (boardId, userId, action) => {
+    const res = await axios.put(
+      `${API}/board-api/invite/handle-request/${boardId}`,
+      { userId, action },
+      { withCredentials: true }
+    )
+    set({ board: res.data.payload })
+    socketService.emitMemberUpdated(boardId, {
+      board: res.data.payload
+    })
+    return res.data
+  },
+
   fetchActivities: async (boardId) => {
     try {
       const res = await axios.get(`${API}/board-api/activity/${boardId}`, { withCredentials: true })

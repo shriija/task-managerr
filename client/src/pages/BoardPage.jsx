@@ -37,6 +37,7 @@ function BoardPage() {
 
   // Determine if the current user has owner permissions for this board
   const isOwner = board?.owner?._id === currentUser?._id || board?.owner === currentUser?._id
+  const isAdmin = board?.admins?.some(admin => (admin._id || admin) === currentUser?._id)
 
   // Synchronize local title state with board data when it loads/updates
   useEffect(() => {
@@ -288,30 +289,47 @@ function BoardPage() {
             {/* Board Members Display */}
             <div 
               onClick={() => setShowMembers(true)}
-              className="flex -space-x-2.5 ml-2 cursor-pointer hover:opacity-85 active:scale-95 transition-all"
+              className="relative cursor-pointer hover:opacity-85 active:scale-95 transition-all ml-2 flex items-center"
               title="View & Manage Members"
             >
-              {(board?.members || []).slice(0, 4).map((m, i) => (
-                <div
-                  key={i}
-                  title={m?.name || m}
-                  className="w-8 h-8 rounded-full border-2 border-white
-                             bg-linear-to-br from-primary-300 to-primary-500
-                             flex items-center justify-center shadow-sm cursor-default"
-                >
-                  <span className="text-[10px] font-bold text-white">
-                    {m?.name ? m.name.charAt(0).toUpperCase() : (typeof m === "string" ? m.charAt(0).toUpperCase() : "U")}
-                  </span>
+              {board?.members && board.members.length > 0 ? (
+                <div className="flex -space-x-2.5">
+                  {board.members.slice(0, 4).map((m, i) => (
+                    <div
+                      key={i}
+                      title={m?.name || m}
+                      className="w-8 h-8 rounded-full border-2 border-white
+                                 bg-linear-to-br from-primary-300 to-primary-500
+                                 flex items-center justify-center shadow-sm cursor-default"
+                    >
+                      <span className="text-[10px] font-bold text-white">
+                        {m?.name ? m.name.charAt(0).toUpperCase() : (typeof m === "string" ? m.charAt(0).toUpperCase() : "U")}
+                      </span>
+                    </div>
+                  ))}
+                  {/* Show overflow indicator if there are more than 4 members */}
+                  {board.members.length > 4 && (
+                    <div className="w-8 h-8 rounded-full border-2 border-white
+                                   bg-gray-100 flex items-center justify-center">
+                      <span className="text-[10px] font-semibold text-gray-500">
+                        +{board.members.length - 4}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              ))}
-              {/* Show overflow indicator if there are more than 4 members */}
-              {(board?.members?.length || 0) > 4 && (
-                <div className="w-8 h-8 rounded-full border-2 border-white
-                               bg-gray-100 flex items-center justify-center">
-                  <span className="text-[10px] font-semibold text-gray-500">
-                    +{board.members.length - 4}
-                  </span>
+              ) : (
+                /* Fallback outline icon if the board has no members yet */
+                <div className="w-8 h-8 rounded-full border-2 border-dashed border-gray-300 bg-gray-50/50 flex items-center justify-center shadow-xs">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.97 5.97 0 00-.75-2.985m-.001-1.03A3.75 3.75 0 1012 7.5a3.75 3.75 0 00-3.25 1.884m-4.5 9.33A9.094 9.094 0 001.25 18.24a3 3 0 014.683-2.72m-.94 3.198l-.001.031c0 .225.012.447.037.666A11.944 11.944 0 0012 21c2.17 0 4.207-.576-5.963-1.584A6.062 6.062 0 0018 18.72m-12 0a5.97 5.97 0 01.75-2.985m.001-1.03A3.75 3.75 0 1112 7.5a3.75 3.75 0 013.25 1.884" />
+                  </svg>
                 </div>
+              )}
+              {/* Pulse notification badge for pending requests */}
+              {(isOwner || isAdmin) && board?.pendingRequests && board.pendingRequests.length > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-extrabold text-white ring-2 ring-white animate-pulse">
+                  {board.pendingRequests.length}
+                </span>
               )}
             </div>
 

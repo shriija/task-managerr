@@ -15,7 +15,7 @@ function AcceptInvitePage() {
   const navigate = useNavigate()
   
   // Track the current validation state
-  const [status, setStatus] = useState("loading") // "loading" | "success" | "error"
+  const [status, setStatus] = useState("loading") // "loading" | "success" | "pending" | "error"
   const [message, setMessage] = useState("")
   const [boardId, setBoardId] = useState(null)
 
@@ -28,14 +28,23 @@ function AcceptInvitePage() {
           withCredentials: true,
         })
         
-        // Destructure the resulting boardId and whether they were already a member
-        const { boardId: bid, alreadyMember } = res.data.payload
+        // Destructure the resulting boardId, whether they were already a member, and if it's pending
+        const { boardId: bid, alreadyMember, pending } = res.data.payload
         setBoardId(bid)
-        setMessage(alreadyMember ? "You're already a member of this board." : "You've joined the board!")
-        setStatus("success")
 
-        // Auto-redirect to the board view after 2 seconds
-        setTimeout(() => navigate(`/board/${bid}`), 2000)
+        if (alreadyMember) {
+          setMessage("You're already a member of this board.")
+          setStatus("success")
+          setTimeout(() => navigate(`/board/${bid}`), 2000)
+        } else if (pending) {
+          setMessage("Your request to join the board has been submitted to the owner for approval!")
+          setStatus("pending")
+          setTimeout(() => navigate("/dashboard"), 3500)
+        } else {
+          setMessage("You've joined the board!")
+          setStatus("success")
+          setTimeout(() => navigate(`/board/${bid}`), 2000)
+        }
       } catch (err) {
         // Handle invalid, expired, or non-existent tokens
         const msg = err.response?.data?.message || "Something went wrong"
@@ -98,6 +107,41 @@ function AcceptInvitePage() {
                 Go to Board Now
               </button>
             )}
+          </>
+        )}
+
+        {/* ─── PENDING STATE ─── */}
+        {status === "pending" && (
+          <>
+            <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
+              <svg className="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-1">
+              Request Submitted
+            </h2>
+            <p className="text-sm text-gray-500 mb-5">{message}</p>
+            
+            {/* Auto-redirect spinner indicator */}
+            <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              Redirecting to dashboard…
+            </div>
+            
+            {/* Manual redirect button (fallback) */}
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="mt-4 w-full bg-linear-to-r from-amber-500 to-amber-600
+                         hover:from-amber-600 hover:to-amber-700
+                         text-white text-sm font-semibold py-2.5 rounded-xl
+                         transition-all shadow-sm hover:shadow-md"
+            >
+              Go to Dashboard
+            </button>
           </>
         )}
 

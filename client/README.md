@@ -103,6 +103,63 @@ client/
 
 ---
 
+## Application Flow Diagrams
+
+### 1. General Application Navigation & Page Flow
+```mermaid
+graph TD
+    Start([User Visits App]) --> Home{Is Authenticated?}
+    Home -- Yes --> Dashboard[User Dashboard]
+    Home -- No --> PublicHome[Public Landing Page]
+    
+    PublicHome --> Login[Login Page]
+    PublicHome --> Register[Register Page]
+    
+    Register -- DNS MX Check Valid --> Login
+    Register -- DNS MX Check Invalid --> Register
+    
+    Login -- JWT Cookie Set --> Dashboard
+    
+    Dashboard --> CreateBoard[Create Board Page]
+    Dashboard --> BoardPage[Board Kanban View]
+    Dashboard --> AccountPage[Account Profile Page]
+    
+    BoardPage --> ViewToggle{View Toggle}
+    ViewToggle -- Kanban --> BoardPage
+    ViewToggle -- Calendar --> CalendarView[Calendar Due Date View]
+    ViewToggle -- Trash --> TrashView[Soft-Deleted Items View]
+    
+    InviteLink[Click Shareable Invite Link] --> AcceptInvite[Accept Invite Page]
+    AcceptInvite -- Logged In & Submit --> PendingRequest[Create Pending Join Request]
+    PendingRequest --> Dashboard
+    
+    BoardPage -- Owner/Admin clicks notification --> MembersModal[Manage Members & Requests]
+    MembersModal -- Approve Request --> JoinSuccess[User Added as Board Member]
+```
+
+### 2. Real-Time Drag-and-Drop Collaboration Flow (Socket.io)
+```mermaid
+sequenceDiagram
+    autonumber
+    actor UserA as Collaborator A
+    actor UserB as Collaborator B
+    participant FE_A as User A Frontend
+    participant FE_B as User B Frontend
+    participant BE as Backend Server
+    participant WS as Socket.io Server
+    
+    UserA->>FE_A: "Drag Card to In Progress"
+    FE_A->>BE: "PUT /card-api/moveCard/:cardId"
+    BE-->>FE_A: "200 OK (Card moved in DB)"
+    FE_A->>WS: "Emit move-card { boardId, cardId, listId, position }"
+    WS->>WS: "Identify Board Room"
+    WS-->>FE_B: "Broadcast card-moved payload"
+    FE_B->>FE_B: "Update local Zustand store optimistically"
+    FE_B->>UserB: "Render card in In Progress in real-time"
+```
+
+---
+
 ## Layout Structure & Routing
 
 The application uses **React Router v7** with `createBrowserRouter`. All authenticated routes are wrapped in `<ProtectedRoute>`, which checks the `isAuthenticated` flag from the Zustand auth store.
@@ -219,6 +276,7 @@ LoginPage form submit
 | `deleteCard(id)` | Card menu action | `DELETE /card-api/deleteCards/:id` → emits `card-deleted` |
 | `inviteByEmail(data)` | Invite modal submit | `POST /board-api/invite/email/:boardId` |
 | `manageMember(data)` | Members modal action | `PUT /board-api/manage-member/:boardId` → emits `member-updated` |
+| `handleJoinRequest(id, uid, act)` | Join requests accept/reject | `PUT /board-api/invite/handle-request/:boardId` → emits `member-updated` |
 
 **Socket.io receive events** (applied to local state without API re-fetch):
 - `card-moved` → Updates card position in `cards[listId]` array
@@ -282,7 +340,8 @@ All Zustand actions use `axios` with `{ withCredentials: true }` to ensure the H
 | `GET` | `/board-api/activity/:boardId` | ✓ | Board activity log |
 | `POST` | `/board-api/invite/email/:boardId` | ✓ | Invite via email |
 | `POST` | `/board-api/invite/link/:boardId` | ✓ | Generate invite link |
-| `GET` | `/board-api/invite/accept/:token` | ✓ | Accept invite |
+| `GET` | `/board-api/invite/accept/:token` | ✓ | Accept invite (registers request) |
+| `PUT` | `/board-api/invite/handle-request/:boardId` | ✓ | Accept or reject join request |
 
 #### List API (`/list-api`)
 

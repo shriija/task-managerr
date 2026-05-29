@@ -44,7 +44,8 @@ export const getBoard = async (req, res) => {
     const board = await BoardModel.findById(req.params.id)
       .populate("owner", "name email avatar")
       .populate("members", "name email avatar")
-      .populate("admins", "name email avatar");
+      .populate("admins", "name email avatar")
+      .populate("pendingRequests.user", "name email avatar");
 
     if (!board) {
       return res.status(404).json({ message: "Board not found" });
@@ -195,7 +196,8 @@ export const updateBoard = async (req, res) => {
     const updated = await BoardModel.findById(board._id)
       .populate("owner", "name email avatar")
       .populate("members", "name email avatar")
-      .populate("admins", "name email avatar");
+      .populate("admins", "name email avatar")
+      .populate("pendingRequests.user", "name email avatar");
       
     res.json({ message: "Board updated successfully", payload: updated });
   } catch (err) {
@@ -300,7 +302,8 @@ export const manageMember = async (req, res) => {
     const updatedBoard = await BoardModel.findById(boardId)
       .populate("owner", "name email avatar")
       .populate("members", "name email avatar")
-      .populate("admins", "name email avatar");
+      .populate("admins", "name email avatar")
+      .populate("pendingRequests.user", "name email avatar");
 
     res.status(200).json({ message: `Member updated successfully`, payload: updatedBoard });
   } catch (error) {

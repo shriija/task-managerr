@@ -15,6 +15,7 @@ import { useAuthStore } from "../context/AuthContext";
 function MembersModal({ onClose }) {
   const board = useBoardStore(s => s.board);
   const manageBoardMember = useBoardStore(s => s.manageBoardMember);
+  const handleJoinRequest = useBoardStore(s => s.handleJoinRequest);
   const currentUser = useAuthStore(s => s.currentUser);
   
   const backdropRef = useRef(null);
@@ -67,6 +68,21 @@ function MembersModal({ onClose }) {
     }
   };
 
+  /**
+   * Accepts or Rejects a user's join request.
+   */
+  const handleRequestAction = async (userId, action) => {
+    setError("");
+    setLoadingId(userId + "-" + action);
+    try {
+      await handleJoinRequest(board._id, userId, action);
+    } catch (err) {
+      setError(err.response?.data?.message || `Failed to ${action} join request`);
+    } finally {
+      setLoadingId("");
+    }
+  };
+
   // Listen for Escape key to close the modal
   useEffect(() => {
     const handler = (e) => {
@@ -107,6 +123,60 @@ function MembersModal({ onClose }) {
         {error && (
           <div className="mb-3 p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-xl font-medium">
             {error}
+          </div>
+        )}
+
+        {/* Join Requests section - visible to owner and admins */}
+        {(isOwner || isAdmin) && board?.pendingRequests && board.pendingRequests.length > 0 && (
+          <div className="mb-5 border-b border-gray-100 pb-4">
+            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2.5 text-left">
+              Join Requests ({board.pendingRequests.length})
+            </h4>
+            <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+              {board.pendingRequests.map((reqItem) => {
+                const u = reqItem.user;
+                if (!u) return null;
+                const reqId = u._id;
+                
+                return (
+                  <div
+                    key={reqId}
+                    className="flex items-center justify-between p-2.5 rounded-2xl border border-amber-100 bg-amber-50/20 hover:bg-amber-50/40 transition-all duration-200"
+                  >
+                    <div className="flex items-center gap-2.5 overflow-hidden">
+                      <div className="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-amber-500 flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-xs">
+                        {u.avatar ? (
+                          <img src={u.avatar} alt={u.name} className="w-full h-full rounded-full object-cover" />
+                        ) : (
+                          u.name?.charAt(0).toUpperCase() || "R"
+                        )}
+                      </div>
+                      <div className="truncate text-left">
+                        <div className="font-bold text-gray-800 text-xs truncate">{u.name}</div>
+                        <div className="text-[10px] text-gray-400 truncate">{u.email}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleRequestAction(reqId, "accept")}
+                        disabled={loadingId === reqId + "-accept" || loadingId === reqId + "-reject"}
+                        className="text-[11px] font-bold px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-all shadow-xs cursor-pointer"
+                      >
+                        {loadingId === reqId + "-accept" ? "..." : "Accept"}
+                      </button>
+                      <button
+                        onClick={() => handleRequestAction(reqId, "reject")}
+                        disabled={loadingId === reqId + "-accept" || loadingId === reqId + "-reject"}
+                        className="text-[11px] font-semibold px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all cursor-pointer"
+                      >
+                        {loadingId === reqId + "-reject" ? "..." : "Reject"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 

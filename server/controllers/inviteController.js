@@ -112,8 +112,9 @@ export const generateInviteLink = async (req, res) => {
 
     // Otherwise, generate a brand new token using crypto.randomUUID()
     const token = randomUUID();
-    // Set expiration to 7 days from now
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); 
+    // Set expiration to configurable days from now
+    const inviteDays = parseInt(process.env.INVITE_LINK_EXPIRES_DAYS) || 7;
+    const expiresAt = new Date(Date.now() + inviteDays * 24 * 60 * 60 * 1000); 
 
     // Save the new token to the database
     await InviteTokenModel.create({ boardId, token, createdBy: req.userId, expiresAt });
@@ -165,16 +166,102 @@ export const acceptInvite = async (req, res) => {
       });
     }
 
-    // Add the user to the board's members array
-    board.members.push(req.userId);
+    // Check if the user already has a pending join request
+    const alreadyRequested = board.pendingRequests.some(
+      (r) => r.user.toString() === req.userId
+    );
+    if (alreadyRequested) {
+      return res.status(200).json({
+        message: "Your join request is already pending approval",
+        payload: { boardId: board._id, alreadyMember: false, pending: true },
+      });
+    }
+
+    // Add the user to the board's pendingRequests array
+    board.pendingRequests.push({ user: req.userId });
     await board.save();
 
-    // Log the fact that they joined via a link
-    await logActivity(board._id, req.userId, "joined the board via invite link");
+    // Log the fact that they requested to join via a link
+    await logActivity(board._id, req.userId, "requested to join the board via invite link");
 
     res.status(200).json({
-      message: "You have joined the board!",
-      payload: { boardId: board._id, alreadyMember: false },
+      message: "Your request to join the board has been submitted to the owner for approval!",
+      payload: { boardId: board._id, alreadyMember: false, pending: true },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * ── 4. Handle a pending join request ──────────────────────────
+ * Accepts or rejects a user's join request.
+ * 
+ * @param {Object} req - Express request object containing boardId (params), userId and action (body)
+ * @param {Object} res - Express response object
+ */
+export const handleJoinRequest = async (req, res) => {
+  try {
+    const { boardId } = req.params;
+    const { userId, action } = req.body; // action: "accept" | "reject"
+
+    if (!userId || !["accept", "reject"].includes(action)) {
+      return res.status(400).json({ message: "userId and action ('accept' or 'reject') are required" });
+    }
+
+    // Validate the board exists
+    const board = await BoardModel.findById(boardId);
+    if (!board || board.isDeleted) {
+      return res.status(404).json({ message: "Board not found" });
+    }
+
+    // Security Check: Only the board owner or admins can manage join requests
+    const isOwner = board.owner.toString() === req.userId;
+    const isAdmin = board.admins.some((a) => a.toString() === req.userId);
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: "Only the board owner or admins can manage join requests" });
+    }
+
+    // Find the request in pendingRequests
+    const requestIndex = board.pendingRequests.findIndex(
+      (r) => r.user.toString() === userId
+    );
+    if (requestIndex === -1) {
+      return res.status(404).json({ message: "Join request not found" });
+    }
+
+    const requester = await UserModel.findById(userId);
+    const requesterName = requester ? requester.name : "User";
+
+    if (action === "accept") {
+      // Remove from pending requests
+      board.pendingRequests.splice(requestIndex, 1);
+      // Ensure user is not already a member
+      const alreadyMember = board.members.some((m) => m.toString() === userId);
+      if (!alreadyMember) {
+        board.members.push(userId);
+      }
+      await board.save();
+
+      await logActivity(boardId, req.userId, `accepted join request from ${requesterName}`);
+    } else {
+      // Reject: simply remove from pending requests
+      board.pendingRequests.splice(requestIndex, 1);
+      await board.save();
+
+      await logActivity(boardId, req.userId, `rejected join request from ${requesterName}`);
+    }
+
+    // Return the updated board state populated
+    const updatedBoard = await BoardModel.findById(boardId)
+      .populate("owner", "name email avatar")
+      .populate("members", "name email avatar")
+      .populate("admins", "name email avatar")
+      .populate("pendingRequests.user", "name email avatar");
+
+    res.status(200).json({
+      message: `Join request successfully ${action}ed`,
+      payload: updatedBoard,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

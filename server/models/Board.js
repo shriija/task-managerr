@@ -54,6 +54,16 @@ const boardSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    // Users who have requested to join this board via invite link and are pending approval
+    pendingRequests: {
+      type: [
+        {
+          user: { type: Schema.Types.ObjectId, ref: "User" },
+          requestedAt: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
+    },
   },
   {
     strict: true,

@@ -1,8 +1,26 @@
 import { UserModel } from '../models/User.js';
 import bcrypt from 'bcryptjs';
-import { generateToken } from '../utils/generateToken.js';
+import { generateToken, setAuthCookie } from '../utils/generateToken.js';
 import { OAuth2Client } from 'google-auth-library';
 import crypto from 'crypto';
+import dns from 'dns';
+import { promisify } from 'util';
+
+const resolveMxAsync = promisify(dns.resolveMx);
+
+/**
+ * Resolves MX records for the given email's domain to verify it is real.
+ */
+const verifyEmailDomain = async (email) => {
+    const domain = email.split('@')[1];
+    if (!domain) return false;
+    try {
+        const records = await resolveMxAsync(domain);
+        return records && records.length > 0;
+    } catch (error) {
+        return false;
+    }
+};
 
 /**
  * Handle user registration (Sign up)
@@ -17,6 +35,12 @@ export const signup = async (req, res) => {
     const response = await UserModel.findOne({ email: user.email });
     if (response) {
         return res.status(409).json({ message: "email already exists" });
+    }
+    
+    // Verify email domain MX records
+    const isDomainValid = await verifyEmailDomain(user.email);
+    if (!isDomainValid) {
+        return res.status(400).json({ message: "Invalid email domain. Please use a real email address." });
     }
     
     try {
@@ -68,18 +92,8 @@ export const signin = async (req, res) => {
         const userObj = user.toObject();
         delete userObj.password;
         
-        // Generate a signed JWT token for the session
-        const token = generateToken(user);
-        
-        // Set the JWT as a secure, HTTP-only cookie.
-        // `partitioned: true` and `sameSite: "none"` are required for cross-site cookie delivery (like frontend on Vercel, backend on Render)
-        res.cookie('token', token, {
-            httpOnly: true,
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            secure: true,
-            sameSite: "none",
-            partitioned: true 
-        });
+        // Set the JWT cookie via unified helper
+        setAuthCookie(res, user);
         
         res.status(200).json({ message: "signin sucessfull", payload: userObj });
     } catch (error) {
@@ -239,15 +253,8 @@ export const googleSignin = async (req, res) => {
         const userObj = user.toObject();
         delete userObj.password;
 
-        const appToken = generateToken(user);
-
-        res.cookie('token', appToken, {
-            httpOnly: true,
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            secure: true,
-            sameSite: "none",
-            partitioned: true 
-        });
+        // Set the JWT cookie via unified helper
+        setAuthCookie(res, user);
 
         res.status(200).json({ message: "Google signin successful", payload: userObj });
 

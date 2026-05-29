@@ -77,6 +77,104 @@ server/
 
 ---
 
+## Backend Request Pipelines & Architecture Flows
+
+### 1. Request Pipeline Flowchart
+```mermaid
+graph TD
+    Request([Incoming HTTP Request]) --> TrustProxy{trust proxy == 1?}
+    TrustProxy --> BodyParser[express.json]
+    BodyParser --> CookieParser[cookieParser]
+    CookieParser --> CORS[cors configurations]
+    CORS --> Router{Router Match?}
+    Router -- Protected --> VerifyToken[verifyToken Middleware]
+    VerifyToken -- Token Valid --> Controller[Controller Function]
+    VerifyToken -- Token Invalid --> AuthError[401 Unauthorized]
+    Router -- Public --> Controller
+    Controller --> DB[(MongoDB Atlas)]
+    Controller --> Response([res.json response])
+```
+
+### 2. Authentication & Security Session Flow
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User Browser
+    participant FE as Frontend (React)
+    participant BE as Backend (Express)
+    participant DB as MongoDB
+    
+    User->>FE: "Enter Credentials & Submit Login"
+    FE->>BE: "POST /user-api/signin"
+    BE->>DB: "Find User by Email"
+    DB-->>BE: "User Document (hashed password)"
+    BE->>BE: "bcrypt.compare(password, hash)"
+    alt Credentials Valid
+        BE->>BE: "Generate JWT signed with JWT_SECRET_KEY"
+        BE-->>FE: "200 OK + Set-Cookie (token=JWT, HttpOnly, Secure)"
+        FE->>User: "Redirect to /dashboard"
+    else Credentials Invalid
+        BE-->>FE: "401 Unauthorized (error message)"
+        FE->>User: "Display error message"
+    end
+    
+    note over User, BE: Session Verification on page refresh / protected route mount
+    User->>FE: "Load Dashboard Route"
+    FE->>BE: "GET /user-api/verify (cookie sent automatically)"
+    BE->>BE: "jwt.verify(token, JWT_SECRET_KEY)"
+    alt JWT Valid
+        BE-->>FE: "200 OK (User profile payload)"
+        FE->>User: "Render Dashboard"
+    else JWT Invalid / Expired
+        BE-->>FE: "401 Unauthorized"
+        FE->>User: "Redirect to /login"
+    end
+```
+
+### 3. Invite Request-and-Approval Process Flow
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Owner as Board Owner (User A)
+    actor Joiner as Invitee (User B)
+    participant FE as Frontend (React)
+    participant BE as Backend (Express)
+    participant DB as MongoDB
+    participant WS as WebSocket (Socket.io)
+    
+    Owner->>FE: "Generate Invite Link"
+    FE->>BE: "POST /board-api/invite/link/:boardId"
+    BE->>DB: "Save InviteToken (with expiry)"
+    BE-->>FE: "201 Created (Token url)"
+    FE->>Owner: "Display copyable link"
+    
+    Owner->>Joiner: "Send Invite Link (outside app)"
+    Joiner->>FE: "Open Invite Link in Browser"
+    FE->>BE: "GET /board-api/invite/accept/:token"
+    BE->>DB: "Validate Token & Find Board"
+    BE->>DB: "Add User B to board.pendingRequests"
+    BE-->>FE: "200 OK (status: pending)"
+    FE->>Joiner: "Show Request Submitted countdown"
+    
+    note over Owner, BE: Real-time Notification
+    BE->>WS: "Emit member-updated (User B pending)"
+    WS-->>FE: "Broadcast update to Board Room"
+    FE->>Owner: "Display pulsing red badge (Count = 1)"
+    
+    Owner->>FE: "Click badge -> open MembersModal"
+    FE->>Owner: "Show Candidate User B with Accept/Reject"
+    Owner->>FE: "Click Accept"
+    FE->>BE: "PUT /board-api/invite/handle-request/:boardId (action: accept)"
+    BE->>DB: "Move User B from pendingRequests to members"
+    BE-->>FE: "200 OK (success message)"
+    BE->>WS: "Emit member-updated (User B added)"
+    WS-->>FE: "Broadcast updated member list to room"
+    FE->>Owner: "Update Members list in UI"
+    FE->>Joiner: "Grant access to Board canvas"
+```
+
+---
+
 ## Express Pipeline
 
 The request lifecycle for every API call:
@@ -155,6 +253,7 @@ try {
 | `isDeleted` | Boolean | Soft-delete flag |
 | `deletedAt` | Date | When board was trashed |
 | `allowMultipleAssignees` | Boolean | Board-level card assignment mode |
+| `pendingRequests` | [{ user: ObjectId → User, requestedAt: Date }] | Users requesting to join via link |
 
 ### `List` (`models/List.js`)
 
@@ -322,6 +421,7 @@ const verifyToken = (req, res, next) => {
 | `POST` | `/invite/email/:boardId` | Admin+ | `{ email }` |
 | `POST` | `/invite/link/:boardId` | Admin+ | — |
 | `GET` | `/invite/accept/:token` | Authenticated | — |
+| `PUT` | `/invite/handle-request/:boardId` | Admin+ | `{ userId, action: "accept"/"reject" }` |
 
 ### List API (`/list-api`)
 
@@ -444,6 +544,9 @@ CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 GOOGLE_CLIENT_ID=your_google_oauth_client_id
+JWT_EXPIRES_IN=1d                           # JWT token lifespan (e.g. 1d, 12h)
+COOKIE_MAX_AGE_DAYS=7                       # Session cookie age in days
+INVITE_LINK_EXPIRES_DAYS=7                  # Invite link validity in days
 ```
 
 | Variable | Required | Description |
@@ -456,6 +559,9 @@ GOOGLE_CLIENT_ID=your_google_oauth_client_id
 | `CLOUDINARY_API_KEY` | Yes | From Cloudinary dashboard |
 | `CLOUDINARY_API_SECRET` | Yes | From Cloudinary dashboard — **never commit this** |
 | `GOOGLE_CLIENT_ID` | Yes | Google Cloud OAuth 2.0 Client ID |
+| `JWT_EXPIRES_IN` | No (defaults to 1d) | Lifespan of JWT session token |
+| `COOKIE_MAX_AGE_DAYS` | No (defaults to 7) | Lifespan of HTTP-only session cookie in days |
+| `INVITE_LINK_EXPIRES_DAYS` | No (defaults to 7) | Lifespan of generated invite links in days |
 
 ---
 
