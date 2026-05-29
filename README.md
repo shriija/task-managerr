@@ -2,6 +2,10 @@
 
 A full-stack, real-time collaborative Kanban task management application built with **React + Vite** on the frontend and **Node.js + Express + MongoDB** on the backend. It supports Google OAuth, JWT-based session management via HttpOnly cookies, Cloudinary file uploads, Socket.io real-time sync, and a soft-delete trash system.
 
+### Live Deployment Links
+- **Frontend Web App**: [https://task-managerr-g0c3.onrender.com/](https://task-managerr-g0c3.onrender.com)
+- **Backend API Server**: [https://task-managerr-oigx.onrender.com](https://task-managerr-oigx.onrender.com)
+
 ---
 
 ## Monorepo Structure
