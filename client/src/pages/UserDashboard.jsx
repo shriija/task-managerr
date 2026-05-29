@@ -238,15 +238,15 @@ function UserDashboard() {
 
         {/* Dashboard Statistics Overview Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm">
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm" onClick={() => navigate("/dashboard/boards")}>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">My Boards</p>
             <p className="font-display text-3xl font-extrabold text-slate-900 mt-1">{stats.personal}</p>
           </div>
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm">
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm" onClick={() => navigate("/dashboard/shared")}>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Shared Workspaces</p>
             <p className="font-display text-3xl font-extrabold text-slate-900 mt-1">{stats.shared}</p>
           </div>
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm">
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm" onClick={() => navigate("/dashboard/trash")}>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Trash Bin</p>
             <p className="font-display text-3xl font-extrabold text-slate-900 mt-1">{deletedBoards.length}</p>
           </div>
